@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page 24 - ZimPublish Author Dashboard</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+</head>
+<body>
+
+    <div class="dashboard-container">
+        <!-- Sidebar Workspace Navigation Component -->
+        <aside class="sidebar">
+            <div class="brand-section">
+                <div class="logo-group">
+                    <span class="logo-icon">🇿🇼</span>
+                    <span class="logo-text">ZimPublish</span>
+                </div>
+                <div class="welcome-tag">Welcome, Chengetai 👤</div>
+            </div>
+
+            <nav class="side-menu">
+                <a href="#" class="menu-item active" id="menu-dash">📊 My Books Dashboard</a>
+                <a href="#" class="menu-item" id="menu-create">➕ Create New Book</a>
+                <!-- UPDATED MENU ITEM NAME & ID BELOW -->
+                <a href="#" class="menu-item" id="menu-studio">✍️ Write Online (Web Studio)</a>
+                <a href="#" class="menu-item" id="menu-sales">💰 Sales & Royalties</a>
+                <a href="#" class="menu-item">👤 My Author Profile</a>
+                <hr class="menu-divider">
+                <a href="/" class="menu-item view-site">👁️ Reader View</a>
+                <a href="/api/auth/logout" style="color: #d97736; font-weight: bold; margin-top: 20px; display: block;">🚪 Sign Out</a>
+            </nav>
+        </aside>
+
+        <!-- Dynamic Main Content Grid Layout -->
+        <main class="main-content">
+            
+            <!-- VIEW 1: Main Dashboard Window (Active Books & Balances) -->
+            <div id="dashboard-view" class="view-section">
+                <h1 class="view-title">Active Books</h1>
+                
+                <div class="books-horizontal-grid" id="author-books-container">
+                    <p style="color: var(--text-dark); opacity: 0.6;">Loading your books portfolio...</p>
+                </div>
+
+                <!-- Big Quick Action Action Trigger Bar -->
+                <div class="action-trigger-card" id="quick-create-trigger">
+                    <span class="plus-circle">＋</span>
+                    <h3>Create a New Book</h3>
+                </div>
+
+                <!-- Financial Balance & Activity Matrix Setup -->
+                <div class="financials-row">
+                    <div class="activity-log-box">
+                        <h3>Recent Activity</h3>
+                        <div class="log-item"><span>Active Activity<br><small>June 17, 2026</small></span> <strong>+ 18 USD</strong></div>
+                        <div class="log-item"><span>Creators Earnings<br><small>June 17, 2026</small></span> <strong>1 USD</strong></div>
+                        <div class="log-item"><span>Advished Earnings<br><small>June 17, 2026</small></span> <strong>1 USD</strong></div>
+                    </div>
+
+                    <div class="earnings-withdrawal-box">
+                        <h3>Total Author Earnings</h3>
+                        <p class="sub-label">Balance available for withdrawal via:</p>
+                        
+                        <div class="payout-row">
+                            <span>💸 EcoCash</span>
+                            <strong>$115 USD</strong>
+                        </div>
+                        <div class="payout-row">
+                            <span>📱 OneMoney</span>
+                            <strong>$0 USD</strong>
+                        </div>
+
+                        <button class="withdraw-btn">Withdraw</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VIEW 2: Creator Creation Desk Window Form -->
+            <div id="creator-view" class="view-section hidden">
+                <h1 class="view-title">Create & Publish Master</h1>
+                
+                <div class="creator-card">
+                    <form id="publish-master-form">
+                        <label class="input-label">BOOK TITLE</label>
+                        <input type="text" placeholder="Enter Book Title" required>
+
+                        <label class="input-label">BOOK DESCRIPTION / SUMMARY</label>
+                        <textarea id="book-description" rows="4" placeholder="Enter a brief summary of what the book is about..." style="width: 100%; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light); border-radius: 4px; padding: 12px; box-sizing: border-box;" required></textarea>
+
+                        <label class="input-label">BOOK PRICE (USD)</label>
+                        <input type="number" placeholder="e.g. 5.00" step="0.01" required>
+
+                        <label class="input-label">BOOK STORE FRONT COVER IMAGE</label>
+                        <input type="file" id="cover-upload" accept="image/*" style="display: block; margin-bottom: 15px;" required>
+
+                        <!-- UPDATED LABELS FOR CLARITY -->
+                        <label class="input-label">PUBLISH FORMAT</label>
+                        <div class="mode-select-row" style="margin-bottom: 15px;">
+                            <label class="radio-option" style="display: block; margin-bottom: 10px; font-weight: bold;">
+                                <input type="radio" name="upload-mode" value="pdf" checked> 📁 Upload finished PDF manuscript
+                            </label>
+                            <label class="radio-option" style="display: block; font-weight: bold;">
+                                <input type="radio" name="upload-mode" value="html"> ✍️ Compose / Paste chapters directly online (No PDF required!)
+                            </label>
+                            
+                            <label class="input-label" style="margin-top: 20px; display: block;">SECURITY & DISTRIBUTION RULES</label>
+                            <select id="book-download-rule" style="width: 100%; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
+                                <option value="0">🔒 Secure Anti-Piracy Streaming (Read in Browser/App Only)</option>
+                                <option value="1">🔓 Open Distribution (Allow Readers to Download Physical PDF file)</option>
+                            </select>
+                        </div>
+
+                        <!-- Conditional Input field 1: For PDF Authors -->
+                        <div id="pdf-input-group" class="conditional-group">
+                            <label class="input-label">UPLOAD PDF MANUSCRIPT</label>
+                            <input type="file" id="pdf-upload" accept=".pdf">
+                        </div>
+
+                        <!-- Conditional Input field 2: For Web Book Authors -->
+                        <div id="html-input-group" class="conditional-group hidden">
+                            <div style="background-color: #fcf8e3; border-left: 4px solid #f0ad4e; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
+                                <strong>💡 Web Book Tip:</strong> You can write your first chapter right now! Once saved, you can add and manage more chapters inside the <strong>Write Online (Web Studio)</strong> menu.
+                            </div>
+                            <label class="input-label">FIRST CHAPTER TITLE</label>
+                            <input type="text" placeholder="e.g. Chapter 1: The Journey Begins">
+                            
+                            <label class="input-label">FIRST CHAPTER BODY CONTENT</label>
+                            <textarea rows="10" placeholder="Paste or type your chapter text here..."></textarea>
+                        </div>
+
+                        <button type="submit" class="save-master-btn">Save Content Profile</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- NEW VIEW 3: Write Online / Web Book Studio Panel -->
+            <div id="studio-view" class="view-section hidden">
+                <h1 class="view-title">✍️ Web Book Writing Studio</h1>
+                <p style="margin-bottom: 20px; opacity: 0.8;">Select one of your online-composed books below to add or edit chapters.</p>
+                
+                <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
+                    <!-- Left Column: Web Books list Selector -->
+                    <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border-tan); max-height: 500px; overflow-y: auto;">
+                        <h3 style="margin-bottom: 10px; color: var(--primary-green);">Your Web Books</h3>
+                        <div id="studio-books-list">
+                            <!-- JS will load books created via HTML mode here -->
+                            <p style="font-size: 13px; color: gray;">Loading your web books...</p>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Chapter Composer Panel -->
+                    <div id="studio-editor-panel" class="hidden" style="background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border-tan);">
+                        <h3 id="current-editing-book-title" style="margin-bottom: 5px; color: var(--primary-green);">No Book Selected</h3>
+                        <p style="font-size: 12px; color: gray; margin-bottom: 15px;">Add chapters to your web book composition pipeline.</p>
+                        
+                        <hr style="margin-bottom: 15px; border: 0; border-top: 1px solid #eee;">
+                        
+                        <!-- List of chapters currently written -->
+                        <div style="margin-bottom: 20px;">
+                            <h4 style="margin-bottom: 10px;">Current Chapters</h4>
+                            <div id="studio-chapters-list" style="display: flex; flex-direction: column; gap: 8px;">
+                                <!-- Dynamic list of chapters -->
+                            </div>
+                        </div>
+
+                        <!-- Form to add a new chapter -->
+                        <form id="add-chapter-form">
+                            <input type="hidden" id="editor-book-id">
+                            <h4 style="margin-bottom: 10px;">➕ Write a New Chapter</h4>
+                            
+                            <label class="input-label">CHAPTER TITLE</label>
+                            <input type="text" id="new-chapter-title" placeholder="e.g. Chapter 2: Into the Forest" style="width: 100%; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
+
+                            <label class="input-label">CHAPTER CONTENT</label>
+                            <textarea id="new-chapter-body" rows="12" placeholder="Start writing or paste chapter content here..." style="width: 100%; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required></textarea>
+
+                            <button type="submit" class="save-master-btn" style="background: var(--primary-green); color: white;">Save and Publish Chapter</button>
+                        </form>
+                    </div>
+
+                    <!-- Placeholder display when no book is selected -->
+                    <div id="studio-editor-placeholder" style="background: white; padding: 40px; border-radius: 8px; border: 1px dashed var(--border-tan); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+                        <span style="font-size: 40px; margin-bottom: 10px;">👈</span>
+                        <h3>Select a Web Book to Begin Writing</h3>
+                        <p style="opacity: 0.7;">Select one of your online composition books from the list on the left to add, edit, or organize chapters.</p>
+                    </div>
+                </div>
+            </div>
+<!-- Placeholder display when no book is selected -->
+                    <div id="studio-editor-placeholder" style="background: white; padding: 40px; border-radius: 8px; border: 1px dashed var(--border-tan); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
+                        <span style="font-size: 40px; margin-bottom: 10px;">👈</span>
+                        <h3>Select a Web Book to Begin Writing</h3>
+                        <p style="opacity: 0.7;">Select one of your online composition books from the list on the left to add, edit, or organize chapters.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SALES & ROYALTIES VIEW PANEL -->
+            <div id="sales-view" class="hidden" style="padding: 20px; box-sizing: border-box;">
+                <h1 style="color: var(--primary-green); margin-bottom: 5px;">💰 Royalties & Earnings</h1>
+                <p style="opacity: 0.7; margin-bottom: 25px;">Track your live book sales, customer transactions, and overall payouts.</p>
+
+                <!-- Dynamic Stat Cards Grid -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;">
+                    <div style="background: white; border: 1px solid var(--border-tan); border-radius: 8px; padding: 20px; box-sizing: border-box;">
+                        <span style="font-size: 11px; font-weight: bold; letter-spacing: 0.5px; opacity: 0.6; text-transform: uppercase;">Total Revenue Earned</span>
+                        <h2 id="stats-total-earnings" style="font-size: 32px; color: var(--primary-green); margin: 5px 0 0 0;">$0.00</h2>
+                    </div>
+                    <div style="background: white; border: 1px solid var(--border-tan); border-radius: 8px; padding: 20px; box-sizing: border-box;">
+                        <span style="font-size: 11px; font-weight: bold; letter-spacing: 0.5px; opacity: 0.6; text-transform: uppercase;">Total Copies Sold</span>
+                        <h2 id="stats-total-sales" style="font-size: 32px; color: #2980b9; margin: 5px 0 0 0;">0</h2>
+                    </div>
+                </div>
+
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; align-items: start;">
+                    <!-- Book-by-Book Breakdown Panel -->
+                    <div style="background: white; border: 1px solid var(--border-tan); border-radius: 8px; padding: 20px;">
+                        <h3 style="color: var(--primary-green); margin-bottom: 15px; font-size: 16px;">📈 Revenue by Book Title</h3>
+                        <div id="sales-breakdown-list" style="display: flex; flex-direction: column; gap: 12px;">
+                            <!-- JS will generate items here dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Recent Transaction Feed -->
+                    <div style="background: white; border: 1px solid var(--border-tan); border-radius: 8px; padding: 20px;">
+                        <h3 style="color: var(--primary-green); margin-bottom: 15px; font-size: 16px;">🕒 Recent Customer Transactions</h3>
+                        <div id="recent-transactions-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 350px; overflow-y: auto;">
+                            <!-- JS will list purchases here dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+        </main>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+    <!-- EDIT BOOK DETAILS POPUP MODAL -->
+    <div id="edit-book-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 500px; box-sizing: border-box; border: 1px solid var(--border-tan);">
+            <h2 style="color: var(--primary-green); margin-bottom: 15px;">📝 Edit Book Profile</h2>
+            <form id="edit-book-form">
+                <input type="hidden" id="edit-book-id">
+                
+                <label class="input-label">UPDATE SUMMARY / DESCRIPTION</label>
+                <textarea id="edit-book-description" rows="5" style="width: 100%; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required></textarea>
+
+                <label class="input-label">UPDATE PRICE (USD)</label>
+                <input type="number" id="edit-book-price" step="0.01" style="width: 100%; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 20px;" required>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" id="close-modal-btn" style="background: #ccc; color: black; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer;">Cancel</button>
+                    <button type="submit" class="save-master-btn" style="margin: 0; padding: 10px 20px;">Save Updates</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

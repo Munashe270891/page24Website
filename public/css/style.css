@@ -1,0 +1,137 @@
+:root {
+    --primary-green: #1b3d2b;
+    --accent-orange: #d97736;
+    --bg-cream: #f4f3ef;
+    --dark-text: #1a1a1a;
+    --card-bg: #eae7df;
+    --white: #ffffff;
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background-color: var(--bg-cream);
+    color: var(--dark-text);
+}
+
+header {
+    background-color: var(--white);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 18px 5%;
+    border-bottom: 1px solid #e2dfd7;
+}
+
+.logo {
+    font-size: 22px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: var(--dark-text);
+}
+
+nav a {
+    margin-left: 24px;
+    text-decoration: none;
+    font-weight: 500;
+    color: var(--dark-text);
+    font-size: 14px;
+}
+
+.nav-btn {
+    background: var(--dark-text);
+    color: var(--white);
+    padding: 10px 18px;
+    border-radius: 4px;
+    transition: opacity 0.2s;
+}
+
+.nav-btn:hover {
+    opacity: 0.9;
+}
+
+.hero {
+    background-color: var(--primary-green);
+    color: var(--white);
+    padding: 60px 5%;
+    text-align: center;
+}
+
+.hero h1 {
+    font-size: 32px;
+    margin-bottom: 12px;
+    font-weight: 700;
+}
+
+.hero p {
+    font-size: 16px;
+    opacity: 0.9;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.content-wrapper {
+    padding: 40px 5%;
+}
+
+.content-wrapper h2 {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 25px;
+}
+
+.book-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 30px;
+}
+
+.book-card {
+    background-color: var(--card-bg);
+    padding: 16px;
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+}
+
+ .book-cover-placeholder, .book-card img {
+    height: 240px;
+    background-color: #d1cdc4;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 32px;
+    margin-bottom: 14px;
+    border: 1px solid #e2dfd7;
+}
+
+
+
+.book-card h3 {
+    margin: 0 0 6px 0;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.author-tag {
+    margin: 0 0 16px 0;
+    font-size: 13px;
+    opacity: 0.7;
+}
+
+.buy-btn {
+    background-color: var(--primary-green);
+    color: var(--white);
+    border: none;
+    padding: 10px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+    margin-top: auto;
+}
+
+.buy-btn:hover {
+    background-color: #24523a;
+}

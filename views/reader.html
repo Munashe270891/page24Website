@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page 24 - Secure Digital Vault</title>
+    <style>
+        :root {
+            --primary-green: #1b3d2b;
+            --accent-orange: #d97736;
+            --bg-cream: #f4f3ef;
+            --text-dark: #2a2d2b;
+            --white: #ffffff;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-cream);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            text-align: center;
+        }
+        .gateway-card {
+            background-color: var(--white);
+            padding: 40px 30px;
+            border-radius: 12px;
+            border: 1px solid #e3e1d5;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            max-width: 420px;
+            width: 90%;
+        }
+        .app-logo {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--primary-green);
+            margin-bottom: 20px;
+        }
+        .book-badge {
+            background-color: #eae7df;
+            padding: 10px 15px;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-bottom: 25px;
+            font-size: 14px;
+            color: var(--primary-green);
+            display: inline-block;
+        }
+        .launch-btn {
+            background-color: var(--primary-green);
+            color: var(--white);
+            border: none;
+            width: 100%;
+            padding: 15px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 12px;
+            transition: background 0.2s;
+        }
+        .launch-btn:hover { background-color: #24523a; }
+        .download-link {
+            display: inline-block;
+            color: var(--accent-orange);
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 14px;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="gateway-card">
+        <div class="app-logo">PAGE 24</div>
+        <div class="book-badge" id="vault-book-title">🔑 Securing Access...</div>
+        
+        <h2 style="margin: 0 0 10px 0; font-size: 20px;">Read Safely on Mobile</h2>
+        <p style="color: #666; font-size: 14px; line-height: 1.5; margin: 0 0 30px 0;">
+            To prevent piracy and protect our Zimbabwean authors, books can only be read securely inside the official **Page 24 Mobile Reader** app.
+        </p>
+
+        <!-- DEEP LINK TRIGGER: Tries to open the local mobile app directly -->
+        <button class="launch-btn" id="open-app-trigger">🚀 Launch Page 24 Reader</button>
+        
+        <!-- FALLBACK LINK: If they don't have the app installed yet -->
+        <a href="#" class="download-link" id="download-app-trigger">📲 Don't have the app? Get it here</a>
+    </div>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const bookId = urlParams.get('bookId');
+
+        async function verifyVaultToken() {
+            if (!bookId) return;
+            try {
+                const req = await fetch(`/api/books/secure-source?bookId=${bookId}`);
+                if (req.ok) {
+                    const bookData = await req.json();
+                    document.getElementById('vault-book-title').textContent = `📖 Vault Cleared: ${bookData.title}`;
+                    
+                    // Wire up the App Launch Button using a custom mobile Deep Link scheme (e.g., page24://read/id)
+                    document.getElementById('open-app-trigger').onclick = () => {
+                        window.location.href = `page24://read?bookId=${bookId}`;
+                        
+                        // Set a quick fallback timeout. If the phone doesn't open the app in 2 seconds, alert them.
+                        setTimeout(() => {
+                            alert("If the app didn't open automatically, please click below to download and install the Page 24 mobile platform.");
+                        }, 2000);
+                    };
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        document.getElementById('download-app-trigger').onclick = (e) => {
+            e.preventDefault();
+            alert("This shortcut link will point directly to your compiled Progressive Web App Android APK package download bundle later!");
+        };
+
+        verifyVaultToken();
+    </script>
+</body>
+</html>
