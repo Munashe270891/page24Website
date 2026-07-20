@@ -37,13 +37,37 @@ function requireLogin(req, res, next) {
     next();
 }
 
-// Configure Local File Storage for Book Assets
+// Admin Auth Guard Middleware: Only permits administrative users
+function requireAdmin(req, res, next) {
+    if (!req.session.user) {
+        return res.status(401).json({ error: "Unauthorized access." });
+    }
+
+    db.get(`SELECT role FROM users WHERE id = ?`, [req.session.user.id], (err, user) => {
+        if (err || !user || user.role !== 'admin') {
+            return res.status(403).json({ error: "Access denied: Administrator privileges required." });
+        }
+        next();
+    });
+}
+
+// Configure Local File Storage for Assets & Documents
 const storage = multer.diskStorage({
     destination: (req, file, cb) => { cb(null, 'public/assets/'); },
     filename: (req, file, cb) => { cb(null, Date.now() + path.extname(file.originalname)); }
 });
 const upload = multer({ storage: storage });
-const dualUploadFields = upload.fields([{ name: 'coverImage', maxCount: 1 }, { name: 'pdfBook', maxCount: 1 }]);
+
+// File Upload Fields
+const dualUploadFields = upload.fields([
+    { name: 'coverImage', maxCount: 1 }, 
+    { name: 'pdfBook', maxCount: 1 }
+]);
+
+const profileUploadFields = upload.fields([
+    { name: 'idDoc', maxCount: 1 },
+    { name: 'isbnDoc', maxCount: 1 }
+]);
 
 if (!fs.existsSync('public/assets')) {
     fs.mkdirSync('public/assets', { recursive: true });
@@ -67,7 +91,6 @@ app.post('/api/auth/register', (req, res) => {
         return res.status(400).json({ error: "All registration fields are required." });
     }
 
-    // Hash the password securely before saving it
     const hashedPassword = bcrypt.hashSync(password, 10);
     const sql = `INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)`;
     const params = [username, email, hashedPassword, role || 'author'];
@@ -95,11 +118,9 @@ app.post('/api/auth/login', (req, res) => {
         if (err) return res.status(500).json({ error: err.message });
         if (!user) return res.status(401).json({ error: "Invalid email or password." });
 
-        // Verify password
         const passwordMatches = bcrypt.compareSync(password, user.password);
         if (!passwordMatches) return res.status(401).json({ error: "Invalid email or password." });
 
-        // Store user in session
         req.session.user = {
             id: user.id,
             username: user.username,
@@ -119,41 +140,132 @@ app.get('/api/auth/logout', (req, res) => {
     });
 });
 
-// 4. Get Current User Details (Frontend will use this to replace mockup names)
+// 4. Get Current User Details
 app.get('/api/auth/me', (req, res) => {
     if (!req.session.user) return res.status(401).json({ loggedIn: false });
     res.json({ loggedIn: true, user: req.session.user });
 });
 
 // ==========================================
+//        AUTHOR PROFILE & KYC ENDPOINTS
+// ==========================================
+
+// 1. Get Logged-in Author's KYC Profile
+app.get('/api/author/profile', requireLogin, (req, res) => {
+    const userId = req.session.user.id;
+    const sql = `SELECT legal_name, id_number, id_doc_path, phone, address, kin_name, kin_relation, kin_phone, isbn, isbn_doc_path, profile_complete FROM users WHERE id = ?`;
+
+    db.get(sql, [userId], (err, row) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(row || {});
+    });
+});
+
+// 2. Save / Update Author KYC Verification Profile
+app.post('/api/author/profile', requireLogin, profileUploadFields, (req, res) => {
+    const userId = req.session.user.id;
+    const { legalName, idNumber, phone, address, kinName, kinRelation, kinPhone, isbn } = req.body;
+
+    if (!legalName || !idNumber || !phone || !address || !kinName || !kinRelation || !kinPhone) {
+        return res.status(400).json({ error: "All required KYC fields must be completed." });
+    }
+
+    const idDocPath = req.files && req.files['idDoc'] ? `/assets/${req.files['idDoc'][0].filename}` : null;
+    const isbnDocPath = req.files && req.files['isbnDoc'] ? `/assets/${req.files['isbnDoc'][0].filename}` : null;
+
+    db.get(`SELECT id_doc_path, isbn_doc_path FROM users WHERE id = ?`, [userId], (err, user) => {
+        if (err) return res.status(500).json({ error: err.message });
+
+        const finalIdDoc = idDocPath || (user ? user.id_doc_path : null);
+        const finalIsbnDoc = isbnDocPath || (user ? user.isbn_doc_path : null);
+
+        if (!finalIdDoc) {
+            return res.status(400).json({ error: "A clear Government ID image or document upload is required." });
+        }
+
+        const sql = `
+            UPDATE users SET 
+                legal_name = ?, 
+                id_number = ?, 
+                id_doc_path = ?, 
+                phone = ?, 
+                address = ?, 
+                kin_name = ?, 
+                kin_relation = ?, 
+                kin_phone = ?, 
+                isbn = ?, 
+                isbn_doc_path = ?,
+                profile_complete = 1
+            WHERE id = ?
+        `;
+
+        const params = [legalName, idNumber, finalIdDoc, phone, address, kinName, kinRelation, kinPhone, isbn || null, finalIsbnDoc, userId];
+
+        db.run(sql, params, function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, message: "KYC Author Verification Profile saved successfully!" });
+        });
+    });
+});
+
+// ==========================================
+//          NOTIFICATIONS SYSTEM
+// ==========================================
+
+// Fetch notifications for the logged-in user (User-specific + System broadcasts)
+app.get('/api/notifications', requireLogin, (req, res) => {
+    const userId = req.session.user.id;
+    const sql = `
+        SELECT * FROM notifications 
+        WHERE user_id = ? OR user_id IS NULL 
+        ORDER BY createdAt DESC LIMIT 20
+    `;
+
+    db.all(sql, [userId], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+
+// Mark a notification as read
+app.post('/api/notifications/:id/read', requireLogin, (req, res) => {
+    const notificationId = req.params.id;
+    db.run(`UPDATE notifications SET is_read = 1 WHERE id = ?`, [notificationId], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
+});
+
+// ==========================================
 //              PAGE VIEWS ROUTES
 // ==========================================
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'views', 'index.html')));
-
-// Registration and Login Pages
 app.get('/register', (req, res) => res.sendFile(path.join(__dirname, 'views', 'register.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
 
-// Protect the dashboard view so only logged-in users can open it
 app.get('/dashboard', requireLogin, (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
 });
 
-// Serve the anti-piracy full screen document preview canvas
 app.get('/read', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'reader.html'));
+});
+
+app.get('/terms', (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'terms.html'));
 });
 
 // ==========================================
 //             BOOK ACTIONS ENDPOINTS
 // ==========================================
 app.get('/api/books', (req, res) => {
-    db.all(`SELECT * FROM books ORDER BY id DESC`, [], (err, rows) => {
+    // Only return books marked as 'active' or legacy NULLs
+    db.all(`SELECT * FROM books WHERE status = 'active' OR status IS NULL ORDER BY id DESC`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
 });
-// Get books published strictly by the logged-in user (for Dashboard view)
+
 app.get('/api/books/my-books', requireLogin, (req, res) => {
     const userId = req.session.user.id;
     db.all(`SELECT * FROM books WHERE user_id = ? ORDER BY id DESC`, [userId], (err, rows) => {
@@ -162,38 +274,56 @@ app.get('/api/books/my-books', requireLogin, (req, res) => {
     });
 });
 
-// Updated Publish endpoint to assign the book to the logged-in author!
+// Publish endpoint with KYC Profile & Legal Acceptance Enforcement Guards
 app.post('/api/books/publish', requireLogin, dualUploadFields, (req, res) => {
-    const { title, description, price, mode, allowDownload, chapterTitle, chapterBody } = req.body;
-    const coverImageUrl = req.files['coverImage'] ? `/assets/${req.files['coverImage'][0].filename}` : null;
-    const securePdfUrl = req.files['pdfBook'] ? `/assets/${req.files['pdfBook'][0].filename}` : null;
-    
-    if (!coverImageUrl) return res.status(400).json({ error: "A book front cover artwork is required." });
-
-    // Link the book to the user logged into this session
     const userId = req.session.user.id;
-    const authorName = req.session.user.username; 
 
-    const bookSql = `INSERT INTO books (user_id, title, author, description, price, mode, allowDownload, coverImage, pdfSource) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
-    const bookParams = [userId, title, authorName, description, parseFloat(price), mode, parseInt(allowDownload), coverImageUrl, mode === 'pdf' ? securePdfUrl : null];
-
-    db.run(bookSql, bookParams, function(err) {
+    // 1. Verify KYC Profile Guard
+    db.get(`SELECT profile_complete FROM users WHERE id = ?`, [userId], (err, user) => {
         if (err) return res.status(500).json({ error: err.message });
-        const lastInsertedBookId = this.lastID;
-
-        if (mode === 'html' && chapterTitle) {
-            const chapSql = `INSERT INTO chapters (book_id, title, body) VALUES (?, ?, ?)`;
-            db.run(chapSql, [lastInsertedBookId, chapterTitle, chapterBody], (chapErr) => {
-                if (chapErr) return res.status(500).json({ error: chapErr.message });
-                return res.status(201).json({ success: true, bookId: lastInsertedBookId });
+        
+        if (!user || user.profile_complete !== 1) {
+            return res.status(403).json({ 
+                error: "KYC Verification Required: You must complete your 'My Author Profile' details before publishing titles." 
             });
-        } else {
-            return res.status(201).json({ success: true, bookId: lastInsertedBookId });
         }
+
+        const { title, description, price, mode, allowDownload, chapterTitle, chapterBody, agreeCopyright, agreeTerms } = req.body;
+
+        // 2. Verify Legal Acceptance Guard
+        if (!agreeCopyright || !agreeTerms) {
+            return res.status(400).json({ 
+                error: "Legal Compliance Rejection: You must accept the Copyright Affirmation and Terms of Service under Zimbabwean Law." 
+            });
+        }
+
+        const coverImageUrl = req.files && req.files['coverImage'] ? `/assets/${req.files['coverImage'][0].filename}` : null;
+        const securePdfUrl = req.files && req.files['pdfBook'] ? `/assets/${req.files['pdfBook'][0].filename}` : null;
+        
+        if (!coverImageUrl) return res.status(400).json({ error: "A book front cover artwork is required." });
+
+        const authorName = req.session.user.username; 
+
+        const bookSql = `INSERT INTO books (user_id, title, author, description, price, mode, allowDownload, status, coverImage, pdfSource) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`;
+        const bookParams = [userId, title, authorName, description, parseFloat(price), mode, parseInt(allowDownload), coverImageUrl, mode === 'pdf' ? securePdfUrl : null];
+
+        db.run(bookSql, bookParams, function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            const lastInsertedBookId = this.lastID;
+
+            if (mode === 'html' && chapterTitle) {
+                const chapSql = `INSERT INTO chapters (book_id, title, body) VALUES (?, ?, ?)`;
+                db.run(chapSql, [lastInsertedBookId, chapterTitle, chapterBody], (chapErr) => {
+                    if (chapErr) return res.status(500).json({ error: chapErr.message });
+                    return res.status(201).json({ success: true, bookId: lastInsertedBookId });
+                });
+            } else {
+                return res.status(201).json({ success: true, bookId: lastInsertedBookId });
+            }
+        });
     });
 });
 
-// Secured Reader Stream
 app.get('/api/books/secure-source', (req, res) => {
     const bookId = req.query.bookId;
     
@@ -209,20 +339,92 @@ app.get('/api/books/secure-source', (req, res) => {
 });
 
 // ==========================================
+//    WEB BOOK STUDIO CHAPTER MANAGEMENT
+// ==========================================
+app.get('/api/books/my-web-books', requireLogin, (req, res) => {
+    const query = `SELECT * FROM books WHERE user_id = ? AND mode = 'html'`;
+    db.all(query, [req.session.user.id], (err, rows) => {
+        if (err) return res.status(500).json({ error: 'Database query failure.' });
+        res.json(rows);
+    });
+});
+
+app.get('/api/books/:bookId/chapters', requireLogin, (req, res) => {
+    const { bookId } = req.params;
+
+    db.get(`SELECT id FROM books WHERE id = ? AND user_id = ?`, [bookId, req.session.user.id], (err, book) => {
+        if (err || !book) return res.status(403).json({ error: 'Forbidden or book not found.' });
+
+        db.all(`SELECT * FROM chapters WHERE book_id = ? ORDER BY id ASC`, [bookId], (err, chapters) => {
+            if (err) return res.status(500).json({ error: 'Failed to retrieve chapters.' });
+            res.json(chapters);
+        });
+    });
+});
+
+app.post('/api/books/chapters', requireLogin, (req, res) => {
+    const { bookId, title, content } = req.body;
+
+    if (!bookId || !title || !content) {
+        return res.status(400).json({ error: 'Missing required chapter parameters.' });
+    }
+
+    db.get(`SELECT id FROM books WHERE id = ? AND user_id = ?`, [bookId, req.session.user.id], (err, book) => {
+        if (err || !book) return res.status(403).json({ error: 'Unauthorized book pipeline action.' });
+
+        const insertQuery = `INSERT INTO chapters (book_id, title, body) VALUES (?, ?, ?)`;
+        db.run(insertQuery, [bookId, title, content], function(err) {
+            if (err) return res.status(500).json({ error: 'Failed to write chapter to database.' });
+            res.json({ success: true, chapterId: this.lastID });
+        });
+    });
+});
+
+// ==========================================
+//        BOOK MANAGEMENT (EDIT & DELETE)
+// ==========================================
+app.put('/api/books/:id', requireLogin, (req, res) => {
+    const bookId = req.params.id;
+    const { description, price } = req.body;
+
+    if (!description || !price) {
+        return res.status(400).json({ error: 'Missing updated parameters.' });
+    }
+
+    const updateQuery = `UPDATE books SET description = ?, price = ? WHERE id = ? AND user_id = ?`;
+    db.run(updateQuery, [description, price, bookId, req.session.user.id], function(err) {
+        if (err) return res.status(500).json({ error: 'Failed to update book profile.' });
+        if (this.changes === 0) return res.status(404).json({ error: 'Book not found or unauthorized.' });
+        res.json({ success: true, message: 'Book updated successfully!' });
+    });
+});
+
+app.delete('/api/books/:id', requireLogin, (req, res) => {
+    const bookId = req.params.id;
+    const deleteQuery = `DELETE FROM books WHERE id = ? AND user_id = ?`;
+
+    db.run(deleteQuery, [bookId, req.session.user.id], function(err) {
+        if (err) return res.status(500).json({ error: 'Failed to purge book from database.' });
+        if (this.changes === 0) return res.status(404).json({ error: 'Book not found or unauthorized.' });
+        res.json({ success: true, message: 'Book permanently deleted.' });
+    });
+});
+
+// ==========================================
 //             PAYMENT SUBSYSTEM INTEGRATION
 // ==========================================
 app.post('/api/payments/initiate', (req, res) => {
     const { bookId, email } = req.body;
 
     db.get(`SELECT * FROM books WHERE id = ?`, [bookId], async (err, book) => {
-        if (err || !book) {
-            return res.status(404).json({ error: "Targeted book item profile could not be verified." });
+        if (err || !book) return res.status(404).json({ error: "Targeted book item profile could not be verified." });
+
+        if (book.status === 'offline') {
+            return res.status(403).json({ error: "This book has been taken offline and cannot be purchased." });
         }
 
         const validPrice = parseFloat(book.price);
-        if (isNaN(validPrice) || validPrice <= 0) {
-            return res.status(400).json({ error: "Invalid book price encountered for billing pipeline." });
-        }
+        if (isNaN(validPrice) || validPrice <= 0) return res.status(400).json({ error: "Invalid book price encountered for billing pipeline." });
 
         const cleanTitle = (book.title || "Digital Book Purchase").replace(/[^\w\s]/gi, '');
 
@@ -257,13 +459,7 @@ app.post('/api/payments/callback', (req, res) => {
 // ==========================================
 //        SALES & ROYALTIES ANALYTICS
 // ==========================================
-
-// 1. Get sales and earnings breakdown for the logged-in author
-app.get('/api/analytics/sales', (req, res) => {
-    if (!req.session.user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-
+app.get('/api/analytics/sales', requireLogin, (req, res) => {
     const authorId = req.session.user.id;
 
     const query = `
@@ -281,10 +477,7 @@ app.get('/api/analytics/sales', (req, res) => {
     `;
 
     db.all(query, [authorId], (err, rows) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ error: 'Failed to retrieve sales data.' });
-        }
+        if (err) return res.status(500).json({ error: 'Failed to retrieve sales data.' });
 
         const totalSalesCount = rows.length;
         const totalEarnings = rows.reduce((sum, row) => sum + row.sale_price, 0);
@@ -307,18 +500,16 @@ app.get('/api/analytics/sales', (req, res) => {
     });
 });
 
-// 2. SANDBOX BUY ROUTE: Let a user simulated-buy any book (for testing)
-app.post('/api/books/:id/buy', (req, res) => {
-    if (!req.session.user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-
+// SANDBOX BUY ROUTE
+app.post('/api/books/:id/buy', requireLogin, (req, res) => {
     const bookId = req.params.id;
     const buyerId = req.session.user.id;
 
-    db.get('SELECT price, user_id FROM books WHERE id = ?', [bookId], (err, book) => {
-        if (err || !book) {
-            return res.status(404).json({ error: 'Book not found.' });
+    db.get('SELECT price, user_id, status FROM books WHERE id = ?', [bookId], (err, book) => {
+        if (err || !book) return res.status(404).json({ error: 'Book not found.' });
+
+        if (book.status === 'offline') {
+            return res.status(403).json({ error: 'This title is currently offline and unavailable for purchase.' });
         }
 
         if (book.user_id === buyerId) {
@@ -326,15 +517,10 @@ app.post('/api/books/:id/buy', (req, res) => {
         }
 
         db.get('SELECT id FROM purchases WHERE book_id = ? AND buyer_id = ?', [bookId, buyerId], (err, alreadyBought) => {
-            if (alreadyBought) {
-                return res.status(400).json({ error: 'You already own this book!' });
-            }
+            if (alreadyBought) return res.status(400).json({ error: 'You already own this book!' });
 
             db.run('INSERT INTO purchases (book_id, buyer_id, price) VALUES (?, ?, ?)', [bookId, buyerId, book.price], function(err) {
-                if (err) {
-                    console.error(err);
-                    return res.status(500).json({ error: 'Purchase processing failed.' });
-                }
+                if (err) return res.status(500).json({ error: 'Purchase processing failed.' });
                 res.json({ success: true, message: 'Book purchased successfully!' });
             });
         });
@@ -342,128 +528,56 @@ app.post('/api/books/:id/buy', (req, res) => {
 });
 
 // ==========================================
-//            ENGINE ACTIVATION
+//          ADMINISTRATOR MODERATION
 // ==========================================
+
+// 1. Get all books across the platform for Admin Moderation
+app.get('/api/admin/books', requireAdmin, (req, res) => {
+    const sql = `
+        SELECT books.id, books.title, books.author, COALESCE(books.status, 'active') AS status, books.created_at, users.email AS author_email
+        FROM books
+        LEFT JOIN users ON books.user_id = users.id
+        ORDER BY books.id DESC
+    `;
+    db.all(sql, [], (err, rows) => {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ books: rows });
+    });
+});
+
+// 2. Admin Toggle Book Status (Take Offline / Restore Online)
+app.post('/api/admin/books/:id/toggle-status', requireAdmin, (req, res) => {
+    const bookId = req.params.id;
+    const { status } = req.body; // 'active' or 'offline'
+
+    if (!['active', 'offline'].includes(status)) {
+        return res.status(400).json({ error: "Invalid status value provided." });
+    }
+
+    db.run(`UPDATE books SET status = ? WHERE id = ?`, [status, bookId], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, message: `Book status changed to '${status}'.` });
+    });
+});
+
+// 3. Admin Broadcast System Update Announcement
+app.post('/api/admin/broadcast-notification', requireAdmin, (req, res) => {
+    const { title, message, targetUserId } = req.body;
+
+    if (!title || !message) {
+        return res.status(400).json({ error: "Announcement title and message are required." });
+    }
+
+    // targetUserId = null means broadcast to all users
+    const sql = `INSERT INTO notifications (user_id, title, message) VALUES (?, ?, ?)`;
+    db.run(sql, [targetUserId || null, title, message], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, message: "System update broadcasted successfully!" });
+    });
+});
+
+// ==========================================
+//             ENGINE ACTIVATION
+// ==========================================
+
 app.listen(PORT, () => console.log(`Page 24 active at http://localhost:${PORT}`));
-// ==========================================
-//    WEB BOOK STUDIO CHAPTER MANAGEMENT
-// ==========================================
-
-// 1. Get all HTML/Web books created by the logged-in author
-app.get('/api/books/my-web-books', (req, res) => {
-    if (!req.session.user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const query = `SELECT * FROM books WHERE user_id = ? AND mode = 'html'`;
-    db.all(query, [req.session.user.id], (err, rows) => {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ error: 'Database query failure.' });
-        }
-        res.json(rows);
-    });
-});
-
-// 2. Get all chapters written for a specific book
-app.get('/api/books/:bookId/chapters', (req, res) => {
-    if (!req.session.user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const { bookId } = req.params;
-
-    // Verify first that this book belongs to the logged-in user
-    db.get(`SELECT id FROM books WHERE id = ? AND user_id = ?`, [bookId, req.session.user.id], (err, book) => {
-        if (err || !book) {
-            return res.status(403).json({ error: 'Forbidden or book not found.' });
-        }
-
-        db.all(`SELECT * FROM chapters WHERE book_id = ? ORDER BY id ASC`, [bookId], (err, chapters) => {
-            if (err) {
-                return res.status(500).json({ error: 'Failed to retrieve chapters.' });
-            }
-            res.json(chapters);
-        });
-    });
-});
-
-// 3. Save / Add a new chapter to a web book
-app.post('/api/books/chapters', (req, res) => {
-    if (!req.session.user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const { bookId, title, content } = req.body;
-
-    if (!bookId || !title || !content) {
-        return res.status(400).json({ error: 'Missing required chapter parameters.' });
-    }
-
-    // Verify book ownership
-    db.get(`SELECT id FROM books WHERE id = ? AND user_id = ?`, [bookId, req.session.user.id], (err, book) => {
-        if (err || !book) {
-            return res.status(403).json({ error: 'Unauthorized book pipeline action.' });
-        }
-
-        const insertQuery = `INSERT INTO chapters (book_id, title, content) VALUES (?, ?, ?)`;
-        db.run(insertQuery, [bookId, title, content], function(err) {
-            if (err) {
-                console.error(err);
-                return res.status(500).json({ error: 'Failed to write chapter to database.' });
-            }
-            res.json({ success: true, chapterId: this.lastID });
-        });
-    });
-});
-// ==========================================
-//        BOOK MANAGEMENT (EDIT & DELETE)
-// ==========================================
-
-// 1. Update book metadata (Price and Description)
-app.put('/api/books/:id', (req, res) => {
-    if (!req.session.user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const bookId = req.params.id;
-    const { description, price } = req.body;
-
-    if (!description || !price) {
-        return res.status(400).json({ error: 'Missing updated parameters.' });
-    }
-
-    const updateQuery = `UPDATE books SET description = ?, price = ? WHERE id = ? AND user_id = ?`;
-    db.run(updateQuery, [description, price, bookId, req.session.user.id], function(err) {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ error: 'Failed to update book profile.' });
-        }
-        if (this.changes === 0) {
-            return res.status(404).json({ error: 'Book not found or unauthorized.' });
-        }
-        res.json({ success: true, message: 'Book updated successfully!' });
-    });
-});
-
-// 2. Permanently Delete a Book
-app.delete('/api/books/:id', (req, res) => {
-    if (!req.session.user) {
-        return res.status(401).json({ error: 'Unauthorized' });
-    }
-
-    const bookId = req.params.id;
-
-    // Delete query uses ON DELETE CASCADE automatically for chapters table if set up
-    const deleteQuery = `DELETE FROM books WHERE id = ? AND user_id = ?`;
-    db.run(deleteQuery, [bookId, req.session.user.id], function(err) {
-        if (err) {
-            console.error(err);
-            return res.status(500).json({ error: 'Failed to purge book from database.' });
-        }
-        if (this.changes === 0) {
-            return res.status(404).json({ error: 'Book not found or unauthorized.' });
-        }
-        res.json({ success: true, message: 'Book permanently deleted.' });
-    });
-});

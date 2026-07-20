@@ -3,8 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Page 24 - ZimPublish Author Dashboard</title>
+    <title>Page 24 - Author Dashboard</title>
     <link rel="stylesheet" href="/css/dashboard.css">
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
@@ -14,21 +16,22 @@
             <div class="brand-section">
                 <div class="logo-group">
                     <span class="logo-icon">🇿🇼</span>
-                    <span class="logo-text">ZimPublish</span>
+                    <span class="logo-text">Page 24</span>
                 </div>
-                <div class="welcome-tag">Welcome, Chengetai 👤</div>
+                <div class="welcome-tag">Welcome 👤</div>
             </div>
 
             <nav class="side-menu">
-                <a href="#" class="menu-item active" id="menu-dash">📊 My Books Dashboard</a>
-                <a href="#" class="menu-item" id="menu-create">➕ Create New Book</a>
-                <!-- UPDATED MENU ITEM NAME & ID BELOW -->
-                <a href="#" class="menu-item" id="menu-studio">✍️ Write Online (Web Studio)</a>
-                <a href="#" class="menu-item" id="menu-sales">💰 Sales & Royalties</a>
-                <a href="#" class="menu-item">👤 My Author Profile</a>
+                <a href="#" class="menu-item active" id="menu-dash" onclick="switchTab('dashboard-view')">📊 My Books Dashboard</a>
+                <a href="#" class="menu-item" id="menu-create" onclick="switchTab('creator-view')">➕ Create New Book</a>
+                <a href="#" class="menu-item" id="menu-studio" onclick="switchTab('studio-view')">✍️ Write Online (Web Studio)</a>
+                <a href="#" class="menu-item" id="menu-sales" onclick="switchTab('sales-view')">💰 Sales & Royalties</a>
+                <a href="#" class="menu-item" id="menu-profile" onclick="switchTab('profile-view')">👤 My Author Profile</a>
+                <a href="#" class="menu-item" id="menu-admin" onclick="switchTab('admin-view'); loadAdminBooks();">🛡️ Admin Moderation</a>
                 <hr class="menu-divider">
+                <a href="/terms" target="_blank" class="menu-item">📜 Terms & Copyright</a>
                 <a href="/" class="menu-item view-site">👁️ Reader View</a>
-                <a href="/api/auth/logout" style="color: #d97736; font-weight: bold; margin-top: 20px; display: block;">🚪 Sign Out</a>
+                <a href="/api/auth/logout" style="color: #d97736; font-weight: bold; margin-top: 20px; display: block; text-decoration: none; padding: 10px;">🚪 Sign Out</a>
             </nav>
         </aside>
 
@@ -43,8 +46,8 @@
                     <p style="color: var(--text-dark); opacity: 0.6;">Loading your books portfolio...</p>
                 </div>
 
-                <!-- Big Quick Action Action Trigger Bar -->
-                <div class="action-trigger-card" id="quick-create-trigger">
+                <!-- Quick Action Trigger Bar -->
+                <div class="action-trigger-card" id="quick-create-trigger" onclick="switchTab('creator-view')">
                     <span class="plus-circle">＋</span>
                     <h3>Create a New Book</h3>
                 </div>
@@ -53,9 +56,9 @@
                 <div class="financials-row">
                     <div class="activity-log-box">
                         <h3>Recent Activity</h3>
-                        <div class="log-item"><span>Active Activity<br><small>June 17, 2026</small></span> <strong>+ 18 USD</strong></div>
-                        <div class="log-item"><span>Creators Earnings<br><small>June 17, 2026</small></span> <strong>1 USD</strong></div>
-                        <div class="log-item"><span>Advished Earnings<br><small>June 17, 2026</small></span> <strong>1 USD</strong></div>
+                        <div id="dashboard-activity-log">
+                            <p style="font-size: 13px; color: gray; padding: 10px 0;">No transactions yet.</p>
+                        </div>
                     </div>
 
                     <div class="earnings-withdrawal-box">
@@ -64,16 +67,16 @@
                         
                         <div class="payout-row">
                             <span>💸 EcoCash</span>
-                            <strong>$115 USD</strong>
+                            <strong id="dashboard-ecocash-balance">$0.00 USD</strong>
                         </div>
                         <div class="payout-row">
                             <span>📱 OneMoney</span>
-                            <strong>$0 USD</strong>
+                            <strong>$0.00 USD</strong>
                         </div>
 
                         <button class="withdraw-btn">Withdraw</button>
                     </div>
-                </div>
+                </div> 
             </div>
 
             <!-- VIEW 2: Creator Creation Desk Window Form -->
@@ -94,7 +97,6 @@
                         <label class="input-label">BOOK STORE FRONT COVER IMAGE</label>
                         <input type="file" id="cover-upload" accept="image/*" style="display: block; margin-bottom: 15px;" required>
 
-                        <!-- UPDATED LABELS FOR CLARITY -->
                         <label class="input-label">PUBLISH FORMAT</label>
                         <div class="mode-select-row" style="margin-bottom: 15px;">
                             <label class="radio-option" style="display: block; margin-bottom: 10px; font-weight: bold;">
@@ -129,12 +131,30 @@
                             <textarea rows="10" placeholder="Paste or type your chapter text here..."></textarea>
                         </div>
 
+                        <!-- COPYRIGHT & LEGAL COMPLIANCE AFFIRMATION -->
+                        <div style="background: #f8f9fa; border: 1px solid var(--border-tan); padding: 15px; border-radius: 6px; margin: 20px 0;">
+                            <h4 style="color: var(--primary-green); margin-bottom: 8px;">⚖️ Legal & Copyright Declaration</h4>
+                            <p style="font-size: 11px; color: #555; margin-bottom: 12px; line-height: 1.4;">
+                                Pursuant to the <strong>Zimbabwe Copyright and Neighbouring Rights Act [Chapter 26:05]</strong>, you must certify that you possess lawful distribution rights for this work.
+                            </p>
+
+                            <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 12px; margin-bottom: 10px; cursor: pointer;">
+                                <input type="checkbox" id="copyright-ownership-check" required style="margin-top: 2px;">
+                                <span>I certify that I am the original author or authorized copyright holder of this content, or that it is strictly in the public domain.</span>
+                            </label>
+
+                            <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 12px; cursor: pointer;">
+                                <input type="checkbox" id="copyright-terms-check" required style="margin-top: 2px;">
+                                <span>I agree to Page 24 Terms of Service and understand that submitting pirated or fraudulent works will result in immediate termination, forfeiture of royalties, and full personal legal indemnity under Zimbabwean law.</span>
+                            </label>
+                        </div>
+
                         <button type="submit" class="save-master-btn">Save Content Profile</button>
                     </form>
                 </div>
             </div>
 
-            <!-- NEW VIEW 3: Write Online / Web Book Studio Panel -->
+            <!-- VIEW 3: Write Online / Web Book Studio Panel -->
             <div id="studio-view" class="view-section hidden">
                 <h1 class="view-title">✍️ Web Book Writing Studio</h1>
                 <p style="margin-bottom: 20px; opacity: 0.8;">Select one of your online-composed books below to add or edit chapters.</p>
@@ -144,7 +164,6 @@
                     <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border-tan); max-height: 500px; overflow-y: auto;">
                         <h3 style="margin-bottom: 10px; color: var(--primary-green);">Your Web Books</h3>
                         <div id="studio-books-list">
-                            <!-- JS will load books created via HTML mode here -->
                             <p style="font-size: 13px; color: gray;">Loading your web books...</p>
                         </div>
                     </div>
@@ -156,15 +175,11 @@
                         
                         <hr style="margin-bottom: 15px; border: 0; border-top: 1px solid #eee;">
                         
-                        <!-- List of chapters currently written -->
                         <div style="margin-bottom: 20px;">
                             <h4 style="margin-bottom: 10px;">Current Chapters</h4>
-                            <div id="studio-chapters-list" style="display: flex; flex-direction: column; gap: 8px;">
-                                <!-- Dynamic list of chapters -->
-                            </div>
+                            <div id="studio-chapters-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
                         </div>
 
-                        <!-- Form to add a new chapter -->
                         <form id="add-chapter-form">
                             <input type="hidden" id="editor-book-id">
                             <h4 style="margin-bottom: 10px;">➕ Write a New Chapter</h4>
@@ -187,21 +202,12 @@
                     </div>
                 </div>
             </div>
-<!-- Placeholder display when no book is selected -->
-                    <div id="studio-editor-placeholder" style="background: white; padding: 40px; border-radius: 8px; border: 1px dashed var(--border-tan); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
-                        <span style="font-size: 40px; margin-bottom: 10px;">👈</span>
-                        <h3>Select a Web Book to Begin Writing</h3>
-                        <p style="opacity: 0.7;">Select one of your online composition books from the list on the left to add, edit, or organize chapters.</p>
-                    </div>
-                </div>
-            </div>
 
-            <!-- SALES & ROYALTIES VIEW PANEL -->
-            <div id="sales-view" class="hidden" style="padding: 20px; box-sizing: border-box;">
+            <!-- VIEW 4: SALES & ROYALTIES VIEW PANEL -->
+            <div id="sales-view" class="view-section hidden" style="padding: 20px; box-sizing: border-box;">
                 <h1 style="color: var(--primary-green); margin-bottom: 5px;">💰 Royalties & Earnings</h1>
                 <p style="opacity: 0.7; margin-bottom: 25px;">Track your live book sales, customer transactions, and overall payouts.</p>
 
-                <!-- Dynamic Stat Cards Grid -->
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;">
                     <div style="background: white; border: 1px solid var(--border-tan); border-radius: 8px; padding: 20px; box-sizing: border-box;">
                         <span style="font-size: 11px; font-weight: bold; letter-spacing: 0.5px; opacity: 0.6; text-transform: uppercase;">Total Revenue Earned</span>
@@ -214,30 +220,128 @@
                 </div>
 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; align-items: start;">
-                    <!-- Book-by-Book Breakdown Panel -->
                     <div style="background: white; border: 1px solid var(--border-tan); border-radius: 8px; padding: 20px;">
                         <h3 style="color: var(--primary-green); margin-bottom: 15px; font-size: 16px;">📈 Revenue by Book Title</h3>
-                        <div id="sales-breakdown-list" style="display: flex; flex-direction: column; gap: 12px;">
-                            <!-- JS will generate items here dynamically -->
-                        </div>
+                        <div id="sales-breakdown-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
                     </div>
 
-                    <!-- Recent Transaction Feed -->
                     <div style="background: white; border: 1px solid var(--border-tan); border-radius: 8px; padding: 20px;">
                         <h3 style="color: var(--primary-green); margin-bottom: 15px; font-size: 16px;">🕒 Recent Customer Transactions</h3>
-                        <div id="recent-transactions-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 350px; overflow-y: auto;">
-                            <!-- JS will list purchases here dynamically -->
-                        </div>
+                        <div id="recent-transactions-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 350px; overflow-y: auto;"></div>
                     </div>
+                </div>
+            </div>
+
+            <!-- VIEW 5: AUTHOR PROFILE & KYC (ZIM LAW COMPLIANCE) -->
+            <div id="profile-view" class="view-section hidden">
+                <h1 class="view-title">👤 Author Profile & Identity Verification</h1>
+                <p style="margin-bottom: 20px; opacity: 0.8;">Complete your verified author profile to publish titles and withdraw royalties on Page 24.</p>
+
+                <!-- MANDATORY PAYOUT NOTICE -->
+                <div style="background: #ebf5fb; border-left: 4px solid #2980b9; padding: 15px; margin-bottom: 20px; border-radius: 4px; max-width: 650px;">
+                    <strong style="color: #2980b9;">⚠️ Financial Gateway & Legal Name Policy:</strong>
+                    <p style="font-size: 12px; margin-top: 5px; color: #333; line-height: 1.4;">
+                        Your registered <strong>Full Legal Name</strong> must strictly match the owner of your payout account (EcoCash, OneMoney, or Mastercard/Bank Card). Page 24 strictly prohibits royalty withdrawals to third-party accounts. Providing false or fraudulent information will result in immediate account termination, forfeiture of royalties, and reporting under Zimbabwean legal frameworks.
+                    </p>
+                </div>
+
+                <div class="creator-card" style="max-width: 650px;">
+                    <form id="author-profile-form">
+                        <!-- LEGAL IDENTITY -->
+                        <h3 style="color: var(--primary-green); margin-bottom: 15px;">🪪 Government Identity Verification</h3>
+                        
+                        <label class="input-label">FULL LEGAL NAME (As shown on National ID or Passport)</label>
+                        <input type="text" id="author-legal-name" placeholder="e.g. Tendai Samuel Moyo" style="width: 100%; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
+
+                        <label class="input-label">NATIONAL ID / PASSPORT NUMBER</label>
+                        <input type="text" id="author-id-number" placeholder="e.g. 63-1234567-X-63" style="width: 100%; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
+
+                        <label class="input-label">UPLOAD NATIONAL ID / PASSPORT PHOTO (PDF or Image)</label>
+                        <input type="file" id="author-id-upload" accept="image/*,.pdf" style="display: block; margin-bottom: 20px;" required>
+
+                        <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-tan);">
+
+                        <!-- CONTACT & ADDRESS -->
+                        <h3 style="color: var(--primary-green); margin-bottom: 15px;">📱 Contact & Residential Address</h3>
+
+                        <label class="input-label">MOBILE PHONE NUMBER (EcoCash / OneMoney Registered Number)</label>
+                        <input type="tel" id="author-phone" placeholder="e.g. +263 77 123 4567" style="width: 100%; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
+
+                        <label class="input-label">PHYSICAL RESIDENTIAL ADDRESS</label>
+                        <textarea id="author-address" rows="3" placeholder="Enter street address, suburb, city (e.g. 12 Samora Machel Ave, Harare)" style="width: 100%; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 20px;" required></textarea>
+
+                        <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-tan);">
+
+                        <!-- NEXT OF KIN -->
+                        <h3 style="color: var(--primary-green); margin-bottom: 15px;">👥 Next of Kin (Royalty Estate Successor)</h3>
+                        <p style="font-size: 12px; color: gray; margin-bottom: 15px;">Required for statutory estate succession and legal secondary verification.</p>
+
+                        <label class="input-label">NEXT OF KIN FULL NAME</label>
+                        <input type="text" id="kin-name" placeholder="e.g. Chipo Moyo" style="width: 100%; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
+
+                        <label class="input-label">RELATIONSHIP</label>
+                        <input type="text" id="kin-relation" placeholder="e.g. Spouse, Brother, Parent" style="width: 100%; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
+
+                        <label class="input-label">NEXT OF KIN PHONE NUMBER</label>
+                        <input type="tel" id="kin-phone" placeholder="e.g. +263 71 987 6543" style="width: 100%; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 20px;" required>
+
+                        <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-tan);">
+
+                        <!-- OPTIONAL ISBN PROOF -->
+                        <h3 style="color: var(--primary-green); margin-bottom: 15px;">📖 Optional Copyright & ISBN Verification</h3>
+                        <p style="font-size: 12px; color: gray; margin-bottom: 15px;">If you have registered an official ISBN for your publication, add it below to increase reader trust.</p>
+
+                        <label class="input-label">ISBN NUMBER (Optional)</label>
+                        <input type="text" id="author-isbn" placeholder="e.g. 978-3-16-148410-0" style="width: 100%; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;">
+
+                        <label class="input-label">UPLOAD ISBN / COPYRIGHT CERTIFICATE PROOF (Optional)</label>
+                        <input type="file" id="author-isbn-proof" accept="image/*,.pdf" style="display: block; margin-bottom: 20px;">
+
+                        <button type="submit" class="save-master-btn">Save & Verify Profile</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- VIEW 6: ADMIN MODERATION TAB -->
+            <div id="admin-view" class="view-section hidden">
+                <h1 class="view-title"><i class="fas fa-user-shield"></i> Platform Moderation Panel</h1>
+                <p style="margin-bottom: 20px; opacity: 0.8;">Manage published books, copyright compliance, and platform announcements.</p>
+
+                <!-- Broadcast Announcement Box -->
+                <div style="background: white; border: 1px solid var(--border-tan); padding: 20px; border-radius: 8px; margin-bottom: 25px;">
+                    <h3 style="color: var(--primary-green); margin-bottom: 10px;"><i class="fas fa-bullhorn"></i> Broadcast System Announcement</h3>
+                    <form id="broadcast-form" style="display: flex; flex-direction: column; gap: 12px; max-width: 600px;">
+                        <input type="text" id="announce-title" placeholder="Announcement Title" required style="padding: 10px; border-radius: 4px; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light);">
+                        <textarea id="announce-message" placeholder="Message content for all authors..." rows="3" required style="padding: 10px; border-radius: 4px; border: 1px solid var(--border-tan); background-color: var(--bg-cream-light);"></textarea>
+                        <button type="submit" class="save-master-btn" style="width: fit-content; margin: 0; background: #007bff; color: white;">
+                            Send Broadcast
+                        </button>
+                    </form>
+                </div>
+
+                <!-- All Books Moderation Table -->
+                <h3 style="color: var(--primary-green); margin-bottom: 10px;">All Platform Books</h3>
+                <div style="background: white; border: 1px solid var(--border-tan); border-radius: 8px; overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                        <thead>
+                            <tr style="background: #343a40; color: white;">
+                                <th style="padding: 12px;">ID</th>
+                                <th style="padding: 12px;">Title</th>
+                                <th style="padding: 12px;">Author</th>
+                                <th style="padding: 12px;">Status</th>
+                                <th style="padding: 12px;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="admin-books-list">
+                            <tr><td colspan="5" style="padding: 20px; text-align: center;">Loading books...</td></tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
         </main>
     </div>
-        </main>
-    </div>
 
-    <script src="/js/dashboard.js"></script>
     <!-- EDIT BOOK DETAILS POPUP MODAL -->
     <div id="edit-book-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
         <div style="background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 500px; box-sizing: border-box; border: 1px solid var(--border-tan);">
@@ -258,5 +362,118 @@
             </form>
         </div>
     </div>
+
+    <script src="/js/dashboard.js"></script>
+
+    <!-- TAB NAVIGATION & ADMIN MODERATION LOGIC -->
+    <script>
+        // Global Tab Switching Function
+        window.switchTab = function(targetTabId) {
+            // Hide all tab views
+            const views = document.querySelectorAll('.view-section');
+            views.forEach(view => {
+                view.classList.add('hidden');
+            });
+
+            // Show selected view
+            const selectedView = document.getElementById(targetTabId);
+            if (selectedView) {
+                selectedView.classList.remove('hidden');
+            }
+
+            // Highlight active menu item
+            const menuItems = document.querySelectorAll('.side-menu .menu-item');
+            menuItems.forEach(item => item.classList.remove('active'));
+
+            if (event && event.currentTarget && event.currentTarget.classList) {
+                event.currentTarget.classList.add('active');
+            }
+        };
+
+        function loadAdminBooks() {
+            fetch('/api/admin/books')
+                .then(res => {
+                    if (!res.ok) throw new Error("Access denied or failed to load");
+                    return res.json();
+                })
+                .then(data => {
+                    const tbody = document.getElementById('admin-books-list');
+                    if (!tbody) return;
+                    tbody.innerHTML = '';
+
+                    if (!data.books || data.books.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" style="padding: 20px; text-align: center;">No books found in system.</td></tr>`;
+                        return;
+                    }
+
+                    data.books.forEach(book => {
+                        const isOffline = book.status === 'offline';
+                        const statusBadge = isOffline 
+                            ? `<span style="color: #dc3545; font-weight: bold;">[OFFLINE]</span>` 
+                            : `<span style="color: #28a745; font-weight: bold;">[ACTIVE]</span>`;
+                        
+                        const actionBtn = isOffline
+                            ? `<button onclick="toggleBookStatus(${book.id}, 'active')" style="background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Restore Online</button>`
+                            : `<button onclick="toggleBookStatus(${book.id}, 'offline')" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Take Offline</button>`;
+
+                        tbody.innerHTML += `
+                            <tr style="border-bottom: 1px solid #ddd;">
+                                <td style="padding: 12px;">#${book.id}</td>
+                                <td style="padding: 12px;"><strong>${book.title}</strong></td>
+                                <td style="padding: 12px;">${book.author} <br><small style="color: #666;">(${book.author_email || 'N/A'})</small></td>
+                                <td style="padding: 12px;">${statusBadge}</td>
+                                <td style="padding: 12px;">${actionBtn}</td>
+                            </tr>
+                        `;
+                    });
+                })
+                .catch(err => {
+                    console.error("Admin load error:", err);
+                    const tbody = document.getElementById('admin-books-list');
+                    if (tbody) {
+                        tbody.innerHTML = `<tr><td colspan="5" style="padding: 20px; color: #dc3545; text-align: center;">Administrator privileges required to view this panel.</td></tr>`;
+                    }
+                });
+        }
+
+        function toggleBookStatus(bookId, newStatus) {
+            if (!confirm(`Are you sure you want to set book #${bookId} to '${newStatus}'?`)) return;
+
+            fetch(`/api/admin/books/${bookId}/toggle-status`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(res => res.json())
+            .then(data => {
+                alert(data.message || "Status updated!");
+                loadAdminBooks();
+            })
+            .catch(err => alert("Failed to update status."));
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const broadcastForm = document.getElementById('broadcast-form');
+            if (broadcastForm) {
+                broadcastForm.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const title = document.getElementById('announce-title').value;
+                    const message = document.getElementById('announce-message').value;
+
+                    fetch('/api/admin/broadcast-notification', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ title, message })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        alert(data.message || "Broadcast sent!");
+                        broadcastForm.reset();
+                    })
+                    .catch(err => alert("Broadcast failed."));
+                });
+            }
+        });
+    </script>
 </body>
 </html>
