@@ -2,8 +2,14 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Page 24 - Secure Digital Vault</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Page 24 - Reader App</title>
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#1b3d2b">
+    
+    <!-- PDF.js Engine -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+
     <style>
         :root {
             --primary-green: #1b3d2b;
@@ -11,119 +17,447 @@
             --bg-cream: #f4f3ef;
             --text-dark: #2a2d2b;
             --white: #ffffff;
+            --border-light: #e3e1d5;
         }
+        * { box-sizing: border-box; -webkit-user-select: none; user-select: none; }
+        
         body {
-            margin: 0;
-            padding: 0;
+            margin: 0; padding: 0;
             background-color: var(--bg-cream);
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             color: var(--text-dark);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            text-align: center;
+            padding-bottom: 70px;
         }
-        .gateway-card {
-            background-color: var(--white);
-            padding: 40px 30px;
-            border-radius: 12px;
-            border: 1px solid #e3e1d5;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
-            max-width: 420px;
-            width: 90%;
-        }
-        .app-logo {
-            font-size: 32px;
-            font-weight: bold;
-            color: var(--primary-green);
-            margin-bottom: 20px;
-        }
-        .book-badge {
-            background-color: #eae7df;
-            padding: 10px 15px;
-            border-radius: 6px;
-            font-weight: 600;
-            margin-bottom: 25px;
-            font-size: 14px;
-            color: var(--primary-green);
-            display: inline-block;
-        }
-        .launch-btn {
+        
+        /* Header Bar */
+        header {
             background-color: var(--primary-green);
             color: var(--white);
-            border: none;
-            width: 100%;
-            padding: 15px;
-            font-size: 16px;
-            font-weight: bold;
-            border-radius: 6px;
-            cursor: pointer;
-            margin-bottom: 12px;
-            transition: background 0.2s;
+            padding: 10px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
-        .launch-btn:hover { background-color: #24523a; }
-        .download-link {
-            display: inline-block;
-            color: var(--accent-orange);
+        .header-title { font-weight: bold; font-size: 15px; }
+        .header-actions { display: flex; gap: 6px; align-items: center; }
+
+        .btn-header {
+            background-color: rgba(255,255,255,0.15);
+            color: white; border: 1px solid rgba(255,255,255,0.3);
+            padding: 5px 10px; border-radius: 4px;
+            font-size: 12px; font-weight: bold; cursor: pointer;
             text-decoration: none;
-            font-weight: 600;
-            font-size: 14px;
-            margin-top: 15px;
         }
+        .btn-logout { background-color: #c93b2b; border: none; }
+        .btn-install { background-color: var(--accent-orange); border: none; }
+
+        /* Search Bar */
+        .search-container { margin-bottom: 15px; }
+        .search-input {
+            width: 100%;
+            padding: 10px 14px;
+            border-radius: 6px;
+            border: 1px solid var(--border-light);
+            font-size: 14px;
+            outline: none;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+
+        /* Tab Content Screens */
+        .tab-screen { display: none; padding: 15px; max-width: 800px; margin: 0 auto; }
+        .tab-screen.active { display: block; }
+
+        /* TAB 1: READ NOW */
+        #pdf-render {
+            width: 100%; border-radius: 6px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1); background: #fff;
+        }
+        .controls {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 15px; background: white; padding: 10px; border-radius: 8px;
+        }
+        .controls button {
+            background: var(--primary-green); color: white; border: none;
+            padding: 8px 16px; border-radius: 4px; cursor: pointer; font-weight: bold;
+        }
+        .chapter-body {
+            background: white; padding: 25px; border-radius: 8px;
+            line-height: 1.8; font-size: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+        }
+
+        /* TAB 2 & 3: STORE & LIBRARY GRID */
+        .book-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            gap: 15px;
+        }
+        .book-card {
+            background: white; border-radius: 8px; overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex;
+            flex-direction: column; text-align: center;
+        }
+        .book-card img { width: 100%; height: 180px; object-fit: cover; background: #e0e0e0; }
+        .book-info { padding: 10px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .book-title { font-size: 14px; font-weight: bold; margin-bottom: 4px; color: var(--primary-green); }
+        .book-author { font-size: 12px; color: #666; margin-bottom: 8px; }
+        .action-btn {
+            background: var(--primary-green); color: white; border: none;
+            padding: 6px 10px; border-radius: 4px; font-size: 12px;
+            font-weight: bold; cursor: pointer; width: 100%; text-decoration: none;
+            display: inline-block; text-align: center;
+        }
+
+        /* Guest Empty State Box */
+        .guest-box {
+            grid-column: 1/-1;
+            text-align: center;
+            background: white;
+            padding: 30px 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            margin-top: 10px;
+        }
+
+        /* Bottom Tab Navigation Bar */
+        .nav-tabs {
+            position: fixed; bottom: 0; left: 0; right: 0; height: 60px;
+            background: white; display: flex; justify-space-around;
+            align-items: center; border-top: 1px solid var(--border-light);
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 1000;
+        }
+        .tab-btn {
+            background: none; border: none; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; color: #777;
+            font-size: 11px; font-weight: 600; cursor: pointer; flex-grow: 1; height: 100%;
+        }
+        .tab-btn span.icon { font-size: 20px; margin-bottom: 2px; }
+        .tab-btn.active { color: var(--primary-green); font-weight: bold; }
     </style>
 </head>
 <body>
 
-    <div class="gateway-card">
-        <div class="app-logo">PAGE 24</div>
-        <div class="book-badge" id="vault-book-title">🔑 Securing Access...</div>
-        
-        <h2 style="margin: 0 0 10px 0; font-size: 20px;">Read Safely on Mobile</h2>
-        <p style="color: #666; font-size: 14px; line-height: 1.5; margin: 0 0 30px 0;">
-            To prevent piracy and protect our Zimbabwean authors, books can only be read securely inside the official **Page 24 Mobile Reader** app.
-        </p>
+    <header>
+        <span class="header-title" id="top-header-title">📖 Read Now</span>
+        <div class="header-actions">
+            <a href="/login?returnTo=/read" class="btn-header" id="auth-btn">👤 Sign In</a>
+            <button class="btn-header btn-logout" id="logout-btn" style="display:none;" onclick="handleLogout()">Logout</button>
+            <button class="btn-header btn-install" id="pwa-install-btn">📲 Install</button>
+        </div>
+    </header>
 
-        <!-- DEEP LINK TRIGGER: Tries to open the local mobile app directly -->
-        <button class="launch-btn" id="open-app-trigger">🚀 Launch Page 24 Reader</button>
+    <!-- TAB 1: READ NOW SCREEN -->
+    <div id="screen-read" class="tab-screen active">
+        <p id="status-text" style="text-align: center; margin-top: 50px; color: #666;">
+            Select a book from <strong>My Books</strong> or the <strong>Store</strong> to start reading.
+        </p>
         
-        <!-- FALLBACK LINK: If they don't have the app installed yet -->
-        <a href="#" class="download-link" id="download-app-trigger">📲 Don't have the app? Get it here</a>
+        <!-- PDF Viewport -->
+        <div id="pdf-wrapper" style="display:none; text-align: center;">
+            <canvas id="pdf-render"></canvas>
+            <div class="controls">
+                <button id="prev-page">◀ Prev</button>
+                <span>Page <span id="page-num">1</span> of <span id="page-count">--</span></span>
+                <button id="next-page">Next ▶</button>
+            </div>
+        </div>
+
+        <!-- HTML Viewport -->
+        <div id="html-wrapper" style="display:none;">
+            <h1 id="chapter-title" style="margin-top: 0;"></h1>
+            <div id="chapter-content" class="chapter-body"></div>
+        </div>
     </div>
 
-    <script>
-        const urlParams = new URLSearchParams(window.location.search);
-        const bookId = urlParams.get('bookId');
+    <!-- TAB 2: BOOK STORE SCREEN -->
+    <div id="screen-store" class="tab-screen">
+        <div class="search-container">
+            <input type="text" id="store-search-input" class="search-input" placeholder="🔍 Search titles or authors in Store..." onkeyup="filterStoreBooks()">
+        </div>
+        <div class="book-grid" id="store-books-grid">Loading store catalog...</div>
+    </div>
 
-        async function verifyVaultToken() {
-            if (!bookId) return;
+    <!-- TAB 3: MY BOOKS / LIBRARY SCREEN -->
+    <div id="screen-library" class="tab-screen">
+        <div class="search-container">
+            <input type="text" id="library-search-input" class="search-input" placeholder="🔍 Search my library..." onkeyup="filterLibraryBooks()">
+        </div>
+        <div class="book-grid" id="library-books-grid">Loading your personal library...</div>
+    </div>
+
+    <!-- BOTTOM TAB NAVIGATION -->
+    <nav class="nav-tabs">
+        <button class="tab-btn active" onclick="switchTab('read')">
+            <span class="icon">📖</span> Read Now
+        </button>
+        <button class="tab-btn" onclick="switchTab('store')">
+            <span class="icon">🛒</span> Store
+        </button>
+        <button class="tab-btn" onclick="switchTab('library')">
+            <span class="icon">📚</span> My Books
+        </button>
+    </nav>
+
+    <script>
+        let currentUser = null;
+        let allStoreBooks = [];
+        let allLibraryBooks = [];
+
+        // 1. Check Auth & Manage Sign-In/Out UI
+        async function checkAuth() {
             try {
-                const req = await fetch(`/api/books/secure-source?bookId=${bookId}`);
-                if (req.ok) {
-                    const bookData = await req.json();
-                    document.getElementById('vault-book-title').textContent = `📖 Vault Cleared: ${bookData.title}`;
-                    
-                    // Wire up the App Launch Button using a custom mobile Deep Link scheme (e.g., page24://read/id)
-                    document.getElementById('open-app-trigger').onclick = () => {
-                        window.location.href = `page24://read?bookId=${bookId}`;
-                        
-                        // Set a quick fallback timeout. If the phone doesn't open the app in 2 seconds, alert them.
-                        setTimeout(() => {
-                            alert("If the app didn't open automatically, please click below to download and install the Page 24 mobile platform.");
-                        }, 2000);
-                    };
+                const res = await fetch('/api/auth/me');
+                const data = await res.json();
+                const authBtn = document.getElementById('auth-btn');
+                const logoutBtn = document.getElementById('logout-btn');
+
+                if (data.loggedIn) {
+                    currentUser = data.user;
+                    authBtn.textContent = `👤 ${currentUser.username}`;
+                    authBtn.href = "/dashboard";
+                    logoutBtn.style.display = "inline-block";
+                } else {
+                    currentUser = null;
+                    authBtn.textContent = "👤 Sign In";
+                    authBtn.href = "/login?returnTo=/read";
+                    logoutBtn.style.display = "none";
                 }
             } catch (err) {
-                console.error(err);
+                currentUser = null;
             }
         }
 
-        document.getElementById('download-app-trigger').onclick = (e) => {
-            e.preventDefault();
-            alert("This shortcut link will point directly to your compiled Progressive Web App Android APK package download bundle later!");
-        };
+        async function handleLogout() {
+            await fetch('/api/auth/logout', { headers: { 'Accept': 'application/json' } });
+            window.location.reload();
+        }
 
-        verifyVaultToken();
+        // 2. Service Worker Registration
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('/sw.js').catch(err => console.error(err));
+        }
+
+        // 3. Install App Trigger
+        let deferredPrompt;
+        const installBtn = document.getElementById('pwa-install-btn');
+
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+        });
+
+        installBtn.addEventListener('click', () => {
+            if (deferredPrompt) {
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(() => deferredPrompt = null);
+            } else {
+                alert("To install Page 24 Reader App:\n\n• Mobile: Tap browser menu -> 'Add to Home Screen'\n• Desktop: Click the Install icon in your address bar.");
+            }
+        });
+
+        // 4. Tab Switching Logic
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+
+            if (tabName === 'read') {
+                document.getElementById('screen-read').classList.add('active');
+                document.querySelectorAll('.tab-btn')[0].classList.add('active');
+                document.getElementById('top-header-title').textContent = currentBookTitle || "📖 Read Now";
+            } else if (tabName === 'store') {
+                document.getElementById('screen-store').classList.add('active');
+                document.querySelectorAll('.tab-btn')[1].classList.add('active');
+                document.getElementById('top-header-title').textContent = "🛒 Page 24 Store";
+                loadStoreCatalog();
+            } else if (tabName === 'library') {
+                document.getElementById('screen-library').classList.add('active');
+                document.querySelectorAll('.tab-btn')[2].classList.add('active');
+                document.getElementById('top-header-title').textContent = "📚 My Books";
+                loadUserLibrary();
+            }
+        }
+
+        // 5. Reader Engine
+        let pdfDoc = null, pageNum = 1, currentBookTitle = "";
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const initialBookId = urlParams.get('bookId');
+
+        async function openBook(bookId) {
+            switchTab('read');
+            document.getElementById('status-text').style.display = 'block';
+            document.getElementById('status-text').textContent = 'Opening secure reader...';
+            document.getElementById('pdf-wrapper').style.display = 'none';
+            document.getElementById('html-wrapper').style.display = 'none';
+
+            try {
+                const res = await fetch(`/api/books/secure-source?bookId=${bookId}`);
+                if (!res.ok) throw new Error("Could not load book source.");
+                const book = await res.json();
+
+                currentBookTitle = book.title;
+                document.getElementById('top-header-title').textContent = book.title;
+                document.getElementById('status-text').style.display = 'none';
+
+                if (book.mode === 'pdf') {
+                    document.getElementById('pdf-wrapper').style.display = 'block';
+                    renderPdfView(`/api/books/${bookId}/pdf-stream`);
+                } else {
+                    document.getElementById('html-wrapper').style.display = 'block';
+                    document.getElementById('chapter-title').textContent = book.chapterTitle || book.title;
+                    document.getElementById('chapter-content').innerHTML = book.chapterBody || "No text body available.";
+                }
+            } catch (err) {
+                document.getElementById('status-text').textContent = "Unable to load book file. Please make sure you are logged in.";
+            }
+        }
+
+        function renderPdfView(pdfUrl) {
+            pdfjsLib.getDocument(pdfUrl).promise.then(doc => {
+                pdfDoc = doc;
+                pageNum = 1;
+                document.getElementById('page-count').textContent = doc.numPages;
+                renderPage(pageNum);
+            });
+        }
+
+        function renderPage(num) {
+            pdfDoc.getPage(num).then(page => {
+                const canvas = document.getElementById('pdf-render');
+                const ctx = canvas.getContext('2d');
+                const viewport = page.getViewport({ scale: 1.5 });
+
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+
+                page.render({ canvasContext: ctx, viewport: viewport });
+            });
+            document.getElementById('page-num').textContent = num;
+        }
+
+        document.getElementById('prev-page').addEventListener('click', () => {
+            if (pdfDoc && pageNum > 1) { pageNum--; renderPage(pageNum); }
+        });
+        document.getElementById('next-page').addEventListener('click', () => {
+            if (pdfDoc && pageNum < pdfDoc.numPages) { pageNum++; renderPage(pageNum); }
+        });
+
+        // 6. Store Catalog & Search
+        async function loadStoreCatalog() {
+            try {
+                const res = await fetch('/api/books');
+                allStoreBooks = await res.json();
+                renderStoreGrid(allStoreBooks);
+            } catch (err) {
+                document.getElementById('store-books-grid').innerHTML = "<p style='grid-column:1/-1; text-align:center;'>Failed to load store catalog.</p>";
+            }
+        }
+
+        function renderStoreGrid(books) {
+            const grid = document.getElementById('store-books-grid');
+            if (books.length === 0) {
+                grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #777;">No matching books found.</p>`;
+                return;
+            }
+            grid.innerHTML = books.map(b => `
+                <div class="book-card">
+                    <img src="${b.coverImage || '/assets/default-cover.png'}" alt="cover">
+                    <div class="book-info">
+                        <div>
+                            <div class="book-title">${b.title}</div>
+                            <div class="book-author">by ${b.author}</div>
+                        </div>
+                        <button class="action-btn" onclick="openBook(${b.id})">Read Now</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterStoreBooks() {
+            const query = document.getElementById('store-search-input').value.toLowerCase();
+            const filtered = allStoreBooks.filter(b => 
+                b.title.toLowerCase().includes(query) || 
+                b.author.toLowerCase().includes(query)
+            );
+            renderStoreGrid(filtered);
+        }
+
+        // 7. Personal Library & Guest State Handling
+        async function loadUserLibrary() {
+            const grid = document.getElementById('library-books-grid');
+
+            if (!currentUser) {
+                grid.innerHTML = `
+                    <div class="guest-box">
+                        <h3 style="margin-top:0; color: var(--primary-green);">Sign In Required</h3>
+                        <p style="color:#666; font-size:14px; margin-bottom: 20px;">
+                            Please sign in to view your books or to purchase.
+                        </p>
+                        <a href="/login?returnTo=/read" class="action-btn" style="width: auto; padding: 10px 24px;">Sign In / Register</a>
+                    </div>
+                `;
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/books/my-library');
+                if (res.status === 401) {
+                    grid.innerHTML = `
+                        <div class="guest-box">
+                            <p style="color:#666;">Please sign in to view your books or to purchase.</p>
+                            <a href="/login?returnTo=/read" class="action-btn" style="width: auto; padding: 10px 20px;">Sign In</a>
+                        </div>
+                    `;
+                    return;
+                }
+                allLibraryBooks = await res.json();
+                renderLibraryGrid(allLibraryBooks);
+            } catch (err) {
+                grid.innerHTML = "<p style='grid-column:1/-1; text-align:center;'>Unable to load library right now.</p>";
+            }
+        }
+
+        function renderLibraryGrid(books) {
+            const grid = document.getElementById('library-books-grid');
+            if (books.length === 0) {
+                grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #777;">You haven't unlocked any books yet.</p>`;
+                return;
+            }
+            grid.innerHTML = books.map(b => `
+                <div class="book-card">
+                    <img src="${b.coverImage || '/assets/default-cover.png'}" alt="cover">
+                    <div class="book-info">
+                        <div>
+                            <div class="book-title">${b.title}</div>
+                            <div class="book-author">by ${b.author}</div>
+                        </div>
+                        <button class="action-btn" onclick="openBook(${b.id})">📖 Open Book</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function filterLibraryBooks() {
+            const query = document.getElementById('library-search-input').value.toLowerCase();
+            const filtered = allLibraryBooks.filter(b => 
+                b.title.toLowerCase().includes(query) || 
+                b.author.toLowerCase().includes(query)
+            );
+            renderLibraryGrid(filtered);
+        }
+
+        // Initialize App
+        checkAuth().then(() => {
+            if (initialBookId) {
+                openBook(initialBookId);
+            } else {
+                switchTab('store');
+            }
+        });
     </script>
 </body>
 </html>

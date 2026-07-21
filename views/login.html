@@ -46,8 +46,8 @@
 </head>
 <body style="background: #f4f3ef;">
     <div class="form-container">
-        <h2 style="color: #1b3d2b; margin-top: 0;">Author Portal Login</h2>
-        <p>Access your dashboard to publish and view royalties.</p>
+        <h2 id="portal-title" style="color: #1b3d2b; margin-top: 0;">Portal Login</h2>
+        <p id="portal-subtext">Access your account to read, publish, and manage books.</p>
         <div id="error-msg" style="color: red; margin-bottom: 15px; font-weight: bold; display: none;"></div>
         
         <form id="login-form">
@@ -62,29 +62,49 @@
             <button type="submit" class="form-btn">Log In</button>
         </form>
         <p style="margin-top: 20px; font-size: 14px; text-align: center;">
-            New here? <a href="/register" style="color: #d97736;">Register an account</a>
+            New here? <a id="register-link" href="/register" style="color: #d97736;">Register an account</a>
         </p>
     </div>
 
     <script>
+        // Extract return parameter from URL (e.g. /login?returnTo=/read)
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnTo = urlParams.get('returnTo');
+
+        // Adjust UI context if user came from Reader App
+        if (returnTo && returnTo.includes('/read')) {
+            document.getElementById('portal-title').textContent = "Reader & Author Sign In";
+            document.getElementById('portal-subtext').textContent = "Sign in to access your digital library and purchased books.";
+            document.getElementById('register-link').href = `/register?returnTo=${encodeURIComponent(returnTo)}`;
+        }
+
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const errorMsg = document.getElementById('error-msg');
 
-            const response = await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ email, password })
-            });
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        email, 
+                        password,
+                        redirectTo: returnTo || null // Pass origin destination
+                    })
+                });
 
-            const data = await response.json();
-            if (response.ok) {
-                // If login matches, redirect to the dashboard
-                window.location.href = '/dashboard';
-            } else {
-                errorMsg.textContent = data.error;
+                const data = await response.json();
+                if (response.ok && data.success) {
+                    // Smart redirect based on backend determination or returnTo URL
+                    window.location.href = data.redirectUrl || '/read';
+                } else {
+                    errorMsg.textContent = data.error || "Invalid login details.";
+                    errorMsg.style.display = 'block';
+                }
+            } catch (err) {
+                errorMsg.textContent = "Network error. Please try again.";
                 errorMsg.style.display = 'block';
             }
         });

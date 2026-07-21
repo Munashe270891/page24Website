@@ -106,9 +106,9 @@ app.post('/api/auth/register', (req, res) => {
     });
 });
 
-// 2. Login User
+// 2. Login User (Updated with redirect logic)
 app.post('/api/auth/login', (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, redirectTo } = req.body;
     if (!email || !password) {
         return res.status(400).json({ error: "Email and password are required." });
     }
@@ -128,7 +128,18 @@ app.post('/api/auth/login', (req, res) => {
             role: user.role
         };
 
-        res.json({ success: true, message: "Logged in successfully!", user: req.session.user });
+        // Determine target destination
+        let destination = redirectTo;
+        if (!destination) {
+            destination = (user.role === 'author' || user.role === 'admin') ? '/dashboard' : '/read';
+        }
+
+        res.json({ 
+            success: true, 
+            message: "Logged in successfully!", 
+            user: req.session.user,
+            redirectUrl: destination 
+        });
     });
 });
 
@@ -136,6 +147,9 @@ app.post('/api/auth/login', (req, res) => {
 app.get('/api/auth/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) return res.status(500).json({ error: "Could not log out." });
+        if (req.headers['accept'] && req.headers['accept'].includes('application/json')) {
+            return res.json({ success: true, message: "Logged out successfully!" });
+        }
         res.redirect('/');
     });
 });
@@ -262,6 +276,44 @@ app.get('/api/books', (req, res) => {
     // Only return books marked as 'active' or legacy NULLs
     db.all(`SELECT * FROM books WHERE status = 'active' OR status IS NULL ORDER BY id DESC`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
+        res.json(rows);
+    });
+});
+// Secure endpoint to serve PDF binary stream for offline app reading
+app.get('/api/books/:id/pdf-stream', (req, res) => {
+    const bookId = req.params.id;
+
+    db.get(`SELECT pdfSource FROM books WHERE id = ?`, [bookId], (err, book) => {
+        if (err || !book || !book.pdfSource) {
+            return res.status(404).json({ error: "PDF document file not found." });
+        }
+
+        // Clean path removing leading slash if present
+        const cleanPath = book.pdfSource.replace(/^\//, '');
+        const filePath = path.join(__dirname, 'public', cleanPath);
+
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ error: "PDF file does not exist on disk." });
+        }
+
+        res.sendFile(filePath);
+    });
+});
+
+// Endpoint to return only books owned or purchased by the logged-in user
+app.get('/api/books/my-library', requireLogin, (req, res) => {
+    const userId = req.session.user.id;
+
+    const query = `
+        SELECT DISTINCT books.* 
+        FROM books 
+        LEFT JOIN purchases ON purchases.book_id = books.id
+        WHERE books.user_id = ? OR purchases.buyer_id = ? OR books.price = 0
+        ORDER BY books.id DESC
+    `;
+
+    db.all(query, [userId, userId], (err, rows) => {
+        if (err) return res.status(500).json({ error: "Failed to load personal library." });
         res.json(rows);
     });
 });
