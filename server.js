@@ -24,7 +24,7 @@ app.use(session({
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: false, // Set to true if running on HTTPS in production
+        secure: process.env.NODE_ENV === 'production', // Set to true if running on HTTPS in production
         maxAge: 24 * 60 * 60 * 1000 // Session lasts 24 hours
     }
 }));
@@ -40,12 +40,18 @@ function requireLogin(req, res, next) {
 // Admin Auth Guard Middleware: Only permits administrative users
 function requireAdmin(req, res, next) {
     if (!req.session.user) {
-        return res.status(401).json({ error: "Unauthorized access." });
+        if (req.headers['accept'] && req.headers['accept'].includes('application/json')) {
+            return res.status(401).json({ error: "Unauthorized access." });
+        }
+        return res.redirect('/login');
     }
 
     db.get(`SELECT role FROM users WHERE id = ?`, [req.session.user.id], (err, user) => {
         if (err || !user || user.role !== 'admin') {
-            return res.status(403).json({ error: "Access denied: Administrator privileges required." });
+            if (req.headers['accept'] && req.headers['accept'].includes('application/json')) {
+                return res.status(403).json({ error: "Access denied: Administrator privileges required." });
+            }
+            return res.status(403).send("Access Denied: Administrator Privileges Required.");
         }
         next();
     });
@@ -269,6 +275,11 @@ app.get('/terms', (req, res) => {
     res.sendFile(path.join(__dirname, 'views', 'terms.html'));
 });
 
+// Serve Secret Admin Route
+app.get('/secret-admin-console', requireAdmin, (req, res) => {
+    res.sendFile(path.join(__dirname, 'views', 'admin.html'));
+});
+
 // ==========================================
 //             BOOK ACTIONS ENDPOINTS
 // ==========================================
@@ -279,6 +290,7 @@ app.get('/api/books', (req, res) => {
         res.json(rows);
     });
 });
+
 // Secure endpoint to serve PDF binary stream for offline app reading
 app.get('/api/books/:id/pdf-stream', (req, res) => {
     const bookId = req.params.id;
@@ -300,7 +312,37 @@ app.get('/api/books/:id/pdf-stream', (req, res) => {
     });
 });
 
-// Endpoint to return only books owned or purchased by the logged-in user
+// Direct file download trigger endpoint for free books ($0)
+app.get('/api/books/:id/download-free', (req, res) => {
+    const bookId = req.params.id;
+
+    db.get(`SELECT title, pdfSource, price FROM books WHERE id = ?`, [bookId], (err, book) => {
+        if (err || !book) {
+            return res.status(404).json({ error: "Book not found." });
+        }
+
+        if (parseFloat(book.price) !== 0) {
+            return res.status(403).json({ error: "This title requires purchase before downloading." });
+        }
+
+        if (!book.pdfSource) {
+            return res.status(404).json({ error: "No PDF file attached to this book." });
+        }
+
+        const cleanPath = book.pdfSource.replace(/^\//, '');
+        const filePath = path.join(__dirname, 'public', cleanPath);
+
+        if (!fs.existsSync(filePath)) {
+            return res.status(404).json({ error: "File not found on storage server." });
+        }
+
+        // Force browser binary file download on user's device
+        const downloadFileName = `${book.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+        res.download(filePath, downloadFileName);
+    });
+});
+
+// Endpoint to return only books owned or purchased by the logged-in user (including $0 free books)
 app.get('/api/books/my-library', requireLogin, (req, res) => {
     const userId = req.session.user.id;
 
@@ -439,12 +481,12 @@ app.put('/api/books/:id', requireLogin, (req, res) => {
     const bookId = req.params.id;
     const { description, price } = req.body;
 
-    if (!description || !price) {
+    if (!description || price === undefined) {
         return res.status(400).json({ error: 'Missing updated parameters.' });
     }
 
     const updateQuery = `UPDATE books SET description = ?, price = ? WHERE id = ? AND user_id = ?`;
-    db.run(updateQuery, [description, price, bookId, req.session.user.id], function(err) {
+    db.run(updateQuery, [description, parseFloat(price), bookId, req.session.user.id], function(err) {
         if (err) return res.status(500).json({ error: 'Failed to update book profile.' });
         if (this.changes === 0) return res.status(404).json({ error: 'Book not found or unauthorized.' });
         res.json({ success: true, message: 'Book updated successfully!' });
@@ -508,6 +550,33 @@ app.post('/api/payments/callback', (req, res) => {
     res.sendStatus(200); 
 });
 
+// SANDBOX BUY ROUTE
+app.post('/api/books/:id/buy', requireLogin, (req, res) => {
+    const bookId = req.params.id;
+    const buyerId = req.session.user.id;
+
+    db.get('SELECT price, user_id, status FROM books WHERE id = ?', [bookId], (err, book) => {
+        if (err || !book) return res.status(404).json({ error: 'Book not found.' });
+
+        if (book.status === 'offline') {
+            return res.status(403).json({ error: 'This title is currently offline and unavailable for purchase.' });
+        }
+
+        if (book.user_id === buyerId) {
+            return res.status(400).json({ error: 'You cannot purchase your own book!' });
+        }
+
+        db.get('SELECT id FROM purchases WHERE book_id = ? AND buyer_id = ?', [bookId, buyerId], (err, alreadyBought) => {
+            if (alreadyBought) return res.status(400).json({ error: 'You already own this book!' });
+
+            db.run('INSERT INTO purchases (book_id, buyer_id, price) VALUES (?, ?, ?)', [bookId, buyerId, book.price], function(err) {
+                if (err) return res.status(500).json({ error: 'Purchase processing failed.' });
+                res.json({ success: true, message: 'Book purchased successfully!' });
+            });
+        });
+    });
+});
+
 // ==========================================
 //        SALES & ROYALTIES ANALYTICS
 // ==========================================
@@ -548,33 +617,6 @@ app.get('/api/analytics/sales', requireLogin, (req, res) => {
             totalEarnings,
             recentTransactions: rows,
             bookBreakdown
-        });
-    });
-});
-
-// SANDBOX BUY ROUTE
-app.post('/api/books/:id/buy', requireLogin, (req, res) => {
-    const bookId = req.params.id;
-    const buyerId = req.session.user.id;
-
-    db.get('SELECT price, user_id, status FROM books WHERE id = ?', [bookId], (err, book) => {
-        if (err || !book) return res.status(404).json({ error: 'Book not found.' });
-
-        if (book.status === 'offline') {
-            return res.status(403).json({ error: 'This title is currently offline and unavailable for purchase.' });
-        }
-
-        if (book.user_id === buyerId) {
-            return res.status(400).json({ error: 'You cannot purchase your own book!' });
-        }
-
-        db.get('SELECT id FROM purchases WHERE book_id = ? AND buyer_id = ?', [bookId, buyerId], (err, alreadyBought) => {
-            if (alreadyBought) return res.status(400).json({ error: 'You already own this book!' });
-
-            db.run('INSERT INTO purchases (book_id, buyer_id, price) VALUES (?, ?, ?)', [bookId, buyerId, book.price], function(err) {
-                if (err) return res.status(500).json({ error: 'Purchase processing failed.' });
-                res.json({ success: true, message: 'Book purchased successfully!' });
-            });
         });
     });
 });

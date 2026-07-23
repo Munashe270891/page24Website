@@ -135,3 +135,88 @@ nav a {
 .buy-btn:hover {
     background-color: #24523a;
 }
+
+/* ========================================== */
+/* AD PLACEMENT & PROMO BANNER SYSTEM          */
+/* ========================================== */
+
+.ad-container {
+    width: 100%;
+    max-width: 1100px;
+    margin: 20px auto;
+    padding: 0 5%;
+    box-sizing: border-box;
+}
+
+.ad-content {
+    background: var(--white);
+    border: 1px solid #e2dfd7;
+    border-radius: 6px;
+    padding: 14px 20px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 55px;
+    text-align: center;
+}
+
+/* Internal House Ad Layout */
+.house-ad {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.house-ad p {
+    margin: 0;
+    font-size: 14px;
+    color: var(--dark-text);
+}
+
+.ad-badge {
+    background: var(--accent-orange);
+    color: var(--white);
+    font-size: 10px;
+    font-weight: 800;
+    padding: 3px 8px;
+    border-radius: 3px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.ad-cta-btn {
+    background: var(--primary-green);
+    color: var(--white);
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 4px;
+    transition: opacity 0.2s;
+    white-space: nowrap;
+}
+
+.ad-cta-btn:hover {
+    opacity: 0.9;
+}
+
+.ad-footer-slot {
+    margin-top: 40px;
+    margin-bottom: 20px;
+}
+
+/* Mobile Adjustments */
+@media (max-width: 600px) {
+    .house-ad {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .ad-content {
+        padding: 12px;
+    }
+}

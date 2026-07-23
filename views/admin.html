@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Page 24 - Admin Console</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body style="background: #f4f6f9; padding: 30px;">
+    <div style="max-width: 1100px; margin: 0 auto;">
+        <h1 style="color: #343a40; margin-bottom: 5px;"><i class="fas fa-user-shield"></i> Secret Admin Moderation Console</h1>
+        <p style="color: #6c757d; margin-bottom: 25px;">Platform oversight, copyright enforcement, and global announcements.</p>
+
+        <!-- Broadcast Box -->
+        <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 25px;">
+            <h3 style="color: #007bff; margin-bottom: 12px;"><i class="fas fa-bullhorn"></i> Broadcast System Announcement</h3>
+            <form id="broadcast-form" style="display: flex; flex-direction: column; gap: 12px; max-width: 600px;">
+                <input type="text" id="announce-title" placeholder="Announcement Title" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                <textarea id="announce-message" placeholder="Message content for all authors..." rows="3" required style="padding: 10px; border: 1px solid #ccc; border-radius: 4px;"></textarea>
+                <button type="submit" style="width: fit-content; background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">
+                    Send Broadcast
+                </button>
+            </form>
+        </div>
+
+        <!-- Books Moderation Table -->
+        <h3>All Registered Books</h3>
+        <div style="background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; text-align: left;">
+                <thead>
+                    <tr style="background: #343a40; color: white;">
+                        <th style="padding: 12px;">ID</th>
+                        <th style="padding: 12px;">Title</th>
+                        <th style="padding: 12px;">Author</th>
+                        <th style="padding: 12px;">Status</th>
+                        <th style="padding: 12px;">Action</th>
+                    </tr>
+                </thead>
+                <tbody id="admin-books-list">
+                    <tr><td colspan="5" style="padding: 20px; text-align: center;">Loading platform books...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function loadAdminBooks() {
+            fetch('/api/admin/books')
+                .then(res => {
+                    if (!res.ok) window.location.href = '/dashboard'; // Redirect unauthorized users
+                    return res.json();
+                })
+                .then(data => {
+                    const tbody = document.getElementById('admin-books-list');
+                    if (!tbody) return;
+                    tbody.innerHTML = '';
+
+                    if (!data.books || data.books.length === 0) {
+                        tbody.innerHTML = `<tr><td colspan="5" style="padding: 20px; text-align: center;">No books found.</td></tr>`;
+                        return;
+                    }
+
+                    data.books.forEach(book => {
+                        const isOffline = book.status === 'offline';
+                        const statusBadge = isOffline 
+                            ? `<span style="color: #dc3545; font-weight: bold;">[OFFLINE]</span>` 
+                            : `<span style="color: #28a745; font-weight: bold;">[ACTIVE]</span>`;
+                        
+                        const actionBtn = isOffline
+                            ? `<button onclick="toggleBookStatus(${book.id}, 'active')" style="background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Restore</button>`
+                            : `<button onclick="toggleBookStatus(${book.id}, 'offline')" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Take Offline</button>`;
+
+                        tbody.innerHTML += `
+                            <tr style="border-bottom: 1px solid #ddd;">
+                                <td style="padding: 12px;">#${book.id}</td>
+                                <td style="padding: 12px;"><strong>${book.title}</strong></td>
+                                <td style="padding: 12px;">${book.author}</td>
+                                <td style="padding: 12px;">${statusBadge}</td>
+                                <td style="padding: 12px;">${actionBtn}</td>
+                            </tr>
+                        `;
+                    });
+                });
+        }
+
+        function toggleBookStatus(bookId, newStatus) {
+            if (!confirm(`Set book #${bookId} status to '${newStatus}'?`)) return;
+
+            fetch(`/api/admin/books/${bookId}/status`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: newStatus })
+            })
+            .then(res => res.json())
+            .then(data => { alert(data.message); loadAdminBooks(); });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            loadAdminBooks();
+            document.getElementById('broadcast-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                fetch('/api/admin/broadcast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                        title: document.getElementById('announce-title').value,
+                        message: document.getElementById('announce-message').value 
+                    })
+                })
+                .then(res => res.json())
+                .then(data => { alert(data.message); this.reset(); });
+            });
+        });
+    </script>
+</body>
+</html>

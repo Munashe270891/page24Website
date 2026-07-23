@@ -92,7 +92,7 @@
         /* TAB 2 & 3: STORE & LIBRARY GRID */
         .book-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
             gap: 15px;
         }
         .book-card {
@@ -102,14 +102,19 @@
         }
         .book-card img { width: 100%; height: 180px; object-fit: cover; background: #e0e0e0; }
         .book-info { padding: 10px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
-        .book-title { font-size: 14px; font-weight: bold; margin-bottom: 4px; color: var(--primary-green); }
-        .book-author { font-size: 12px; color: #666; margin-bottom: 8px; }
+        .book-title { font-size: 14px; font-weight: bold; margin-bottom: 2px; color: var(--primary-green); }
+        .book-author { font-size: 12px; color: #666; margin-bottom: 6px; }
+        .price-badge { font-weight: bold; font-size: 13px; color: var(--accent-orange); margin-bottom: 8px; }
+        .price-badge.free { color: #2e7d32; }
+
         .action-btn {
             background: var(--primary-green); color: white; border: none;
-            padding: 6px 10px; border-radius: 4px; font-size: 12px;
+            padding: 8px 10px; border-radius: 4px; font-size: 12px;
             font-weight: bold; cursor: pointer; width: 100%; text-decoration: none;
             display: inline-block; text-align: center;
         }
+        .action-btn.btn-free { background: #2e7d32; }
+        .action-btn.btn-buy { background: var(--accent-orange); }
 
         /* Guest Empty State Box */
         .guest-box {
@@ -125,7 +130,7 @@
         /* Bottom Tab Navigation Bar */
         .nav-tabs {
             position: fixed; bottom: 0; left: 0; right: 0; height: 60px;
-            background: white; display: flex; justify-space-around;
+            background: white; display: flex; justify-style: space-around;
             align-items: center; border-top: 1px solid var(--border-light);
             box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 1000;
         }
@@ -322,6 +327,10 @@
                 pageNum = 1;
                 document.getElementById('page-count').textContent = doc.numPages;
                 renderPage(pageNum);
+            }).catch(err => {
+                console.error("PDF Render error:", err);
+                document.getElementById('status-text').style.display = 'block';
+                document.getElementById('status-text').textContent = "Error rendering PDF file.";
             });
         }
 
@@ -346,7 +355,7 @@
             if (pdfDoc && pageNum < pdfDoc.numPages) { pageNum++; renderPage(pageNum); }
         });
 
-        // 6. Store Catalog & Search
+        // 6. Store Catalog & Dynamic Free / Paid Actions
         async function loadStoreCatalog() {
             try {
                 const res = await fetch('/api/books');
@@ -363,18 +372,56 @@
                 grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #777;">No matching books found.</p>`;
                 return;
             }
-            grid.innerHTML = books.map(b => `
-                <div class="book-card">
-                    <img src="${b.coverImage || '/assets/default-cover.png'}" alt="cover">
-                    <div class="book-info">
-                        <div>
-                            <div class="book-title">${b.title}</div>
-                            <div class="book-author">by ${b.author}</div>
+            grid.innerHTML = books.map(b => {
+                const isFree = parseFloat(b.price) === 0;
+                let priceText = isFree ? "FREE" : `$${parseFloat(b.price).toFixed(2)}`;
+                let actionButtonHtml = "";
+
+                if (isFree) {
+                    if (b.mode === 'pdf') {
+                        actionButtonHtml = `<a href="/api/books/${b.id}/download-free" class="action-btn btn-free">📥 Download PDF</a>`;
+                    } else {
+                        actionButtonHtml = `<button class="action-btn btn-free" onclick="openBook(${b.id})">📖 Read for Free</button>`;
+                    }
+                } else {
+                    actionButtonHtml = `<button class="action-btn btn-buy" onclick="buyBook(${b.id})">🛒 Buy Now</button>`;
+                }
+
+                return `
+                    <div class="book-card">
+                        <img src="${b.coverImage || '/assets/default-cover.png'}" alt="cover">
+                        <div class="book-info">
+                            <div>
+                                <div class="book-title">${b.title}</div>
+                                <div class="book-author">by ${b.author}</div>
+                                <div class="price-badge ${isFree ? 'free' : ''}">${priceText}</div>
+                            </div>
+                            ${actionButtonHtml}
                         </div>
-                        <button class="action-btn" onclick="openBook(${b.id})">Read Now</button>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
+        }
+
+        async function buyBook(bookId) {
+            if (!currentUser) {
+                window.location.href = `/login?returnTo=/read`;
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/books/${bookId}/buy`, { method: 'POST' });
+                const result = await response.json();
+
+                if (response.ok) {
+                    alert('🎉 Book unlocked! Redirecting to your personal library...');
+                    switchTab('library');
+                } else {
+                    alert(result.error || 'Could not complete purchase.');
+                }
+            } catch (err) {
+                alert('Network error while processing purchase.');
+            }
         }
 
         function filterStoreBooks() {
@@ -395,7 +442,7 @@
                     <div class="guest-box">
                         <h3 style="margin-top:0; color: var(--primary-green);">Sign In Required</h3>
                         <p style="color:#666; font-size:14px; margin-bottom: 20px;">
-                            Please sign in to view your books or to purchase.
+                            Please sign in to view your books or saved downloads.
                         </p>
                         <a href="/login?returnTo=/read" class="action-btn" style="width: auto; padding: 10px 24px;">Sign In / Register</a>
                     </div>
@@ -408,7 +455,7 @@
                 if (res.status === 401) {
                     grid.innerHTML = `
                         <div class="guest-box">
-                            <p style="color:#666;">Please sign in to view your books or to purchase.</p>
+                            <p style="color:#666;">Please sign in to view your books or saved downloads.</p>
                             <a href="/login?returnTo=/read" class="action-btn" style="width: auto; padding: 10px 20px;">Sign In</a>
                         </div>
                     `;
@@ -427,18 +474,27 @@
                 grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #777;">You haven't unlocked any books yet.</p>`;
                 return;
             }
-            grid.innerHTML = books.map(b => `
-                <div class="book-card">
-                    <img src="${b.coverImage || '/assets/default-cover.png'}" alt="cover">
-                    <div class="book-info">
-                        <div>
-                            <div class="book-title">${b.title}</div>
-                            <div class="book-author">by ${b.author}</div>
+            grid.innerHTML = books.map(b => {
+                const isFree = parseFloat(b.price) === 0;
+                let actionBtn = `<button class="action-btn" onclick="openBook(${b.id})">📖 Open Book</button>`;
+                
+                if (isFree && b.mode === 'pdf') {
+                    actionBtn = `<a href="/api/books/${b.id}/download-free" class="action-btn btn-free">📥 Download PDF</a>`;
+                }
+
+                return `
+                    <div class="book-card">
+                        <img src="${b.coverImage || '/assets/default-cover.png'}" alt="cover">
+                        <div class="book-info">
+                            <div>
+                                <div class="book-title">${b.title}</div>
+                                <div class="book-author">by ${b.author}</div>
+                            </div>
+                            ${actionBtn}
                         </div>
-                        <button class="action-btn" onclick="openBook(${b.id})">📖 Open Book</button>
                     </div>
-                </div>
-            `).join('');
+                `;
+            }).join('');
         }
 
         function filterLibraryBooks() {
