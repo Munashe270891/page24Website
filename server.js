@@ -1,10 +1,10 @@
-require('dotenv').config(); // Load secret keys from your local configuration environment
+require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const { Paynow } = require('paynow'); 
-const db = require('./database');
+const supabase = require('./database'); // Import Supabase Client
 const session = require('express-session');
 const bcrypt = require('bcryptjs');
 
@@ -18,18 +18,16 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Set up secure session cookies to track logged-in users
 app.use(session({
     secret: process.env.SESSION_SECRET || 'zim-publish-secure-random-key-1234',
     resave: false,
     saveUninitialized: false,
     cookie: { 
-        secure: process.env.NODE_ENV === 'production', // Set to true if running on HTTPS in production
-        maxAge: 24 * 60 * 60 * 1000 // Session lasts 24 hours
+        secure: process.env.NODE_ENV === 'production',
+        maxAge: 24 * 60 * 60 * 1000
     }
 }));
 
-// Auth Guard Middleware: Redirects guests away from protected pages
 function requireLogin(req, res, next) {
     if (!req.session.user) {
         return res.redirect('/login');
@@ -37,8 +35,7 @@ function requireLogin(req, res, next) {
     next();
 }
 
-// Admin Auth Guard Middleware: Only permits administrative users
-function requireAdmin(req, res, next) {
+async function requireAdmin(req, res, next) {
     if (!req.session.user) {
         if (req.headers['accept'] && req.headers['accept'].includes('application/json')) {
             return res.status(401).json({ error: "Unauthorized access." });
@@ -46,25 +43,31 @@ function requireAdmin(req, res, next) {
         return res.redirect('/login');
     }
 
-    db.get(`SELECT role FROM users WHERE id = ?`, [req.session.user.id], (err, user) => {
-        if (err || !user || user.role !== 'admin') {
+    try {
+        const { data: user, error } = await supabase
+            .from('users')
+            .select('role')
+            .eq('id', req.session.user.id)
+            .single();
+
+        if (error || !user || user.role !== 'admin') {
             if (req.headers['accept'] && req.headers['accept'].includes('application/json')) {
                 return res.status(403).json({ error: "Access denied: Administrator privileges required." });
             }
             return res.status(403).send("Access Denied: Administrator Privileges Required.");
         }
         next();
-    });
+    } catch (err) {
+        return res.status(500).json({ error: "Server authentication error." });
+    }
 }
 
-// Configure Local File Storage for Assets & Documents
 const storage = multer.diskStorage({
     destination: (req, file, cb) => { cb(null, 'public/assets/'); },
     filename: (req, file, cb) => { cb(null, Date.now() + path.extname(file.originalname)); }
 });
 const upload = multer({ storage: storage });
 
-// File Upload Fields
 const dualUploadFields = upload.fields([
     { name: 'coverImage', maxCount: 1 }, 
     { name: 'pdfBook', maxCount: 1 }
@@ -79,11 +82,8 @@ if (!fs.existsSync('public/assets')) {
     fs.mkdirSync('public/assets', { recursive: true });
 }
 
-// Map merchant credential fields securely
 const integrationId = process.env.PAYNOW_INTEGRATION_ID || "25640"; 
 const integrationKey = process.env.PAYNOW_INTEGRATION_KEY;
-
-// Initialize Paynow Transaction Gateway Engine Driver
 const paynow = new Paynow(integrationId, integrationKey);
 
 // ==========================================
@@ -91,61 +91,64 @@ const paynow = new Paynow(integrationId, integrationKey);
 // ==========================================
 
 // 1. Register User
-app.post('/api/auth/register', (req, res) => {
+app.post('/api/auth/register', async (req, res) => {
     const { username, email, password, role } = req.body;
     if (!username || !email || !password) {
         return res.status(400).json({ error: "All registration fields are required." });
     }
 
     const hashedPassword = bcrypt.hashSync(password, 10);
-    const sql = `INSERT INTO users (username, email, password, role) VALUES (?, ?, ?, ?)`;
-    const params = [username, email, hashedPassword, role || 'author'];
 
-    db.run(sql, params, function(err) {
-        if (err) {
-            if (err.message.includes("UNIQUE constraint failed")) {
-                return res.status(400).json({ error: "Username or Email already exists." });
-            }
-            return res.status(500).json({ error: err.message });
+    const { data, error } = await supabase
+        .from('users')
+        .insert([{ username, email, password: hashedPassword, role: role || 'author' }]);
+
+    if (error) {
+        if (error.code === '23505') { // Postgres unique constraint failure
+            return res.status(400).json({ error: "Username or Email already exists." });
         }
-        res.status(201).json({ success: true, message: "Registration successful!" });
-    });
+        return res.status(500).json({ error: error.message });
+    }
+
+    res.status(201).json({ success: true, message: "Registration successful!" });
 });
 
-// 2. Login User (Updated with redirect logic)
-app.post('/api/auth/login', (req, res) => {
+// 2. Login User
+app.post('/api/auth/login', async (req, res) => {
     const { email, password, redirectTo } = req.body;
     if (!email || !password) {
         return res.status(400).json({ error: "Email and password are required." });
     }
 
-    const sql = `SELECT * FROM users WHERE email = ?`;
-    db.get(sql, [email], (err, user) => {
-        if (err) return res.status(500).json({ error: err.message });
-        if (!user) return res.status(401).json({ error: "Invalid email or password." });
+    const { data: user, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('email', email)
+        .maybeSingle();
 
-        const passwordMatches = bcrypt.compareSync(password, user.password);
-        if (!passwordMatches) return res.status(401).json({ error: "Invalid email or password." });
+    if (error) return res.status(500).json({ error: error.message });
+    if (!user) return res.status(401).json({ error: "Invalid email or password." });
 
-        req.session.user = {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            role: user.role
-        };
+    const passwordMatches = bcrypt.compareSync(password, user.password);
+    if (!passwordMatches) return res.status(401).json({ error: "Invalid email or password." });
 
-        // Determine target destination
-        let destination = redirectTo;
-        if (!destination) {
-            destination = (user.role === 'author' || user.role === 'admin') ? '/dashboard' : '/read';
-        }
+    req.session.user = {
+        id: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role
+    };
 
-        res.json({ 
-            success: true, 
-            message: "Logged in successfully!", 
-            user: req.session.user,
-            redirectUrl: destination 
-        });
+    let destination = redirectTo;
+    if (!destination) {
+        destination = (user.role === 'author' || user.role === 'admin') ? '/dashboard' : '/read';
+    }
+
+    res.json({ 
+        success: true, 
+        message: "Logged in successfully!", 
+        user: req.session.user,
+        redirectUrl: destination 
     });
 });
 
@@ -171,18 +174,21 @@ app.get('/api/auth/me', (req, res) => {
 // ==========================================
 
 // 1. Get Logged-in Author's KYC Profile
-app.get('/api/author/profile', requireLogin, (req, res) => {
+app.get('/api/author/profile', requireLogin, async (req, res) => {
     const userId = req.session.user.id;
-    const sql = `SELECT legal_name, id_number, id_doc_path, phone, address, kin_name, kin_relation, kin_phone, isbn, isbn_doc_path, profile_complete FROM users WHERE id = ?`;
 
-    db.get(sql, [userId], (err, row) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(row || {});
-    });
+    const { data, error } = await supabase
+        .from('users')
+        .select('legal_name, id_number, id_doc_path, phone, address, kin_name, kin_relation, kin_phone, isbn, isbn_doc_path, profile_complete')
+        .eq('id', userId)
+        .single();
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data || {});
 });
 
-// 2. Save / Update Author KYC Verification Profile
-app.post('/api/author/profile', requireLogin, profileUploadFields, (req, res) => {
+// 2. Save / Update Author KYC Profile
+app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, res) => {
     const userId = req.session.user.id;
     const { legalName, idNumber, phone, address, kinName, kinRelation, kinPhone, isbn } = req.body;
 
@@ -193,67 +199,70 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, (req, res) =>
     const idDocPath = req.files && req.files['idDoc'] ? `/assets/${req.files['idDoc'][0].filename}` : null;
     const isbnDocPath = req.files && req.files['isbnDoc'] ? `/assets/${req.files['isbnDoc'][0].filename}` : null;
 
-    db.get(`SELECT id_doc_path, isbn_doc_path FROM users WHERE id = ?`, [userId], (err, user) => {
-        if (err) return res.status(500).json({ error: err.message });
+    const { data: user, error: userErr } = await supabase
+        .from('users')
+        .select('id_doc_path, isbn_doc_path')
+        .eq('id', userId)
+        .single();
 
-        const finalIdDoc = idDocPath || (user ? user.id_doc_path : null);
-        const finalIsbnDoc = isbnDocPath || (user ? user.isbn_doc_path : null);
+    if (userErr) return res.status(500).json({ error: userErr.message });
 
-        if (!finalIdDoc) {
-            return res.status(400).json({ error: "A clear Government ID image or document upload is required." });
-        }
+    const finalIdDoc = idDocPath || (user ? user.id_doc_path : null);
+    const finalIsbnDoc = isbnDocPath || (user ? user.isbn_doc_path : null);
 
-        const sql = `
-            UPDATE users SET 
-                legal_name = ?, 
-                id_number = ?, 
-                id_doc_path = ?, 
-                phone = ?, 
-                address = ?, 
-                kin_name = ?, 
-                kin_relation = ?, 
-                kin_phone = ?, 
-                isbn = ?, 
-                isbn_doc_path = ?,
-                profile_complete = 1
-            WHERE id = ?
-        `;
+    if (!finalIdDoc) {
+        return res.status(400).json({ error: "A clear Government ID image or document upload is required." });
+    }
 
-        const params = [legalName, idNumber, finalIdDoc, phone, address, kinName, kinRelation, kinPhone, isbn || null, finalIsbnDoc, userId];
+    const { error: updateErr } = await supabase
+        .from('users')
+        .update({ 
+            legal_name: legalName, 
+            id_number: idNumber, 
+            id_doc_path: finalIdDoc, 
+            phone, 
+            address, 
+            kin_name: kinName, 
+            kin_relation: kinRelation, 
+            kin_phone: kinPhone, 
+            isbn: isbn || null, 
+            isbn_doc_path: finalIsbnDoc,
+            profile_complete: 1
+        })
+        .eq('id', userId);
 
-        db.run(sql, params, function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            res.json({ success: true, message: "KYC Author Verification Profile saved successfully!" });
-        });
-    });
+    if (updateErr) return res.status(500).json({ error: updateErr.message });
+    res.json({ success: true, message: "KYC Author Verification Profile saved successfully!" });
 });
 
 // ==========================================
 //          NOTIFICATIONS SYSTEM
 // ==========================================
 
-// Fetch notifications for the logged-in user (User-specific + System broadcasts)
-app.get('/api/notifications', requireLogin, (req, res) => {
+app.get('/api/notifications', requireLogin, async (req, res) => {
     const userId = req.session.user.id;
-    const sql = `
-        SELECT * FROM notifications 
-        WHERE user_id = ? OR user_id IS NULL 
-        ORDER BY createdAt DESC LIMIT 20
-    `;
 
-    db.all(sql, [userId], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
+    const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .or(`user_id.eq.${userId},user_id.is.null`)
+        .order('created_at', { ascending: false })
+        .limit(20);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
-// Mark a notification as read
-app.post('/api/notifications/:id/read', requireLogin, (req, res) => {
+app.post('/api/notifications/:id/read', requireLogin, async (req, res) => {
     const notificationId = req.params.id;
-    db.run(`UPDATE notifications SET is_read = 1 WHERE id = ?`, [notificationId], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true });
-    });
+
+    const { error } = await supabase
+        .from('notifications')
+        .update({ is_read: 1 })
+        .eq('id', notificationId);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true });
 });
 
 // ==========================================
@@ -262,222 +271,271 @@ app.post('/api/notifications/:id/read', requireLogin, (req, res) => {
 app.get('/', (req, res) => res.sendFile(path.join(__dirname, 'views', 'index.html')));
 app.get('/register', (req, res) => res.sendFile(path.join(__dirname, 'views', 'register.html')));
 app.get('/login', (req, res) => res.sendFile(path.join(__dirname, 'views', 'login.html')));
-
-app.get('/dashboard', requireLogin, (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'dashboard.html'));
-});
-
-app.get('/read', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'reader.html'));
-});
-
-app.get('/terms', (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'terms.html'));
-});
-
-// Serve Secret Admin Route
-app.get('/secret-admin-console', requireAdmin, (req, res) => {
-    res.sendFile(path.join(__dirname, 'views', 'admin.html'));
-});
+app.get('/dashboard', requireLogin, (req, res) => res.sendFile(path.join(__dirname, 'views', 'dashboard.html')));
+app.get('/read', (req, res) => res.sendFile(path.join(__dirname, 'views', 'reader.html')));
+app.get('/terms', (req, res) => res.sendFile(path.join(__dirname, 'views', 'terms.html')));
+app.get('/secret-admin-console', requireAdmin, (req, res) => res.sendFile(path.join(__dirname, 'views', 'admin.html')));
 
 // ==========================================
 //             BOOK ACTIONS ENDPOINTS
 // ==========================================
-app.get('/api/books', (req, res) => {
-    // Only return books marked as 'active' or legacy NULLs
-    db.all(`SELECT * FROM books WHERE status = 'active' OR status IS NULL ORDER BY id DESC`, [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
+
+app.get('/api/books', async (req, res) => {
+    const { data, error } = await supabase
+        .from('books')
+        .select('*')
+        .or('status.eq.active,status.is.null')
+        .order('id', { ascending: false });
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
-// Secure endpoint to serve PDF binary stream for offline app reading
-app.get('/api/books/:id/pdf-stream', (req, res) => {
+app.get('/api/books/:id/pdf-stream', async (req, res) => {
     const bookId = req.params.id;
 
-    db.get(`SELECT pdfSource FROM books WHERE id = ?`, [bookId], (err, book) => {
-        if (err || !book || !book.pdfSource) {
-            return res.status(404).json({ error: "PDF document file not found." });
-        }
+    const { data: book, error } = await supabase
+        .from('books')
+        .select('pdf_source')
+        .eq('id', bookId)
+        .single();
 
-        // Clean path removing leading slash if present
-        const cleanPath = book.pdfSource.replace(/^\//, '');
-        const filePath = path.join(__dirname, 'public', cleanPath);
+    if (error || !book || !book.pdf_source) {
+        return res.status(404).json({ error: "PDF document file not found." });
+    }
 
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ error: "PDF file does not exist on disk." });
-        }
+    const cleanPath = book.pdf_source.replace(/^\//, '');
+    const filePath = path.join(__dirname, 'public', cleanPath);
 
-        res.sendFile(filePath);
-    });
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: "PDF file does not exist on disk." });
+    }
+
+    res.sendFile(filePath);
 });
 
-// Direct file download trigger endpoint for free books ($0)
-app.get('/api/books/:id/download-free', (req, res) => {
+app.get('/api/books/:id/download-free', async (req, res) => {
     const bookId = req.params.id;
 
-    db.get(`SELECT title, pdfSource, price FROM books WHERE id = ?`, [bookId], (err, book) => {
-        if (err || !book) {
-            return res.status(404).json({ error: "Book not found." });
-        }
+    const { data: book, error } = await supabase
+        .from('books')
+        .select('title, pdf_source, price')
+        .eq('id', bookId)
+        .single();
 
-        if (parseFloat(book.price) !== 0) {
-            return res.status(403).json({ error: "This title requires purchase before downloading." });
-        }
+    if (error || !book) return res.status(404).json({ error: "Book not found." });
 
-        if (!book.pdfSource) {
-            return res.status(404).json({ error: "No PDF file attached to this book." });
-        }
+    if (parseFloat(book.price) !== 0) {
+        return res.status(403).json({ error: "This title requires purchase before downloading." });
+    }
 
-        const cleanPath = book.pdfSource.replace(/^\//, '');
-        const filePath = path.join(__dirname, 'public', cleanPath);
+    if (!book.pdf_source) {
+        return res.status(404).json({ error: "No PDF file attached to this book." });
+    }
 
-        if (!fs.existsSync(filePath)) {
-            return res.status(404).json({ error: "File not found on storage server." });
-        }
+    const cleanPath = book.pdf_source.replace(/^\//, '');
+    const filePath = path.join(__dirname, 'public', cleanPath);
 
-        // Force browser binary file download on user's device
-        const downloadFileName = `${book.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
-        res.download(filePath, downloadFileName);
-    });
+    if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ error: "File not found on storage server." });
+    }
+
+    const downloadFileName = `${book.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+    res.download(filePath, downloadFileName);
 });
 
-// Endpoint to return only books owned or purchased by the logged-in user (including $0 free books)
-app.get('/api/books/my-library', requireLogin, (req, res) => {
+app.get('/api/books/my-library', requireLogin, async (req, res) => {
     const userId = req.session.user.id;
 
-    const query = `
-        SELECT DISTINCT books.* 
-        FROM books 
-        LEFT JOIN purchases ON purchases.book_id = books.id
-        WHERE books.user_id = ? OR purchases.buyer_id = ? OR books.price = 0
-        ORDER BY books.id DESC
-    `;
+    // Retrieve purchases made by user
+    const { data: purchases } = await supabase
+        .from('purchases')
+        .select('book_id')
+        .eq('buyer_id', userId);
 
-    db.all(query, [userId, userId], (err, rows) => {
-        if (err) return res.status(500).json({ error: "Failed to load personal library." });
-        res.json(rows);
-    });
+    const purchasedBookIds = purchases ? purchases.map(p => p.book_id) : [];
+
+    // Query books user created, purchased, or are $0 free
+    let filterString = `user_id.eq.${userId},price.eq.0`;
+    if (purchasedBookIds.length > 0) {
+        filterString += `,id.in.(${purchasedBookIds.join(',')})`;
+    }
+
+    const { data: books, error } = await supabase
+        .from('books')
+        .select('*')
+        .or(filterString)
+        .order('id', { ascending: false });
+
+    if (error) return res.status(500).json({ error: "Failed to load personal library." });
+    res.json(books);
 });
 
-app.get('/api/books/my-books', requireLogin, (req, res) => {
+app.get('/api/books/my-books', requireLogin, async (req, res) => {
     const userId = req.session.user.id;
-    db.all(`SELECT * FROM books WHERE user_id = ? ORDER BY id DESC`, [userId], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json(rows);
-    });
+
+    const { data, error } = await supabase
+        .from('books')
+        .select('*')
+        .eq('user_id', userId)
+        .order('id', { ascending: false });
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
 });
 
-// Publish endpoint with KYC Profile & Legal Acceptance Enforcement Guards
-app.post('/api/books/publish', requireLogin, dualUploadFields, (req, res) => {
+app.post('/api/books/publish', requireLogin, dualUploadFields, async (req, res) => {
     const userId = req.session.user.id;
 
-    // 1. Verify KYC Profile Guard
-    db.get(`SELECT profile_complete FROM users WHERE id = ?`, [userId], (err, user) => {
-        if (err) return res.status(500).json({ error: err.message });
-        
-        if (!user || user.profile_complete !== 1) {
-            return res.status(403).json({ 
-                error: "KYC Verification Required: You must complete your 'My Author Profile' details before publishing titles." 
-            });
-        }
+    const { data: user, error: userErr } = await supabase
+        .from('users')
+        .select('profile_complete')
+        .eq('id', userId)
+        .single();
 
-        const { title, description, price, mode, allowDownload, chapterTitle, chapterBody, agreeCopyright, agreeTerms } = req.body;
-
-        // 2. Verify Legal Acceptance Guard
-        if (!agreeCopyright || !agreeTerms) {
-            return res.status(400).json({ 
-                error: "Legal Compliance Rejection: You must accept the Copyright Affirmation and Terms of Service under Zimbabwean Law." 
-            });
-        }
-
-        const coverImageUrl = req.files && req.files['coverImage'] ? `/assets/${req.files['coverImage'][0].filename}` : null;
-        const securePdfUrl = req.files && req.files['pdfBook'] ? `/assets/${req.files['pdfBook'][0].filename}` : null;
-        
-        if (!coverImageUrl) return res.status(400).json({ error: "A book front cover artwork is required." });
-
-        const authorName = req.session.user.username; 
-
-        const bookSql = `INSERT INTO books (user_id, title, author, description, price, mode, allowDownload, status, coverImage, pdfSource) VALUES (?, ?, ?, ?, ?, ?, ?, 'active', ?, ?)`;
-        const bookParams = [userId, title, authorName, description, parseFloat(price), mode, parseInt(allowDownload), coverImageUrl, mode === 'pdf' ? securePdfUrl : null];
-
-        db.run(bookSql, bookParams, function(err) {
-            if (err) return res.status(500).json({ error: err.message });
-            const lastInsertedBookId = this.lastID;
-
-            if (mode === 'html' && chapterTitle) {
-                const chapSql = `INSERT INTO chapters (book_id, title, body) VALUES (?, ?, ?)`;
-                db.run(chapSql, [lastInsertedBookId, chapterTitle, chapterBody], (chapErr) => {
-                    if (chapErr) return res.status(500).json({ error: chapErr.message });
-                    return res.status(201).json({ success: true, bookId: lastInsertedBookId });
-                });
-            } else {
-                return res.status(201).json({ success: true, bookId: lastInsertedBookId });
-            }
+    if (userErr || !user || user.profile_complete !== 1) {
+        return res.status(403).json({ 
+            error: "KYC Verification Required: You must complete your 'My Author Profile' details before publishing titles." 
         });
-    });
+    }
+
+    const { title, description, price, mode, allowDownload, chapterTitle, chapterBody, agreeCopyright, agreeTerms } = req.body;
+
+    if (!agreeCopyright || !agreeTerms) {
+        return res.status(400).json({ 
+            error: "Legal Compliance Rejection: You must accept the Copyright Affirmation and Terms of Service under Zimbabwean Law." 
+        });
+    }
+
+    const coverImageUrl = req.files && req.files['coverImage'] ? `/assets/${req.files['coverImage'][0].filename}` : null;
+    const securePdfUrl = req.files && req.files['pdfBook'] ? `/assets/${req.files['pdfBook'][0].filename}` : null;
+    
+    if (!coverImageUrl) return res.status(400).json({ error: "A book front cover artwork is required." });
+
+    const authorName = req.session.user.username;
+
+    const { data: newBook, error: bookErr } = await supabase
+        .from('books')
+        .insert([{
+            user_id: userId,
+            title,
+            author: authorName,
+            description,
+            price: parseFloat(price),
+            mode,
+            allow_download: parseInt(allowDownload),
+            status: 'active',
+            cover_image: coverImageUrl,
+            pdf_source: mode === 'pdf' ? securePdfUrl : null
+        }])
+        .select()
+        .single();
+
+    if (bookErr) return res.status(500).json({ error: bookErr.message });
+
+    if (mode === 'html' && chapterTitle) {
+        const { error: chapErr } = await supabase
+            .from('chapters')
+            .insert([{ book_id: newBook.id, title: chapterTitle, body: chapterBody }]);
+
+        if (chapErr) return res.status(500).json({ error: chapErr.message });
+    }
+
+    res.status(201).json({ success: true, bookId: newBook.id });
 });
 
-app.get('/api/books/secure-source', (req, res) => {
+app.get('/api/books/secure-source', async (req, res) => {
     const bookId = req.query.bookId;
-    
-    db.get(`
-        SELECT books.*, chapters.title AS chapterTitle, chapters.body AS chapterBody 
-        FROM books 
-        LEFT JOIN chapters ON books.id = chapters.book_id 
-        WHERE books.id = ?
-    `, [bookId], (err, row) => {
-        if (err || !row) return res.status(404).json({ error: "Secure clearance matching identity fault." });
-        res.json(row);
+
+    const { data: book, error: bookErr } = await supabase
+        .from('books')
+        .select('*')
+        .eq('id', bookId)
+        .single();
+
+    if (bookErr || !book) return res.status(404).json({ error: "Secure clearance matching identity fault." });
+
+    const { data: chapter } = await supabase
+        .from('chapters')
+        .select('title, body')
+        .eq('book_id', bookId)
+        .maybeSingle();
+
+    res.json({
+        ...book,
+        chapterTitle: chapter ? chapter.title : null,
+        chapterBody: chapter ? chapter.body : null
     });
 });
 
 // ==========================================
 //    WEB BOOK STUDIO CHAPTER MANAGEMENT
 // ==========================================
-app.get('/api/books/my-web-books', requireLogin, (req, res) => {
-    const query = `SELECT * FROM books WHERE user_id = ? AND mode = 'html'`;
-    db.all(query, [req.session.user.id], (err, rows) => {
-        if (err) return res.status(500).json({ error: 'Database query failure.' });
-        res.json(rows);
-    });
+
+app.get('/api/books/my-web-books', requireLogin, async (req, res) => {
+    const { data, error } = await supabase
+        .from('books')
+        .select('*')
+        .eq('user_id', req.session.user.id)
+        .eq('mode', 'html');
+
+    if (error) return res.status(500).json({ error: 'Database query failure.' });
+    res.json(data);
 });
 
-app.get('/api/books/:bookId/chapters', requireLogin, (req, res) => {
+app.get('/api/books/:bookId/chapters', requireLogin, async (req, res) => {
     const { bookId } = req.params;
 
-    db.get(`SELECT id FROM books WHERE id = ? AND user_id = ?`, [bookId, req.session.user.id], (err, book) => {
-        if (err || !book) return res.status(403).json({ error: 'Forbidden or book not found.' });
+    const { data: book, error: bookErr } = await supabase
+        .from('books')
+        .select('id')
+        .eq('id', bookId)
+        .eq('user_id', req.session.user.id)
+        .single();
 
-        db.all(`SELECT * FROM chapters WHERE book_id = ? ORDER BY id ASC`, [bookId], (err, chapters) => {
-            if (err) return res.status(500).json({ error: 'Failed to retrieve chapters.' });
-            res.json(chapters);
-        });
-    });
+    if (bookErr || !book) return res.status(403).json({ error: 'Forbidden or book not found.' });
+
+    const { data: chapters, error: chapErr } = await supabase
+        .from('chapters')
+        .select('*')
+        .eq('book_id', bookId)
+        .order('id', { ascending: true });
+
+    if (chapErr) return res.status(500).json({ error: 'Failed to retrieve chapters.' });
+    res.json(chapters);
 });
 
-app.post('/api/books/chapters', requireLogin, (req, res) => {
+app.post('/api/books/chapters', requireLogin, async (req, res) => {
     const { bookId, title, content } = req.body;
 
     if (!bookId || !title || !content) {
         return res.status(400).json({ error: 'Missing required chapter parameters.' });
     }
 
-    db.get(`SELECT id FROM books WHERE id = ? AND user_id = ?`, [bookId, req.session.user.id], (err, book) => {
-        if (err || !book) return res.status(403).json({ error: 'Unauthorized book pipeline action.' });
+    const { data: book, error: bookErr } = await supabase
+        .from('books')
+        .select('id')
+        .eq('id', bookId)
+        .eq('user_id', req.session.user.id)
+        .single();
 
-        const insertQuery = `INSERT INTO chapters (book_id, title, body) VALUES (?, ?, ?)`;
-        db.run(insertQuery, [bookId, title, content], function(err) {
-            if (err) return res.status(500).json({ error: 'Failed to write chapter to database.' });
-            res.json({ success: true, chapterId: this.lastID });
-        });
-    });
+    if (bookErr || !book) return res.status(403).json({ error: 'Unauthorized book pipeline action.' });
+
+    const { data: chapter, error: insertErr } = await supabase
+        .from('chapters')
+        .insert([{ book_id: bookId, title, body: content }])
+        .select()
+        .single();
+
+    if (insertErr) return res.status(500).json({ error: 'Failed to write chapter to database.' });
+    res.json({ success: true, chapterId: chapter.id });
 });
 
 // ==========================================
 //        BOOK MANAGEMENT (EDIT & DELETE)
 // ==========================================
-app.put('/api/books/:id', requireLogin, (req, res) => {
+
+app.put('/api/books/:id', requireLogin, async (req, res) => {
     const bookId = req.params.id;
     const { description, price } = req.body;
 
@@ -485,64 +543,79 @@ app.put('/api/books/:id', requireLogin, (req, res) => {
         return res.status(400).json({ error: 'Missing updated parameters.' });
     }
 
-    const updateQuery = `UPDATE books SET description = ?, price = ? WHERE id = ? AND user_id = ?`;
-    db.run(updateQuery, [description, parseFloat(price), bookId, req.session.user.id], function(err) {
-        if (err) return res.status(500).json({ error: 'Failed to update book profile.' });
-        if (this.changes === 0) return res.status(404).json({ error: 'Book not found or unauthorized.' });
-        res.json({ success: true, message: 'Book updated successfully!' });
-    });
+    const { data, error } = await supabase
+        .from('books')
+        .update({ description, price: parseFloat(price) })
+        .eq('id', bookId)
+        .eq('user_id', req.session.user.id)
+        .select();
+
+    if (error) return res.status(500).json({ error: 'Failed to update book profile.' });
+    if (!data || data.length === 0) return res.status(404).json({ error: 'Book not found or unauthorized.' });
+
+    res.json({ success: true, message: 'Book updated successfully!' });
 });
 
-app.delete('/api/books/:id', requireLogin, (req, res) => {
+app.delete('/api/books/:id', requireLogin, async (req, res) => {
     const bookId = req.params.id;
-    const deleteQuery = `DELETE FROM books WHERE id = ? AND user_id = ?`;
 
-    db.run(deleteQuery, [bookId, req.session.user.id], function(err) {
-        if (err) return res.status(500).json({ error: 'Failed to purge book from database.' });
-        if (this.changes === 0) return res.status(404).json({ error: 'Book not found or unauthorized.' });
-        res.json({ success: true, message: 'Book permanently deleted.' });
-    });
+    const { data, error } = await supabase
+        .from('books')
+        .delete()
+        .eq('id', bookId)
+        .eq('user_id', req.session.user.id)
+        .select();
+
+    if (error) return res.status(500).json({ error: 'Failed to purge book from database.' });
+    if (!data || data.length === 0) return res.status(404).json({ error: 'Book not found or unauthorized.' });
+
+    res.json({ success: true, message: 'Book permanently deleted.' });
 });
 
 // ==========================================
-//             PAYMENT SUBSYSTEM INTEGRATION
+//             PAYMENT SUBSYSTEM
 // ==========================================
-app.post('/api/payments/initiate', (req, res) => {
+
+app.post('/api/payments/initiate', async (req, res) => {
     const { bookId, email } = req.body;
 
-    db.get(`SELECT * FROM books WHERE id = ?`, [bookId], async (err, book) => {
-        if (err || !book) return res.status(404).json({ error: "Targeted book item profile could not be verified." });
+    const { data: book, error } = await supabase
+        .from('books')
+        .select('*')
+        .eq('id', bookId)
+        .single();
 
-        if (book.status === 'offline') {
-            return res.status(403).json({ error: "This book has been taken offline and cannot be purchased." });
+    if (error || !book) return res.status(404).json({ error: "Targeted book item profile could not be verified." });
+
+    if (book.status === 'offline') {
+        return res.status(403).json({ error: "This book has been taken offline and cannot be purchased." });
+    }
+
+    const validPrice = parseFloat(book.price);
+    if (isNaN(validPrice) || validPrice <= 0) return res.status(400).json({ error: "Invalid book price encountered for billing pipeline." });
+
+    const cleanTitle = (book.title || "Digital Book Purchase").replace(/[^\w\s]/gi, '');
+
+    let payment = paynow.createPayment(`INV${book.id}${Date.now()}`, email); 
+    payment.add(cleanTitle, validPrice); 
+
+    try {
+        paynow.resultUrl = `${process.env.SITE_URL || 'http://localhost:3000'}/api/payments/callback`; 
+        paynow.returnUrl = `${process.env.SITE_URL || 'http://localhost:3000'}/?status=success&bookId=${book.id}`; 
+
+        let response = await paynow.send(payment);
+
+        if (response && response.success) {
+            res.json({ success: true, redirectUrl: response.redirectUrl, pollUrl: response.pollUrl }); 
+        } else {
+            const paynowError = response ? response.error : "Unknown connection timeout.";
+            console.error(">>> [PAYNOW REJECTION]:", paynowError);
+            res.status(400).json({ error: `Paynow Gateway Rejected Request: ${paynowError}` });
         }
-
-        const validPrice = parseFloat(book.price);
-        if (isNaN(validPrice) || validPrice <= 0) return res.status(400).json({ error: "Invalid book price encountered for billing pipeline." });
-
-        const cleanTitle = (book.title || "Digital Book Purchase").replace(/[^\w\s]/gi, '');
-
-        let payment = paynow.createPayment(`INV${book.id}${Date.now()}`, email); 
-        payment.add(cleanTitle, validPrice); 
-
-        try {
-            paynow.resultUrl = `${process.env.SITE_URL || 'http://localhost:3000'}/api/payments/callback`; 
-            paynow.returnUrl = `${process.env.SITE_URL || 'http://localhost:3000'}/?status=success&bookId=${book.id}`; 
-
-            let response = await paynow.send(payment);
-
-            if (response && response.success) {
-                res.json({ success: true, redirectUrl: response.redirectUrl, pollUrl: response.pollUrl }); 
-            } else {
-                const paynowError = response ? response.error : "Unknown connection timeout.";
-                console.error(">>> [PAYNOW REJECTION]:", paynowError);
-                res.status(400).json({ error: `Paynow Gateway Rejected Request: ${paynowError}` });
-            }
-        } catch (error) {
-            console.error(">>> [PAYNOW EXCEPTION CRASH]:", error);
-            res.status(500).json({ error: "Internal payment processing engine crash fault." });
-        }
-    });
+    } catch (error) {
+        console.error(">>> [PAYNOW EXCEPTION CRASH]:", error);
+        res.status(500).json({ error: "Internal payment processing engine crash fault." });
+    }
 });
 
 app.post('/api/payments/callback', (req, res) => {
@@ -551,73 +624,92 @@ app.post('/api/payments/callback', (req, res) => {
 });
 
 // SANDBOX BUY ROUTE
-app.post('/api/books/:id/buy', requireLogin, (req, res) => {
+app.post('/api/books/:id/buy', requireLogin, async (req, res) => {
     const bookId = req.params.id;
     const buyerId = req.session.user.id;
 
-    db.get('SELECT price, user_id, status FROM books WHERE id = ?', [bookId], (err, book) => {
-        if (err || !book) return res.status(404).json({ error: 'Book not found.' });
+    const { data: book, error: bookErr } = await supabase
+        .from('books')
+        .select('price, user_id, status')
+        .eq('id', bookId)
+        .single();
 
-        if (book.status === 'offline') {
-            return res.status(403).json({ error: 'This title is currently offline and unavailable for purchase.' });
-        }
+    if (bookErr || !book) return res.status(404).json({ error: 'Book not found.' });
 
-        if (book.user_id === buyerId) {
-            return res.status(400).json({ error: 'You cannot purchase your own book!' });
-        }
+    if (book.status === 'offline') {
+        return res.status(403).json({ error: 'This title is currently offline and unavailable for purchase.' });
+    }
 
-        db.get('SELECT id FROM purchases WHERE book_id = ? AND buyer_id = ?', [bookId, buyerId], (err, alreadyBought) => {
-            if (alreadyBought) return res.status(400).json({ error: 'You already own this book!' });
+    if (book.user_id === buyerId) {
+        return res.status(400).json({ error: 'You cannot purchase your own book!' });
+    }
 
-            db.run('INSERT INTO purchases (book_id, buyer_id, price) VALUES (?, ?, ?)', [bookId, buyerId, book.price], function(err) {
-                if (err) return res.status(500).json({ error: 'Purchase processing failed.' });
-                res.json({ success: true, message: 'Book purchased successfully!' });
-            });
-        });
-    });
+    const { data: alreadyBought } = await supabase
+        .from('purchases')
+        .select('id')
+        .eq('book_id', bookId)
+        .eq('buyer_id', buyerId)
+        .maybeSingle();
+
+    if (alreadyBought) return res.status(400).json({ error: 'You already own this book!' });
+
+    const { error: insertErr } = await supabase
+        .from('purchases')
+        .insert([{ book_id: bookId, buyer_id: buyerId, price: book.price }]);
+
+    if (insertErr) return res.status(500).json({ error: 'Purchase processing failed.' });
+    res.json({ success: true, message: 'Book purchased successfully!' });
 });
 
 // ==========================================
 //        SALES & ROYALTIES ANALYTICS
 // ==========================================
-app.get('/api/analytics/sales', requireLogin, (req, res) => {
+
+app.get('/api/analytics/sales', requireLogin, async (req, res) => {
     const authorId = req.session.user.id;
 
-    const query = `
-        SELECT 
-            p.id as purchase_id,
-            p.price as sale_price,
-            p.created_at as sale_date,
-            b.title as book_title,
-            u.username as buyer_name
-        FROM purchases p
-        JOIN books b ON p.book_id = b.id
-        JOIN users u ON p.buyer_id = u.id
-        WHERE b.user_id = ?
-        ORDER BY p.created_at DESC
-    `;
+    const { data: purchases, error } = await supabase
+        .from('purchases')
+        .select(`
+            id,
+            price,
+            created_at,
+            books!inner(title, user_id),
+            users!purchases_buyer_id_fkey(username)
+        `)
+        .eq('books.user_id', authorId)
+        .order('created_at', { ascending: false });
 
-    db.all(query, [authorId], (err, rows) => {
-        if (err) return res.status(500).json({ error: 'Failed to retrieve sales data.' });
+    if (error) return res.status(500).json({ error: 'Failed to retrieve sales data.' });
 
-        const totalSalesCount = rows.length;
-        const totalEarnings = rows.reduce((sum, row) => sum + row.sale_price, 0);
+    const totalSalesCount = purchases.length;
+    const totalEarnings = purchases.reduce((sum, row) => sum + Number(row.price), 0);
 
-        const bookBreakdown = {};
-        rows.forEach(row => {
-            if (!bookBreakdown[row.book_title]) {
-                bookBreakdown[row.book_title] = { sales: 0, earnings: 0 };
-            }
-            bookBreakdown[row.book_title].sales += 1;
-            bookBreakdown[row.book_title].earnings += row.sale_price;
-        });
+    const bookBreakdown = {};
+    const recentTransactions = purchases.map(p => {
+        const title = p.books ? p.books.title : 'Unknown Title';
+        const price = Number(p.price);
 
-        res.json({
-            totalSalesCount,
-            totalEarnings,
-            recentTransactions: rows,
-            bookBreakdown
-        });
+        if (!bookBreakdown[title]) {
+            bookBreakdown[title] = { sales: 0, earnings: 0 };
+        }
+        bookBreakdown[title].sales += 1;
+        bookBreakdown[title].earnings += price;
+
+        return {
+            purchase_id: p.id,
+            sale_price: price,
+            sale_date: p.created_at,
+            book_title: title,
+            buyer_name: p.users ? p.users.username : 'Unknown'
+        };
+    });
+
+    res.json({
+        totalSalesCount,
+        totalEarnings,
+        recentTransactions,
+        bookBreakdown
     });
 });
 
@@ -625,49 +717,63 @@ app.get('/api/analytics/sales', requireLogin, (req, res) => {
 //          ADMINISTRATOR MODERATION
 // ==========================================
 
-// 1. Get all books across the platform for Admin Moderation
-app.get('/api/admin/books', requireAdmin, (req, res) => {
-    const sql = `
-        SELECT books.id, books.title, books.author, COALESCE(books.status, 'active') AS status, books.created_at, users.email AS author_email
-        FROM books
-        LEFT JOIN users ON books.user_id = users.id
-        ORDER BY books.id DESC
-    `;
-    db.all(sql, [], (err, rows) => {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ books: rows });
-    });
+app.get('/api/admin/books', requireAdmin, async (req, res) => {
+    const { data: books, error } = await supabase
+        .from('books')
+        .select(`
+            id,
+            title,
+            author,
+            status,
+            created_at,
+            users(email)
+        `)
+        .order('id', { ascending: false });
+
+    if (error) return res.status(500).json({ error: error.message });
+
+    const formattedBooks = books.map(b => ({
+        id: b.id,
+        title: b.title,
+        author: b.author,
+        status: b.status || 'active',
+        created_at: b.created_at,
+        author_email: b.users ? b.users.email : null
+    }));
+
+    res.json({ books: formattedBooks });
 });
 
-// 2. Admin Toggle Book Status (Take Offline / Restore Online)
-app.post('/api/admin/books/:id/toggle-status', requireAdmin, (req, res) => {
+app.post('/api/admin/books/:id/toggle-status', requireAdmin, async (req, res) => {
     const bookId = req.params.id;
-    const { status } = req.body; // 'active' or 'offline'
+    const { status } = req.body;
 
     if (!['active', 'offline'].includes(status)) {
         return res.status(400).json({ error: "Invalid status value provided." });
     }
 
-    db.run(`UPDATE books SET status = ? WHERE id = ?`, [status, bookId], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, message: `Book status changed to '${status}'.` });
-    });
+    const { error } = await supabase
+        .from('books')
+        .update({ status })
+        .eq('id', bookId);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, message: `Book status changed to '${status}'.` });
 });
 
-// 3. Admin Broadcast System Update Announcement
-app.post('/api/admin/broadcast-notification', requireAdmin, (req, res) => {
+app.post('/api/admin/broadcast-notification', requireAdmin, async (req, res) => {
     const { title, message, targetUserId } = req.body;
 
     if (!title || !message) {
         return res.status(400).json({ error: "Announcement title and message are required." });
     }
 
-    // targetUserId = null means broadcast to all users
-    const sql = `INSERT INTO notifications (user_id, title, message) VALUES (?, ?, ?)`;
-    db.run(sql, [targetUserId || null, title, message], function(err) {
-        if (err) return res.status(500).json({ error: err.message });
-        res.json({ success: true, message: "System update broadcasted successfully!" });
-    });
+    const { error } = await supabase
+        .from('notifications')
+        .insert([{ user_id: targetUserId || null, title, message }]);
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json({ success: true, message: "System update broadcasted successfully!" });
 });
 
 // ==========================================

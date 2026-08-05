@@ -2,22 +2,22 @@
   "name": "page24",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
+    "start": "node server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@supabase/supabase-js": "2.48.0",
     "axios": "^1.18.1",
     "bcryptjs": "^3.0.3",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-session": "^1.19.0",
-    "mongoose": "^9.7.4",
     "multer": "^2.2.0",
-    "paynow": "^2.2.2",
-    "sqlite3": "^6.0.1"
+    "paynow": "^2.2.2"
   }
 }

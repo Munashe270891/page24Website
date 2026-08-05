@@ -1,0 +1,22 @@
+{
+  "short_name": "Page 24",
+  "name": "Page 24 Reader",
+  "icons": [
+    {
+      "src": "/assets/icons/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/assets/icons/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/read",
+  "background_color": "#f4f3ef",
+  "theme_color": "#1b3d2b",
+  "display": "standalone",
+  "orientation": "portrait",
+  "scope": "/"
+}
