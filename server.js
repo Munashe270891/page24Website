@@ -392,6 +392,10 @@ app.get('/api/books/my-books', requireLogin, async (req, res) => {
 app.post('/api/books/publish', requireLogin, dualUploadFields, async (req, res) => {
     const userId = req.session.user.id;
 
+    /* 
+    ===============================================================
+    KYC Verification Check (DISABLED)
+    ===============================================================
     const { data: user, error: userErr } = await supabase
         .from('users')
         .select('profile_complete')
@@ -403,6 +407,8 @@ app.post('/api/books/publish', requireLogin, dualUploadFields, async (req, res) 
             error: "KYC Verification Required: You must complete your 'My Author Profile' details before publishing titles." 
         });
     }
+    ===============================================================
+    */
 
     const { title, description, price, mode, allowDownload, chapterTitle, chapterBody, agreeCopyright, agreeTerms } = req.body;
 
