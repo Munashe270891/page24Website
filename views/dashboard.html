@@ -126,20 +126,20 @@
                         <label class="input-label">PUBLISH FORMAT</label>
                         <div class="mode-select-row" style="margin-bottom: 15px;">
                             <label class="radio-option" style="display: block; margin-bottom: 10px; font-weight: bold;">
-                                <input type="radio" name="upload-mode" value="pdf" checked> 📁 Upload finished PDF manuscript
+                                <input type="radio" name="upload-mode" value="pdf" id="format-pdf" checked> 📁 Upload finished PDF manuscript
                             </label>
                             <label class="radio-option" style="display: block; font-weight: bold;">
-                                <input type="radio" name="upload-mode" value="html"> ✍️ Compose / Paste chapters directly online (No PDF required!)
+                                <input type="radio" name="upload-mode" value="html" id="format-html"> ✍️ Compose / Paste chapters directly online (No PDF required!)
                             </label>
                         </div>
 
-                        <!-- FIXED: SECURITY & DISTRIBUTION RULES DROPDOWN -->
+                        <!-- UPDATED: SECURITY & DISTRIBUTION RULES DROPDOWN -->
                         <div class="security-rules-group">
                             <label for="book-download-rule" class="input-label">SECURITY & DISTRIBUTION RULES</label>
                             <div class="select-wrapper">
-                                <select id="book-download-rule" class="styled-select" required>
-                                    <option value="0">🔒 Secure Anti-Piracy Streaming (Read in Browser/App Only)</option>
-                                    <option value="1">🔓 Open Distribution (Allow Readers to Download Physical PDF file)</option>
+                                <select id="book-download-rule" name="downloadRule" class="styled-select" required>
+                                    <option value="0" selected>🔒 Secure Anti-Piracy Streaming (Read in App Only)</option>
+                                    <option value="1">📂 Open Distribution (Allow PDF Download to Reader Device)</option>
                                 </select>
                             </div>
                         </div>
@@ -153,7 +153,7 @@
                         <!-- Conditional Input field 2: For Web Book Authors -->
                         <div id="html-input-group" class="conditional-group hidden">
                             <div style="background-color: #fcf8e3; border-left: 4px solid #f0ad4e; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
-                                <strong>💡 Web Book Tip:</strong> You can write your first chapter right now! Once saved, you can add and manage more chapters inside the <strong>Write Online (Web Studio)</strong> menu.
+                                <strong>💡 Web Book Tip:</strong> You can write your first chapter right now! Once saved, you can add and manage more chapters inside the <strong>Write Online (Web Studio)</strong> menu. Web books are strictly protected for in-app reading only.
                             </div>
                             <label class="input-label">FIRST CHAPTER TITLE</label>
                             <input type="text" id="initial-chapter-title" placeholder="e.g. Chapter 1: The Journey Begins">
@@ -162,7 +162,7 @@
                             <textarea id="initial-chapter-body" rows="10" placeholder="Paste or type your chapter text here..."></textarea>
                         </div>
 
-                        <!-- FIXED: COPYRIGHT & LEGAL COMPLIANCE AFFIRMATION -->
+                        <!-- COPYRIGHT & LEGAL COMPLIANCE AFFIRMATION -->
                         <div class="legal-declaration-card">
                             <h4 style="color: var(--primary-green, #1e4d2b); margin-bottom: 8px;">⚖️ Legal & Copyright Declaration</h4>
                             <p class="legal-subtitle" style="font-size: 11px; color: #555; margin-bottom: 12px; line-height: 1.4;">
@@ -488,6 +488,33 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // PUBLISH FORMAT & SECURITY RULE DISABLING LOGIC
+            const pdfRadio = document.getElementById('format-pdf');
+            const htmlRadio = document.getElementById('format-html');
+            const ruleSelect = document.getElementById('book-download-rule');
+
+            function handleFormatChange() {
+                if (htmlRadio && htmlRadio.checked) {
+                    // Web/HTML Books force App-Only streaming
+                    ruleSelect.value = "0";
+                    if (ruleSelect.options[1]) {
+                        ruleSelect.options[1].disabled = true;
+                    }
+                } else if (pdfRadio && pdfRadio.checked) {
+                    // PDF Books can toggle Open Distribution
+                    if (ruleSelect.options[1]) {
+                        ruleSelect.options[1].disabled = false;
+                    }
+                }
+            }
+
+            if (pdfRadio && htmlRadio && ruleSelect) {
+                pdfRadio.addEventListener('change', handleFormatChange);
+                htmlRadio.addEventListener('change', handleFormatChange);
+                handleFormatChange(); // Run once on page load
+            }
+
+            // BROADCAST FORM LISTENER
             const broadcastForm = document.getElementById('broadcast-form');
             if (broadcastForm) {
                 broadcastForm.addEventListener('submit', function(e) {
