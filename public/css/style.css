@@ -95,7 +95,7 @@ nav a {
     flex-direction: column;
 }
 
- .book-cover-placeholder, .book-card img {
+.book-cover-placeholder, .book-card img {
     height: 240px;
     background-color: #d1cdc4;
     border-radius: 4px;
@@ -106,8 +106,6 @@ nav a {
     margin-bottom: 14px;
     border: 1px solid #e2dfd7;
 }
-
-
 
 .book-card h3 {
     margin: 0 0 6px 0;
@@ -209,8 +207,30 @@ nav a {
     margin-bottom: 20px;
 }
 
-/* Mobile Adjustments */
-@media (max-width: 600px) {
+/* ========================================== */
+/* MOBILE RESPONSIVE MEDIA QUERIES            */
+/* ========================================== */
+
+@media (max-width: 650px) {
+    header {
+        flex-direction: column;
+        gap: 12px;
+        padding: 15px 5%;
+        text-align: center;
+    }
+
+    nav {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 10px;
+    }
+
+    nav a {
+        margin-left: 0;
+        font-size: 13px;
+    }
+
     .house-ad {
         flex-direction: column;
         gap: 10px;
@@ -218,5 +238,13 @@ nav a {
     
     .ad-content {
         padding: 12px;
+    }
+
+    .hero h1 {
+        font-size: 24px;
+    }
+
+    .hero p {
+        font-size: 14px;
     }
 }
