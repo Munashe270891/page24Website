@@ -131,9 +131,12 @@
                             <label class="radio-option" style="display: block; font-weight: bold;">
                                 <input type="radio" name="upload-mode" value="html"> ✍️ Compose / Paste chapters directly online (No PDF required!)
                             </label>
-                            
-                            <label class="input-label" style="margin-top: 20px; display: block;">SECURITY & DISTRIBUTION RULES</label>
-                            <select id="book-download-rule" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
+                        </div>
+
+                        <!-- SECURITY & DISTRIBUTION RULES DROPDOWN -->
+                        <div class="security-rules-group">
+                            <label for="book-download-rule" class="input-label">SECURITY & DISTRIBUTION RULES</label>
+                            <select id="book-download-rule" class="styled-select" required>
                                 <option value="0">🔒 Secure Anti-Piracy Streaming (Read in Browser/App Only)</option>
                                 <option value="1">🔓 Open Distribution (Allow Readers to Download Physical PDF file)</option>
                             </select>
@@ -158,21 +161,23 @@
                         </div>
 
                         <!-- COPYRIGHT & LEGAL COMPLIANCE AFFIRMATION -->
-                        <div style="background: #f8f9fa; border: 1px solid var(--border-tan, #ccc); padding: 15px; border-radius: 6px; margin: 20px 0;">
+                        <div class="legal-declaration-card">
                             <h4 style="color: var(--primary-green, #1e4d2b); margin-bottom: 8px;">⚖️ Legal & Copyright Declaration</h4>
-                            <p style="font-size: 11px; color: #555; margin-bottom: 12px; line-height: 1.4;">
+                            <p class="legal-subtitle" style="font-size: 11px; color: #555; margin-bottom: 12px; line-height: 1.4;">
                                 Pursuant to the <strong>Zimbabwe Copyright and Neighbouring Rights Act [Chapter 26:05]</strong>, you must certify that you possess lawful distribution rights for this work.
                             </p>
 
-                            <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 12px; margin-bottom: 10px; cursor: pointer;">
-                                <input type="checkbox" id="copyright-ownership-check" required style="margin-top: 2px;">
-                                <span>I certify that I am the original author or authorized copyright holder of this content, or that it is strictly in the public domain.</span>
-                            </label>
+                            <div class="checkbox-group">
+                                <label class="custom-checkbox-label">
+                                    <input type="checkbox" id="copyright-ownership-check" required>
+                                    <span class="checkbox-text">I certify that I am the original author or authorized copyright holder of this content, or that it is strictly in the public domain.</span>
+                                </label>
 
-                            <label style="display: flex; gap: 10px; align-items: flex-start; font-size: 12px; cursor: pointer;">
-                                <input type="checkbox" id="copyright-terms-check" required style="margin-top: 2px;">
-                                <span>I agree to Page 24 Terms of Service and understand that submitting pirated or fraudulent works will result in immediate termination, forfeiture of royalties, and full personal legal indemnity under Zimbabwean law.</span>
-                            </label>
+                                <label class="custom-checkbox-label">
+                                    <input type="checkbox" id="copyright-terms-check" required>
+                                    <span class="checkbox-text">I agree to Page 24 Terms of Service and understand that submitting pirated or fraudulent works will result in immediate termination, forfeiture of royalties, and full personal legal indemnity under Zimbabwean law.</span>
+                                </label>
+                            </div>
                         </div>
 
                         <button type="submit" class="save-master-btn">Save Content Profile</button>
