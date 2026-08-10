@@ -65,7 +65,7 @@ document.addEventListener('DOMContentLoaded', () => {
         .catch(err => console.error("Failed to load user info:", err));
 
     loadDashboardBooks();
-    loadNotifications(); // Initializing notification center load
+    loadNotifications();
 
     // -------------------------------------------------------------
     // 3. LOAD AUTHOR'S BOOKS (MY BOOKS DASHBOARD)
@@ -79,26 +79,27 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(books => {
                 booksContainer.innerHTML = '';
 
-                if (books.length === 0) {
-                    booksContainer.innerHTML = '<p style="color: var(--text-dark); opacity: 0.6;">You have not published any books yet.</p>';
+                if (!books || books.length === 0) {
+                    booksContainer.innerHTML = '<p style="color: var(--text-dark, #222); opacity: 0.6;">You have not published any books yet.</p>';
                     return;
                 }
 
                 books.forEach(book => {
                     const card = document.createElement('div');
                     card.className = 'book-card';
-                    card.style.cssText = "background: white; border: 1px solid var(--border-tan); border-radius: 8px; padding: 15px; margin-bottom: 15px; display: flex; gap: 15px; align-items: center;";
+                    card.style.cssText = "background: white; border: 1px solid var(--border-tan, #ccc); border-radius: 8px; padding: 15px; margin-bottom: 15px; display: flex; gap: 15px; align-items: center;";
 
+                    const rawPrice = parseFloat(book.price) || 0;
                     card.innerHTML = `
                         <img src="${book.coverImage}" alt="${book.title}" style="width: 70px; height: 100px; object-fit: cover; border-radius: 4px;">
                         <div style="flex-grow: 1;">
-                            <h3 style="margin: 0 0 5px 0; color: var(--primary-green);">${book.title}</h3>
+                            <h3 style="margin: 0 0 5px 0; color: var(--primary-green, #1e4d2b);">${book.title}</h3>
                             <p style="font-size: 13px; color: #666; margin: 0 0 5px 0;">${book.description ? book.description.substring(0, 80) + '...' : ''}</p>
-                            <span style="font-weight: bold; color: #27ae60;">$${parseFloat(book.price).toFixed(2)} USD</span> | 
+                            <span style="font-weight: bold; color: #27ae60;">$${rawPrice.toFixed(2)} USD</span> | 
                             <span style="font-size: 12px; color: #888; text-transform: uppercase;">Format: ${book.mode}</span>
                         </div>
                         <div style="display: flex; gap: 8px;">
-                            <button onclick="openEditModal(${book.id}, '${escapeHtml(book.description || '')}', ${book.price})" style="background: #2980b9; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Edit</button>
+                            <button onclick="openEditModal(${book.id}, '${escapeHtml(book.description || '')}', ${rawPrice})" style="background: #2980b9; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Edit</button>
                             <button onclick="deleteBook(${book.id})" style="background: #c0392b; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Delete</button>
                         </div>
                     `;
@@ -110,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper to safely pass strings to inline onclick functions
     window.escapeHtml = function(text) {
-        return text.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+        return text ? text.replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
     };
 
     // -------------------------------------------------------------
@@ -123,37 +124,43 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const formData = new FormData();
             
-            const titleInput = publishForm.querySelector('input[placeholder="Enter Book Title"]');
-            const priceInput = publishForm.querySelector('input[type="number"]');
+            const titleInput = document.getElementById('book-title');
+            const priceInput = document.getElementById('book-price');
+            const descInput = document.getElementById('book-description');
             
-            formData.append('title', titleInput ? titleInput.value : '');
-            formData.append('description', document.getElementById('book-description').value);
+            formData.append('title', titleInput ? titleInput.value.trim() : '');
+            formData.append('description', descInput ? descInput.value.trim() : '');
             formData.append('price', priceInput ? priceInput.value : '0');
 
-            const mode = document.querySelector('input[name="upload-mode"]:checked').value;
+            const selectedRadio = document.querySelector('input[name="upload-mode"]:checked');
+            const mode = selectedRadio ? selectedRadio.value : 'pdf';
             formData.append('mode', mode);
 
-            const downloadRule = document.getElementById('book-download-rule').value;
-            formData.append('allowDownload', downloadRule);
+            const downloadRule = document.getElementById('book-download-rule');
+            formData.append('allowDownload', downloadRule ? downloadRule.value : '0');
 
-            const coverFile = document.getElementById('cover-upload').files[0];
-            if (coverFile) formData.append('coverImage', coverFile);
-
-            if (mode === 'pdf') {
-                const pdfFile = document.getElementById('pdf-upload').files[0];
-                if (pdfFile) formData.append('pdfBook', pdfFile);
-            } else {
-                const chapterTitle = htmlGroup.querySelector('input[type="text"]').value;
-                const chapterBody = htmlGroup.querySelector('textarea').value;
-                formData.append('chapterTitle', chapterTitle);
-                formData.append('chapterBody', chapterBody);
+            const coverFileInput = document.getElementById('cover-upload');
+            if (coverFileInput && coverFileInput.files[0]) {
+                formData.append('coverImage', coverFileInput.files[0]);
             }
 
-            const agreeCopyright = document.getElementById('copyright-ownership-check').checked;
-            const agreeTerms = document.getElementById('copyright-terms-check').checked;
+            if (mode === 'pdf') {
+                const pdfFileInput = document.getElementById('pdf-upload');
+                if (pdfFileInput && pdfFileInput.files[0]) {
+                    formData.append('pdfBook', pdfFileInput.files[0]);
+                }
+            } else {
+                const chapterTitleInput = document.getElementById('initial-chapter-title');
+                const chapterBodyInput = document.getElementById('initial-chapter-body');
+                formData.append('chapterTitle', chapterTitleInput ? chapterTitleInput.value.trim() : '');
+                formData.append('chapterBody', chapterBodyInput ? chapterBodyInput.value.trim() : '');
+            }
 
-            formData.append('agreeCopyright', agreeCopyright ? '1' : '');
-            formData.append('agreeTerms', agreeTerms ? '1' : '');
+            const copyrightCheck = document.getElementById('copyright-ownership-check');
+            const termsCheck = document.getElementById('copyright-terms-check');
+
+            formData.append('agreeCopyright', copyrightCheck && copyrightCheck.checked ? '1' : '');
+            formData.append('agreeTerms', termsCheck && termsCheck.checked ? '1' : '');
 
             fetch('/api/books/publish', {
                 method: 'POST',
@@ -172,7 +179,7 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch(err => {
                 console.error(err);
-                alert("⚠️ Publishing failed. Please try again.");
+                alert("⚠️ Publishing failed. Please check network connection and try again.");
             });
         });
     }
@@ -186,6 +193,7 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch('/api/author/profile')
             .then(res => res.json())
             .then(data => {
+                if (!data) return;
                 if (data.legal_name) document.getElementById('author-legal-name').value = data.legal_name;
                 if (data.id_number) document.getElementById('author-id-number').value = data.id_number;
                 if (data.phone) document.getElementById('author-phone').value = data.phone;
@@ -196,7 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.isbn) document.getElementById('author-isbn').value = data.isbn;
 
                 if (data.id_doc_path) {
-                    document.getElementById('author-id-upload').removeAttribute('required');
+                    const idUpload = document.getElementById('author-id-upload');
+                    if (idUpload) idUpload.removeAttribute('required');
                 }
             })
             .catch(err => console.error("Failed to load author profile:", err));
@@ -255,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(res => res.json())
             .then(books => {
                 studioBooksList.innerHTML = '';
-                if (books.length === 0) {
+                if (!books || books.length === 0) {
                     studioBooksList.innerHTML = '<p style="font-size: 13px; color: gray;">No web books found. Create one under "Create New Book" with HTML/Web option!</p>';
                     return;
                 }
@@ -263,7 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 books.forEach(book => {
                     const btn = document.createElement('button');
                     btn.className = 'studio-book-select-btn';
-                    btn.style.cssText = "width: 100%; text-align: left; padding: 10px; margin-bottom: 8px; border: 1px solid var(--border-tan); background: var(--bg-cream-light); border-radius: 4px; cursor: pointer;";
+                    btn.style.cssText = "width: 100%; text-align: left; padding: 10px; margin-bottom: 8px; border: 1px solid var(--border-tan, #ccc); background: var(--bg-cream-light, #fafafa); border-radius: 4px; cursor: pointer;";
                     btn.innerHTML = `<strong>${book.title}</strong>`;
                     btn.onclick = () => selectStudioBook(book);
                     studioBooksList.appendChild(btn);
@@ -286,8 +295,9 @@ document.addEventListener('DOMContentLoaded', () => {
         fetch(`/api/books/${bookId}/chapters`)
             .then(res => res.json())
             .then(chapters => {
+                if (!studioChaptersList) return;
                 studioChaptersList.innerHTML = '';
-                if (chapters.length === 0) {
+                if (!chapters || chapters.length === 0) {
                     studioChaptersList.innerHTML = '<p style="font-size: 12px; color: gray;">No chapters added yet.</p>';
                     return;
                 }
@@ -336,11 +346,13 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 const totalEarnings = document.getElementById('stats-total-earnings');
                 const totalSales = document.getElementById('stats-total-sales');
-                if (totalEarnings) totalEarnings.innerText = `$${parseFloat(data.totalEarnings || 0).toFixed(2)}`;
+                const earnedAmount = parseFloat(data.totalEarnings || 0).toFixed(2);
+
+                if (totalEarnings) totalEarnings.innerText = `$${earnedAmount}`;
                 if (totalSales) totalSales.innerText = data.totalSalesCount || 0;
 
                 const ecocashBal = document.getElementById('dashboard-ecocash-balance');
-                if (ecocashBal) ecocashBal.innerText = `$${parseFloat(data.totalEarnings || 0).toFixed(2)} USD`;
+                if (ecocashBal) ecocashBal.innerText = `$${earnedAmount} USD`;
 
                 const breakdownList = document.getElementById('sales-breakdown-list');
                 if (breakdownList) {
@@ -351,7 +363,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         for (const [title, stats] of Object.entries(data.bookBreakdown)) {
                             const row = document.createElement('div');
                             row.style.cssText = "display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding-bottom: 8px; font-size: 13px;";
-                            row.innerHTML = `<span><strong>${title}</strong> (${stats.sales} sold)</span><strong style="color: var(--primary-green);">$${stats.earnings.toFixed(2)}</strong>`;
+                            row.innerHTML = `<span><strong>${title}</strong> (${stats.sales} sold)</span><strong style="color: var(--primary-green, #1e4d2b);">$${stats.earnings.toFixed(2)}</strong>`;
                             breakdownList.appendChild(row);
                         }
                     }
@@ -366,7 +378,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         data.recentTransactions.forEach(tx => {
                             const row = document.createElement('div');
                             row.style.cssText = "background: #f8f9fa; border: 1px solid #eee; padding: 10px; border-radius: 4px; font-size: 12px;";
-                            row.innerHTML = `<strong>${tx.buyer_name}</strong> purchased <em>${tx.book_title}</em> for <span style="color: var(--primary-green); font-weight: bold;">$${tx.sale_price.toFixed(2)}</span> on ${new Date(tx.sale_date).toLocaleDateString()}`;
+                            row.innerHTML = `<strong>${tx.buyer_name}</strong> purchased <em>${tx.book_title}</em> for <span style="color: var(--primary-green, #1e4d2b); font-weight: bold;">$${parseFloat(tx.sale_price).toFixed(2)}</span> on ${new Date(tx.sale_date).toLocaleDateString()}`;
                             txList.appendChild(row);
                         });
                     }
@@ -457,7 +469,7 @@ function loadNotifications() {
             }
 
             if (notifications.length === 0) {
-                listContainer.innerHTML = `<p style="text-align: center; color: var(--text-muted); font-size: 13px; padding: 15px 0;">No new notifications</p>`;
+                listContainer.innerHTML = `<p style="text-align: center; color: var(--text-muted, #777); font-size: 13px; padding: 15px 0;">No new notifications</p>`;
                 return;
             }
 
