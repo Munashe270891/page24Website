@@ -2,57 +2,85 @@ document.addEventListener('DOMContentLoaded', () => {
     // -------------------------------------------------------------
     // 1. NAVIGATION & VIEW SWITCHING LOGIC
     // -------------------------------------------------------------
-    const menuDash = document.getElementById('menu-dash');
-    const menuCreate = document.getElementById('menu-create');
-    const menuStudio = document.getElementById('menu-studio');
-    const menuSales = document.getElementById('menu-sales');
-    const menuProfile = document.getElementById('menu-profile');
-    const quickCreateTrigger = document.getElementById('quick-create-trigger');
+    const navItems = {
+        'dashboard-view': document.getElementById('menu-dash'),
+        'creator-view': document.getElementById('menu-create'),
+        'studio-view': document.getElementById('menu-studio'),
+        'sales-view': document.getElementById('menu-sales'),
+        'profile-view': document.getElementById('menu-profile'),
+        'admin-view': document.getElementById('menu-admin')
+    };
 
-    const dashboardView = document.getElementById('dashboard-view');
-    const creatorView = document.getElementById('creator-view');
-    const studioView = document.getElementById('studio-view');
-    const salesView = document.getElementById('sales-view');
-    const profileView = document.getElementById('profile-view');
+    window.switchTab = function(targetTabId, evt) {
+        if (evt) evt.preventDefault();
 
-    const navItems = [menuDash, menuCreate, menuStudio, menuSales, menuProfile];
-    const views = [dashboardView, creatorView, studioView, salesView, profileView];
+        // Hide all views
+        document.querySelectorAll('.view-section').forEach(view => view.classList.add('hidden'));
+        // Deactivate all side-menu items
+        document.querySelectorAll('.side-menu .menu-item').forEach(item => item.classList.remove('active'));
 
-    function showView(targetView, targetMenu) {
-        views.forEach(view => view && view.classList.add('hidden'));
-        navItems.forEach(item => item && item.classList.remove('active'));
-
+        // Show target view
+        const targetView = document.getElementById(targetTabId);
         if (targetView) targetView.classList.remove('hidden');
-        if (targetMenu) targetMenu.classList.add('active');
+
+        // Activate corresponding menu button
+        if (navItems[targetTabId]) {
+            navItems[targetTabId].classList.add('active');
+        }
+
+        // Trigger view-specific data reloads
+        if (targetTabId === 'dashboard-view') loadDashboardBooks();
+        if (targetTabId === 'studio-view') loadStudioWebBooks();
+        if (targetTabId === 'sales-view') loadSalesAnalytics();
+        if (targetTabId === 'profile-view') loadAuthorProfile();
+        if (targetTabId === 'admin-view' && typeof window.loadAdminBooks === 'function') {
+            window.loadAdminBooks();
+        }
+    };
+
+    // Quick create shortcut from dashboard view
+    const quickCreateTrigger = document.getElementById('quick-create-trigger');
+    if (quickCreateTrigger) {
+        quickCreateTrigger.addEventListener('click', (e) => switchTab('creator-view', e));
     }
 
-    if (menuDash) menuDash.addEventListener('click', (e) => { e.preventDefault(); showView(dashboardView, menuDash); loadDashboardBooks(); });
-    if (menuCreate) menuCreate.addEventListener('click', (e) => { e.preventDefault(); showView(creatorView, menuCreate); });
-    if (quickCreateTrigger) quickCreateTrigger.addEventListener('click', () => { showView(creatorView, menuCreate); });
-    
-    if (menuStudio) menuStudio.addEventListener('click', (e) => { e.preventDefault(); showView(studioView, menuStudio); loadStudioWebBooks(); });
-    if (menuSales) menuSales.addEventListener('click', (e) => { e.preventDefault(); showView(salesView, menuSales); loadSalesAnalytics(); });
-    if (menuProfile) menuProfile.addEventListener('click', (e) => { e.preventDefault(); showView(profileView, menuProfile); loadAuthorProfile(); });
-
-    // Handle Publish Mode Radio Switch (PDF vs HTML/Web Book)
+    // -------------------------------------------------------------
+    // 2. PUBLISH FORMAT SWITCH & ANTI-PIRACY AUTO-LOCK
+    // -------------------------------------------------------------
     const modeRadios = document.querySelectorAll('input[name="upload-mode"]');
     const pdfGroup = document.getElementById('pdf-input-group');
     const htmlGroup = document.getElementById('html-input-group');
+    const ruleSelect = document.getElementById('book-download-rule');
+
+    function handleFormatChange(selectedMode) {
+        if (selectedMode === 'pdf') {
+            if (pdfGroup) pdfGroup.classList.remove('hidden');
+            if (htmlGroup) htmlGroup.classList.add('hidden');
+            if (ruleSelect && ruleSelect.options[1]) {
+                ruleSelect.options[1].disabled = false; // Enable PDF download option
+            }
+        } else { // HTML / Web Book selected
+            if (pdfGroup) pdfGroup.classList.add('hidden');
+            if (htmlGroup) htmlGroup.classList.remove('hidden');
+            if (ruleSelect) {
+                ruleSelect.value = "0"; // Auto-lock to Read in App Only
+                if (ruleSelect.options[1]) {
+                    ruleSelect.options[1].disabled = true; // Disable download option
+                }
+            }
+        }
+    }
 
     modeRadios.forEach(radio => {
-        radio.addEventListener('change', (e) => {
-            if (e.target.value === 'pdf') {
-                if (pdfGroup) pdfGroup.classList.remove('hidden');
-                if (htmlGroup) htmlGroup.classList.add('hidden');
-            } else {
-                if (pdfGroup) pdfGroup.classList.add('hidden');
-                if (htmlGroup) htmlGroup.classList.remove('hidden');
-            }
-        });
+        radio.addEventListener('change', (e) => handleFormatChange(e.target.value));
     });
 
+    // Run once on load to set initial state
+    const checkedRadio = document.querySelector('input[name="upload-mode"]:checked');
+    if (checkedRadio) handleFormatChange(checkedRadio.value);
+
     // -------------------------------------------------------------
-    // 2. FETCH CURRENT USER & INITIALIZE DASHBOARD
+    // 3. FETCH CURRENT USER & INITIALIZE DASHBOARD
     // -------------------------------------------------------------
     fetch('/api/auth/me')
         .then(res => res.json())
@@ -68,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
     loadNotifications();
 
     // -------------------------------------------------------------
-    // 3. LOAD AUTHOR'S BOOKS (MY BOOKS DASHBOARD)
+    // 4. LOAD AUTHOR'S BOOKS (MY BOOKS DASHBOARD)
     // -------------------------------------------------------------
     function loadDashboardBooks() {
         const booksContainer = document.getElementById('author-books-container');
@@ -109,13 +137,13 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error("Failed to fetch author books:", err));
     }
 
-    // Helper to safely pass strings to inline onclick functions
+    // Safe string escaping helper for onclick handlers
     window.escapeHtml = function(text) {
         return text ? text.replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
     };
 
     // -------------------------------------------------------------
-    // 4. CREATE / PUBLISH BOOK FORM SUBMISSION
+    // 5. CREATE / PUBLISH BOOK FORM SUBMISSION
     // -------------------------------------------------------------
     const publishForm = document.getElementById('publish-master-form');
     if (publishForm) {
@@ -123,11 +151,10 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
 
             const formData = new FormData();
-            
             const titleInput = document.getElementById('book-title');
             const priceInput = document.getElementById('book-price');
             const descInput = document.getElementById('book-description');
-            
+
             formData.append('title', titleInput ? titleInput.value.trim() : '');
             formData.append('description', descInput ? descInput.value.trim() : '');
             formData.append('price', priceInput ? priceInput.value : '0');
@@ -173,8 +200,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else {
                     alert("🎉 Success! Your book has been published.");
                     publishForm.reset();
-                    showView(dashboardView, menuDash);
-                    loadDashboardBooks();
+                    switchTab('dashboard-view');
                 }
             })
             .catch(err => {
@@ -185,10 +211,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -------------------------------------------------------------
-    // 5. AUTHOR PROFILE & KYC SUBMISSION & LOAD
+    // 6. AUTHOR PROFILE & KYC SUBMISSION & LOAD
     // -------------------------------------------------------------
     const profileForm = document.getElementById('author-profile-form');
-    
+
     function loadAuthorProfile() {
         fetch('/api/author/profile')
             .then(res => res.json())
@@ -223,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
             formData.append('kinName', document.getElementById('kin-name').value);
             formData.append('kinRelation', document.getElementById('kin-relation').value);
             formData.append('kinPhone', document.getElementById('kin-phone').value);
-            
+
             const isbn = document.getElementById('author-isbn').value;
             if (isbn) formData.append('isbn', isbn);
 
@@ -250,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -------------------------------------------------------------
-    // 6. WEB BOOK STUDIO LOGIC
+    // 7. WEB BOOK STUDIO LOGIC
     // -------------------------------------------------------------
     const studioBooksList = document.getElementById('studio-books-list');
     const studioEditorPanel = document.getElementById('studio-editor-panel');
@@ -338,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -------------------------------------------------------------
-    // 7. SALES & ROYALTIES ANALYTICS
+    // 8. SALES & ROYALTIES ANALYTICS
     // -------------------------------------------------------------
     function loadSalesAnalytics() {
         fetch('/api/analytics/sales')
@@ -388,7 +414,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -------------------------------------------------------------
-    // 8. BOOK EDIT & DELETE MODAL HANDLERS
+    // 9. BOOK EDIT & DELETE MODAL HANDLERS
     // -------------------------------------------------------------
     const editModal = document.getElementById('edit-book-modal');
     const editForm = document.getElementById('edit-book-form');
@@ -484,7 +510,6 @@ function loadNotifications() {
         .catch(err => console.error("Notification load error:", err));
 }
 
-// Global scope attachment for inline HTML onClick compatibility
 window.toggleNotifDropdown = function() {
     const dropdown = document.getElementById('notif-dropdown');
     if (dropdown) dropdown.classList.toggle('hidden');
