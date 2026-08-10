@@ -18,12 +18,17 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Trust Render's reverse proxy for secure HTTPS cookies
+app.set('trust proxy', 1);
+
 app.use(session({
     secret: process.env.SESSION_SECRET || 'zim-publish-secure-random-key-1234',
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     cookie: { 
         secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000
     }
 }));
