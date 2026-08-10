@@ -397,53 +397,40 @@ input[type="text"], input[type="number"], textarea {
     font-size: 10px;
     color: var(--text-muted);
 }
+
 /* ==========================================
-   FIX 1: SECURITY & DISTRIBUTION DROPDOWN
+   SECURITY & DISTRIBUTION BADGE / BUTTON
    ========================================== */
 .security-rules-group {
-    margin-bottom: 20px;
+    margin-bottom: 25px;
     width: 100%;
 }
 
-.select-wrapper {
-    position: relative;
-    width: 100%;
-}
-
-.styled-select {
-    width: 100%;
+.security-badge-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    background-color: var(--primary-green);
+    color: var(--white);
+    padding: 12px 18px;
+    border-radius: 25px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 2px 6px rgba(27, 61, 43, 0.15);
+    border: none;
+    cursor: default;
+    transition: all 0.2s ease;
+    width: fit-content;
     max-width: 100%;
-    padding: 12px 35px 12px 12px;
-    border: 1px solid var(--border-tan, #ccc);
-    border-radius: 6px;
-    background-color: #ffffff;
-    color: var(--text-dark, #222);
-    font-size: 13px;
-    font-family: inherit;
-    line-height: 1.4;
-    appearance: none;
-    -webkit-appearance: none;
-    -moz-appearance: none;
     box-sizing: border-box;
-    white-space: normal;
-    text-overflow: ellipsis;
-    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%22//www.w3.org/2000/svg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%231b3d2b%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22/%3E%3C/svg%3E");
-    background-repeat: no-repeat;
-    background-position: right 12px center;
-    background-size: 10px auto;
 }
 
-.styled-select:focus {
-    outline: none;
-    border-color: var(--primary-green, #1b3d2b);
-    box-shadow: 0 0 0 2px rgba(27, 61, 43, 0.15);
+.security-badge-btn:hover {
+    opacity: 0.95;
 }
 
-.styled-select option {
-    padding: 10px;
-    font-size: 13px;
-    background-color: #ffffff;
-    color: var(--text-dark, #222);
+.security-icon {
+    font-size: 15px;
 }
 
 /* ==========================================
@@ -492,7 +479,6 @@ input[type="text"], input[type="number"], textarea {
     flex: 1;
     display: block;
 }
-
 
 /* ==========================================
    MOBILE DASHBOARD RESPONSIVE STYLES
