@@ -95,7 +95,7 @@ nav a {
     flex-direction: column;
 }
 
-.book-cover-placeholder, .book-card img {
+.book-cover-placeholder {
     height: 240px;
     background-color: #d1cdc4;
     border-radius: 4px;
@@ -105,6 +105,17 @@ nav a {
     font-size: 32px;
     margin-bottom: 14px;
     border: 1px solid #e2dfd7;
+}
+
+.book-card img {
+    width: 100%;
+    height: 280px;
+    object-fit: contain; /* Keeps the entire cover visible without cropping */
+    background-color: #e0dcd3; /* Subtle neutral frame filling any side margins */
+    border-radius: 4px;
+    margin-bottom: 14px;
+    border: 1px solid #e2dfd7;
+    box-sizing: border-box;
 }
 
 .book-card h3 {
