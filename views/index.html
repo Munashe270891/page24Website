@@ -11,8 +11,8 @@
     <header>
         <div class="logo">PAGE 24</div>
         <nav>
-            <a href="#">Browse Books</a>
-            <a href="#">Top Authors</a>
+            <a href="#category-filter-section" id="browse-books-btn">Browse Books</a>
+            <a href="#top-authors">Top Authors</a>
             <a href="/dashboard" class="nav-btn">Author Portal</a>
         </nav>
     </header>
@@ -29,7 +29,7 @@
                 <a href="/dashboard" class="ad-cta-btn">Start Publishing</a>
             </div>
 
-            <!-- GOOGLE ADSENSE PLACEHOLDER (Uncomment & replace client/slot IDs when live) -->
+            <!-- GOOGLE ADSENSE PLACEHOLDER -->
             <!-- 
             <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX" crossorigin="anonymous"></script>
             <ins class="adsbygoogle"
@@ -53,9 +53,35 @@
         </div>
     </section>
 
+    <!-- ========================================== -->
+    <!-- CATEGORY & SUB-THEME FILTER SECTION        -->
+    <!-- ========================================== -->
+    <section id="category-filter-section" class="category-filter-container">
+        <div class="category-pills-row">
+            <span class="filter-label">Categories:</span>
+            <button class="cat-pill active" onclick="filterByCategory('All', this)">All Books</button>
+            <button class="cat-pill" onclick="filterByCategory('Shona Novels', this)">Shona Novels</button>
+            <button class="cat-pill" onclick="filterByCategory('Motivational', this)">Motivational</button>
+            <button class="cat-pill" onclick="filterByCategory('Dating & Relationships', this)">Dating & Relationships</button>
+            <button class="cat-pill" onclick="filterByCategory('Christian Devotional', this)">Christian Devotional</button>
+            <button class="cat-pill" onclick="filterByCategory('Business', this)">Business</button>
+            <button class="cat-pill" onclick="filterByCategory('Other', this)">Other</button>
+        </div>
+
+        <!-- DYNAMIC SHONA SUB-THEMES ROW (Shown only when Shona Novels is active) -->
+        <div id="shona-subthemes-row" class="subthemes-pills-row" style="display: none;">
+            <span class="sub-label">Shona Theme:</span>
+            <button class="sub-pill active" onclick="filterBySubTheme('All', this)">All Themes</button>
+            <button class="sub-pill" onclick="filterBySubTheme('Love / Rudo', this)">Love / Rudo</button>
+            <button class="sub-pill" onclick="filterBySubTheme('Christian / Chitendero', this)">Christian / Chitendero</button>
+            <button class="sub-pill" onclick="filterBySubTheme('Culture / Tsika neMagariro', this)">Culture / Tsika neMagariro</button>
+            <button class="sub-pill" onclick="filterBySubTheme('Drama / Mutambo', this)">Drama / Mutambo</button>
+        </div>
+    </section>
+
     <main class="content-wrapper">
-        <h2>Featured Zimbabwean Stories</h2>
-        <div class="book-grid">
+        <h2 id="catalog-heading">Featured Zimbabwean Stories</h2>
+        <div class="book-grid" id="public-books-grid">
             <!-- Main.js script injects database books here -->
         </div>
     </main>
@@ -71,7 +97,7 @@
                 <p>Support local authors! Buy directly using local mobile wallets with 0 hidden fees.</p>
             </div>
 
-            <!-- GOOGLE ADSENSE PLACEHOLDER (Uncomment when live) -->
+            <!-- GOOGLE ADSENSE PLACEHOLDER -->
             <!-- 
             <ins class="adsbygoogle"
                  style="display:block"
