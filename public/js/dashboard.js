@@ -121,8 +121,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     card.style.cssText = "background: white; border: 1px solid var(--border-tan, #ccc); border-radius: 8px; padding: 15px; margin-bottom: 15px; display: flex; gap: 15px; align-items: center;";
 
                     const rawPrice = parseFloat(book.price) || 0;
+                    const coverSrc = book.coverImage || book.cover_image || '/images/default-cover.png';
+
                     card.innerHTML = `
-                        <img src="${book.coverImage}" alt="${book.title}" style="width: 70px; height: 100px; object-fit: cover; border-radius: 4px;">
+                        <img src="${coverSrc}" alt="${book.title}" style="width: 70px; height: 100px; object-fit: cover; border-radius: 4px;" onerror="this.src='/images/default-cover.png'">
                         <div style="flex-grow: 1;">
                             <h3 style="margin: 0 0 5px 0; color: var(--primary-green, #1e4d2b);">${book.title}</h3>
                             <p style="font-size: 13px; color: #666; margin: 0 0 5px 0;">${book.description ? book.description.substring(0, 80) + '...' : ''}</p>
@@ -242,7 +244,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const phone = document.getElementById('author-phone');
                 const isbn = document.getElementById('author-isbn');
 
-                if (legalName && data.legal_name) legalName.value = data.legal_name;
+                if (legalName && (data.legal_name || data.legalName)) legalName.value = data.legal_name || data.legalName;
                 if (phone && data.phone) phone.value = data.phone;
                 if (isbn && data.isbn) isbn.value = data.isbn;
             })
@@ -338,11 +340,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 chapters.forEach((chap, idx) => {
                     const item = document.createElement('div');
-                    item.style.cssText = "background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 4px; font-size: 13px;";
+                    item.style.cssText = "background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 4px; font-size: 13px; margin-bottom: 6px;";
                     item.innerHTML = `<strong>Chapter ${idx + 1}:</strong> ${chap.title}`;
                     studioChaptersList.appendChild(item);
                 });
-            });
+            })
+            .catch(err => console.error("Error loading chapters:", err));
     }
 
     if (addChapterForm) {
@@ -350,12 +353,12 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const bookId = document.getElementById('editor-book-id').value;
             const title = document.getElementById('new-chapter-title').value;
-            const content = document.getElementById('new-chapter-body').value;
+            const chapterBody = document.getElementById('new-chapter-body').value;
 
-            fetch('/api/books/chapters', {
+            fetch(`/api/books/${bookId}/chapters`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bookId, title, content })
+                body: JSON.stringify({ bookId, title, chapterBody })
             })
             .then(res => res.json())
             .then(data => {
@@ -367,7 +370,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     document.getElementById('new-chapter-body').value = '';
                     loadChapters(bookId);
                 }
-            });
+            })
+            .catch(err => alert("⚠️ Failed to post new chapter."));
         });
     }
 
@@ -397,7 +401,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         for (const [title, stats] of Object.entries(data.bookBreakdown)) {
                             const row = document.createElement('div');
                             row.style.cssText = "display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding-bottom: 8px; font-size: 13px;";
-                            row.innerHTML = `<span><strong>${title}</strong> (${stats.sales} sold)</span><strong style="color: var(--primary-green, #1e4d2b);">$${stats.earnings.toFixed(2)}</strong>`;
+                            row.innerHTML = `<span><strong>${title}</strong> (${stats.sales} sold)</span><strong style="color: var(--primary-green, #1e4d2b);">$${parseFloat(stats.earnings || 0).toFixed(2)}</strong>`;
                             breakdownList.appendChild(row);
                         }
                     }
@@ -411,8 +415,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else {
                         data.recentTransactions.forEach(tx => {
                             const row = document.createElement('div');
-                            row.style.cssText = "background: #f8f9fa; border: 1px solid #eee; padding: 10px; border-radius: 4px; font-size: 12px;";
-                            row.innerHTML = `<strong>${tx.buyer_name}</strong> purchased <em>${tx.book_title}</em> for <span style="color: var(--primary-green, #1e4d2b); font-weight: bold;">$${parseFloat(tx.sale_price).toFixed(2)}</span> on ${new Date(tx.sale_date).toLocaleDateString()}`;
+                            row.style.cssText = "background: #f8f9fa; border: 1px solid #eee; padding: 10px; border-radius: 4px; font-size: 12px; margin-bottom: 6px;";
+                            row.innerHTML = `<strong>${tx.buyer_name || 'Anonymous'}</strong> purchased <em>${tx.book_title}</em> for <span style="color: var(--primary-green, #1e4d2b); font-weight: bold;">$${parseFloat(tx.sale_price || 0).toFixed(2)}</span> on ${new Date(tx.sale_date || tx.created_at).toLocaleDateString()}`;
                             txList.appendChild(row);
                         });
                     }
@@ -493,12 +497,12 @@ function loadNotifications() {
             const badge = document.getElementById('notif-badge');
             if (!listContainer || !Array.isArray(notifications)) return;
 
-            const unreadCount = notifications.filter(n => n.is_read === 0).length;
+            const unreadCount = notifications.filter(n => n.is_read === 0 || n.is_read === false).length;
 
-            if (unreadCount > 0) {
+            if (unreadCount > 0 && badge) {
                 badge.textContent = unreadCount;
                 badge.classList.remove('hidden');
-            } else {
+            } else if (badge) {
                 badge.classList.add('hidden');
             }
 
