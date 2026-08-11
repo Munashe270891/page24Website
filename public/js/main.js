@@ -52,11 +52,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 const priceFormatted = numericPrice.toFixed(2);
                 const priceLabel = numericPrice === 0 ? 'FREE' : `$${priceFormatted} USD`;
 
+                // Portrait Container Fix: Uses a forced 2:3 aspect-ratio with contained image fitting
                 card.innerHTML = `
-                    <img src="${coverSrc}" class="book-cover-placeholder" alt="${safeTitle} Cover" style="object-fit: cover; width: 100%; max-height: 240px;" onerror="this.src='/images/default-cover.png'">
-                    <h3>${safeTitle}</h3>
-                    <p class="author-tag">By ${safeAuthor}</p>
-                    <p class="price-tag" style="font-weight: 700; color: var(--accent-orange, #d97736); margin: 0 0 12px 0;">${priceLabel}</p>
+                    <div class="cover-wrapper" style="width: 100%; max-width: 220px; aspect-ratio: 2 / 3; margin: 0 auto 15px auto; background: rgba(0, 0, 0, 0.04); border-radius: 6px; overflow: hidden; display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+                        <img src="${coverSrc}" class="book-cover-placeholder" alt="${safeTitle} Cover" style="width: 100%; height: 100%; object-fit: contain; border-radius: 6px;" onerror="this.src='/images/default-cover.png'">
+                    </div>
+                    <h3 style="margin: 0 0 6px 0; font-size: 1.1rem; line-height: 1.3;">${safeTitle}</h3>
+                    <p class="author-tag" style="margin: 0 0 8px 0; font-size: 0.9rem; opacity: 0.8;">By ${safeAuthor}</p>
+                    <p class="price-tag" style="font-weight: 700; color: var(--accent-orange, #d97736); margin: 0 0 14px 0;">${priceLabel}</p>
                     <button class="buy-btn" data-id="${book.id}">Read Preview</button>
                 `;
                 
@@ -87,7 +90,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     const coverSrc = selectedBook.cover_image || selectedBook.coverImage || '/images/default-cover.png';
                     const numericPrice = Number(selectedBook.price || 0);
                     
-                    if (modalCover) modalCover.src = coverSrc;
+                    if (modalCover) {
+                        modalCover.src = coverSrc;
+                        modalCover.style.objectFit = 'contain';
+                    }
                     if (modalTitle) modalTitle.textContent = selectedBook.title;
                     if (modalAuthor) modalAuthor.textContent = `By ${selectedBook.author || 'Unknown Author'}`;
                     if (modalPrice) modalPrice.textContent = numericPrice === 0 ? 'FREE' : `$${numericPrice.toFixed(2)} USD`;
