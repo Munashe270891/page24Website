@@ -199,15 +199,18 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 const chapterTitleInput = document.getElementById('initial-chapter-title');
                 const chapterBodyInput = document.getElementById('initial-chapter-body');
+                const initialBody = chapterBodyInput ? chapterBodyInput.value.trim() : '';
+                
                 formData.append('chapterTitle', chapterTitleInput ? chapterTitleInput.value.trim() : '');
-                formData.append('chapterBody', chapterBodyInput ? chapterBodyInput.value.trim() : '');
+                formData.append('chapterBody', initialBody);
+                formData.append('content', initialBody); // Dual keys for complete fallback safety
             }
 
             const copyrightCheck = document.getElementById('copyright-ownership-check');
             const termsCheck = document.getElementById('copyright-terms-check');
 
-            formData.append('agreeCopyright', copyrightCheck && copyrightCheck.checked ? '1' : '');
-            formData.append('agreeTerms', termsCheck && termsCheck.checked ? '1' : '');
+            formData.append('agreeCopyright', copyrightCheck && copyrightCheck.checked ? 'true' : 'false');
+            formData.append('agreeTerms', termsCheck && termsCheck.checked ? 'true' : 'false');
 
             fetch('/api/books/publish', {
                 method: 'POST',
@@ -341,7 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 chapters.forEach((chap, idx) => {
                     const item = document.createElement('div');
                     item.style.cssText = "background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 4px; font-size: 13px; margin-bottom: 6px;";
-                    item.innerHTML = `<strong>Chapter ${idx + 1}:</strong> ${chap.title}`;
+                    item.innerHTML = `<strong>Chapter ${chap.chapter_number || idx + 1}:</strong> ${chap.title}`;
                     studioChaptersList.appendChild(item);
                 });
             })
@@ -353,12 +356,17 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
             const bookId = document.getElementById('editor-book-id').value;
             const title = document.getElementById('new-chapter-title').value;
-            const chapterBody = document.getElementById('new-chapter-body').value;
+            const bodyContent = document.getElementById('new-chapter-body').value;
 
             fetch(`/api/books/${bookId}/chapters`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ bookId, title, chapterBody })
+                body: JSON.stringify({ 
+                    bookId, 
+                    title, 
+                    content: bodyContent,
+                    body: bodyContent 
+                })
             })
             .then(res => res.json())
             .then(data => {
