@@ -76,11 +76,6 @@ body {
     margin: 15px 0;
 }
 
-.view-site {
-    font-style: italic;
-    opacity: 0.7;
-}
-
 /* Dashboard Panel Workspace */
 .main-content {
     flex: 1;
@@ -399,7 +394,7 @@ input[type="text"], input[type="number"], textarea {
 }
 
 /* ==========================================
-   FORCED OVERRIDE: SECURITY & DISTRIBUTION BUTTON
+   SECURITY & DISTRIBUTION SELECTOR OVERRIDES
    ========================================== */
 .security-rules-group {
     margin-bottom: 25px;
@@ -409,8 +404,7 @@ input[type="text"], input[type="number"], textarea {
 .security-rules-group input,
 .security-rules-group select,
 .security-rules-group .styled-select,
-.security-rules-group .select-wrapper,
-.security-badge-btn {
+.security-rules-group .select-wrapper {
     appearance: none !important;
     -webkit-appearance: none !important;
     -moz-appearance: none !important;
@@ -442,7 +436,7 @@ input[type="text"], input[type="number"], textarea {
 }
 
 /* ==========================================
-   FIX 2: LEGAL & COPYRIGHT DECLARATION CARD
+   LEGAL & COPYRIGHT DECLARATION CARD
    ========================================== */
 .legal-declaration-card {
     background-color: #fbfbfa;
