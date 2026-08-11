@@ -27,11 +27,10 @@
                 <a href="#" class="menu-item" id="menu-studio" onclick="switchTab('studio-view', event)">✍️ Write Online (Web Studio)</a>
                 <a href="#" class="menu-item" id="menu-sales" onclick="switchTab('sales-view', event)">💰 Sales & Royalties</a>
                 <a href="#" class="menu-item" id="menu-profile" onclick="switchTab('profile-view', event)">👤 My Author Profile</a>
-                <a href="#" class="menu-item" id="menu-admin" onclick="switchTab('admin-view', event)">🛡️ Admin Panel</a>
                 <hr class="menu-divider">
                 <a href="/terms" target="_blank" class="menu-item">📜 Terms & Copyright</a>
                 
-                <!-- REVAMPED READER VIEW BUTTON -->
+                <!-- BROWSE MAIN LIBRARY BUTTON -->
                 <div style="padding: 10px 0; text-align: center;">
                     <a href="/catalog.html" style="
                         display: inline-flex;
@@ -158,7 +157,7 @@
                                 <option value="Love / Rudo">Love / Rudo</option>
                                 <option value="Christian / Chitendero">Christian / Chitendero</option>
                                 <option value="Culture / Tsika neMagariro">Culture / Tsika neMagariro</option>
-                                <option value="Drama / Mutambo">Drama / Mutevedzano</option>
+                                <option value="Drama / Mutambo">Drama / Mutambo</option>
                             </select>
                         </div>
 
@@ -316,58 +315,29 @@
                 </div>
             </div>
 
-            <!-- VIEW 5: AUTHOR PROFILE & KYC (ZIM LAW COMPLIANCE) -->
+            <!-- VIEW 5: AUTHOR PROFILE -->
             <div id="profile-view" class="view-section hidden">
-                <h1 class="view-title">👤 Author Profile & Identity Verification</h1>
-                <p style="margin-bottom: 20px; opacity: 0.8;">Complete your verified author profile to publish titles and withdraw royalties on Page 24.</p>
+                <h1 class="view-title">👤 Author Profile</h1>
+                <p style="margin-bottom: 20px; opacity: 0.8;">Manage your public author details and payout destination details below.</p>
 
-                <!-- MANDATORY PAYOUT NOTICE -->
+                <!-- PAYOUT NOTICE -->
                 <div style="background: #ebf5fb; border-left: 4px solid #2980b9; padding: 15px; margin-bottom: 20px; border-radius: 4px; max-width: 650px;">
                     <strong style="color: #2980b9;">⚠️ Financial Gateway & Legal Name Policy:</strong>
                     <p style="font-size: 12px; margin-top: 5px; color: #333; line-height: 1.4;">
-                        Your registered <strong>Full Legal Name</strong> must strictly match the owner of your payout account (EcoCash, OneMoney, or Mastercard/Bank Card). Page 24 strictly prohibits royalty withdrawals to third-party accounts. Providing false or fraudulent information will result in immediate account termination, forfeiture of royalties, and reporting under Zimbabwean legal frameworks.
+                        Your registered <strong>Full Legal Name</strong> must strictly match the owner of your payout account (EcoCash, OneMoney, or Mastercard/Bank Card). Page 24 strictly prohibits royalty withdrawals to third-party accounts.
                     </p>
                 </div>
 
                 <div class="creator-card" style="max-width: 650px;">
                     <form id="author-profile-form">
                         <!-- LEGAL IDENTITY -->
-                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">🪪 Government Identity Verification</h3>
+                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">🪪 Identity Information</h3>
                         
-                        <label class="input-label">FULL LEGAL NAME (As shown on National ID or Passport)</label>
+                        <label class="input-label">FULL LEGAL NAME</label>
                         <input type="text" id="author-legal-name" placeholder="e.g. Tendai Samuel Moyo" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
 
-                        <label class="input-label">NATIONAL ID / PASSPORT NUMBER</label>
-                        <input type="text" id="author-id-number" placeholder="e.g. 63-1234567-X-63" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
-
-                        <label class="input-label">UPLOAD NATIONAL ID / PASSPORT PHOTO (PDF or Image)</label>
-                        <input type="file" id="author-id-upload" accept="image/*,.pdf" style="display: block; margin-bottom: 20px;" required>
-
-                        <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-tan, #ccc);">
-
-                        <!-- CONTACT & ADDRESS -->
-                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">📱 Contact & Residential Address</h3>
-
                         <label class="input-label">MOBILE PHONE NUMBER (EcoCash / OneMoney Registered Number)</label>
-                        <input type="tel" id="author-phone" placeholder="e.g. +263 77 123 4567" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
-
-                        <label class="input-label">PHYSICAL RESIDENTIAL ADDRESS</label>
-                        <textarea id="author-address" rows="3" placeholder="Enter street address, suburb, city (e.g. 12 Samora Machel Ave, Harare)" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 20px;" required></textarea>
-
-                        <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-tan, #ccc);">
-
-                        <!-- NEXT OF KIN -->
-                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">👥 Next of Kin (Royalty Estate Successor)</h3>
-                        <p style="font-size: 12px; color: gray; margin-bottom: 15px;">Required for statutory estate succession and legal secondary verification.</p>
-
-                        <label class="input-label">NEXT OF KIN FULL NAME</label>
-                        <input type="text" id="kin-name" placeholder="e.g. Chipo Moyo" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
-
-                        <label class="input-label">RELATIONSHIP</label>
-                        <input type="text" id="kin-relation" placeholder="e.g. Spouse, Brother, Parent" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
-
-                        <label class="input-label">NEXT OF KIN PHONE NUMBER</label>
-                        <input type="tel" id="kin-phone" placeholder="e.g. +263 71 987 6543" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 20px;" required>
+                        <input type="tel" id="author-phone" placeholder="e.g. +263 77 123 4567" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 20px;" required>
 
                         <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-tan, #ccc);">
 
@@ -381,46 +351,8 @@
                         <label class="input-label">UPLOAD ISBN / COPYRIGHT CERTIFICATE PROOF (Optional)</label>
                         <input type="file" id="author-isbn-proof" accept="image/*,.pdf" style="display: block; margin-bottom: 20px;">
 
-                        <button type="submit" class="save-master-btn">Save & Verify Profile</button>
+                        <button type="submit" class="save-master-btn">Save Profile</button>
                     </form>
-                </div>
-            </div>
-
-            <!-- VIEW 6: ADMIN CONTROL PANEL -->
-            <div id="admin-view" class="view-section hidden">
-                <h1 class="view-title">🛡️ Platform Administration</h1>
-
-                <!-- Broadcast Announcement Card -->
-                <div class="creator-card" style="margin-bottom: 25px;">
-                    <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 10px;">📢 Send Platform Broadcast</h3>
-                    <form id="broadcast-form">
-                        <label class="input-label">ANNOUNCEMENT TITLE</label>
-                        <input type="text" id="announce-title" placeholder="e.g. System Maintenance Scheduled" style="width: 100%; border: 1px solid var(--border-tan, #ccc); padding: 10px; margin-bottom: 10px;" required>
-
-                        <label class="input-label">MESSAGE</label>
-                        <textarea id="announce-message" rows="3" placeholder="Write broadcast message..." style="width: 100%; border: 1px solid var(--border-tan, #ccc); padding: 10px; margin-bottom: 15px;" required></textarea>
-
-                        <button type="submit" class="save-master-btn" style="width: auto; padding: 10px 20px;">Send Broadcast</button>
-                    </form>
-                </div>
-
-                <!-- All Books Moderation Table -->
-                <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 10px;">All Platform Books</h3>
-                <div style="background: white; border: 1px solid var(--border-tan, #ccc); border-radius: 8px; overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse; text-align: left;">
-                        <thead>
-                            <tr style="background: #343a40; color: white;">
-                                <th style="padding: 12px;">ID</th>
-                                <th style="padding: 12px;">Title</th>
-                                <th style="padding: 12px;">Author</th>
-                                <th style="padding: 12px;">Status</th>
-                                <th style="padding: 12px;">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody id="admin-books-list">
-                            <tr><td colspan="5" style="padding: 20px; text-align: center;">Loading books...</td></tr>
-                        </tbody>
-                    </table>
                 </div>
             </div>
 
@@ -451,93 +383,8 @@
     <!-- External dashboard JS file -->
     <script src="/js/dashboard.js"></script>
 
-    <!-- Tab Navigation and Admin Operations Script -->
+    <!-- UI Interaction Scripts -->
     <script>
-        // Global Tab Switching Function
-        window.switchTab = function(targetTabId, evt) {
-            const views = document.querySelectorAll('.view-section');
-            views.forEach(view => {
-                view.classList.add('hidden');
-            });
-
-            const selectedView = document.getElementById(targetTabId);
-            if (selectedView) {
-                selectedView.classList.remove('hidden');
-                if (targetTabId === 'admin-view') {
-                    loadAdminBooks();
-                }
-            }
-
-            const menuItems = document.querySelectorAll('.side-menu .menu-item');
-            menuItems.forEach(item => item.classList.remove('active'));
-
-            if (evt && evt.currentTarget && evt.currentTarget.classList) {
-                evt.currentTarget.classList.add('active');
-            }
-        };
-
-        function loadAdminBooks() {
-            fetch('/api/admin/books')
-                .then(res => {
-                    if (!res.ok) throw new Error("Access denied or failed to load");
-                    return res.json();
-                })
-                .then(data => {
-                    const tbody = document.getElementById('admin-books-list');
-                    if (!tbody) return;
-                    tbody.innerHTML = '';
-
-                    if (!data.books || data.books.length === 0) {
-                        tbody.innerHTML = `<tr><td colspan="5" style="padding: 20px; text-align: center;">No books found in system.</td></tr>`;
-                        return;
-                    }
-
-                    data.books.forEach(book => {
-                        const isOffline = book.status === 'offline';
-                        const statusBadge = isOffline 
-                            ? `<span style="color: #dc3545; font-weight: bold;">[OFFLINE]</span>` 
-                            : `<span style="color: #28a745; font-weight: bold;">[ACTIVE]</span>`;
-                        
-                        const actionBtn = isOffline
-                            ? `<button onclick="toggleBookStatus(${book.id}, 'active')" style="background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Restore Online</button>`
-                            : `<button onclick="toggleBookStatus(${book.id}, 'offline')" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;">Take Offline</button>`;
-
-                        tbody.innerHTML += `
-                            <tr style="border-bottom: 1px solid #ddd;">
-                                <td style="padding: 12px;">#${book.id}</td>
-                                <td style="padding: 12px;"><strong>${book.title}</strong></td>
-                                <td style="padding: 12px;">${book.author} <br><small style="color: #666;">(${book.author_email || 'N/A'})</small></td>
-                                <td style="padding: 12px;">${statusBadge}</td>
-                                <td style="padding: 12px;">${actionBtn}</td>
-                            </tr>
-                        `;
-                    });
-                })
-                .catch(err => {
-                    console.error("Admin load error:", err);
-                    const tbody = document.getElementById('admin-books-list');
-                    if (tbody) {
-                        tbody.innerHTML = `<tr><td colspan="5" style="padding: 20px; color: #dc3545; text-align: center;">Administrator privileges required to view this panel.</td></tr>`;
-                    }
-                });
-        }
-
-        function toggleBookStatus(bookId, newStatus) {
-            if (!confirm(`Are you sure you want to set book #${bookId} to '${newStatus}'?`)) return;
-
-            fetch(`/api/admin/books/${bookId}/status`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ status: newStatus })
-            })
-            .then(res => res.json())
-            .then(data => {
-                alert(data.message || "Status updated!");
-                loadAdminBooks();
-            })
-            .catch(err => alert("Failed to update status."));
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
             // CATEGORY / SUB-THEME TOGGLE LOGIC
             const categorySelect = document.getElementById('book-category');
@@ -582,28 +429,6 @@
                 pdfRadio.addEventListener('change', handleFormatChange);
                 htmlRadio.addEventListener('change', handleFormatChange);
                 handleFormatChange(); // Run once on page load
-            }
-
-            // BROADCAST FORM LISTENER
-            const broadcastForm = document.getElementById('broadcast-form');
-            if (broadcastForm) {
-                broadcastForm.addEventListener('submit', function(e) {
-                    e.preventDefault();
-                    const title = document.getElementById('announce-title').value;
-                    const message = document.getElementById('announce-message').value;
-
-                    fetch('/api/admin/broadcast', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ title, message })
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        alert(data.message || "Broadcast sent!");
-                        broadcastForm.reset();
-                    })
-                    .catch(err => alert("Broadcast failed."));
-                });
             }
         });
     </script>
