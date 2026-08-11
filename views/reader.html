@@ -103,7 +103,7 @@
         .book-cover-container {
             width: 100%;
             aspect-ratio: 2 / 3;
-            background: #e0e0e0;
+            background: rgba(0, 0, 0, 0.04);
             overflow: hidden;
             display: flex;
             align-items: center;
@@ -144,7 +144,7 @@
         /* Bottom Tab Navigation Bar */
         .nav-tabs {
             position: fixed; bottom: 0; left: 0; right: 0; height: 60px;
-            background: white; display: flex; justify-content: space-around;
+            background: white; display: flex; justify-style: space-around;
             align-items: center; border-top: 1px solid var(--border-light);
             box-shadow: 0 -2px 10px rgba(0,0,0,0.05); z-index: 1000;
         }
@@ -225,6 +225,26 @@
         let allStoreBooks = [];
         let allLibraryBooks = [];
 
+        // Helper to escape strings safely
+        function escapeHTML(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // Resolve cover URL dynamically from Supabase database columns
+        function getCoverUrl(book) {
+            let raw = book.cover_image || book.coverImage || book.cover_url || '';
+            if (raw && !raw.startsWith('http') && !raw.startsWith('/')) {
+                raw = '/' + raw;
+            }
+            return raw || '/images/default-cover.png';
+        }
+
         // 1. Check Auth & Manage Sign-In/Out UI
         async function checkAuth() {
             try {
@@ -304,7 +324,7 @@
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
         const urlParams = new URLSearchParams(window.location.search);
-        const initialBookId = urlParams.get('bookId');
+        const initialBookId = urlParams.get('bookId') || urlParams.get('id');
 
         async function openBook(bookId) {
             switchTab('read');
@@ -382,13 +402,14 @@
 
         function renderStoreGrid(books) {
             const grid = document.getElementById('store-books-grid');
-            if (books.length === 0) {
+            if (!books || books.length === 0) {
                 grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #777;">No matching books found.</p>`;
                 return;
             }
             grid.innerHTML = books.map(b => {
-                const isFree = parseFloat(b.price) === 0;
-                let priceText = isFree ? "FREE" : `$${parseFloat(b.price).toFixed(2)}`;
+                const numericPrice = parseFloat(b.price || 0);
+                const isFree = numericPrice === 0;
+                let priceText = isFree ? "FREE" : `$${numericPrice.toFixed(2)}`;
                 let actionButtonHtml = "";
 
                 if (isFree) {
@@ -401,15 +422,19 @@
                     actionButtonHtml = `<button class="action-btn btn-buy" onclick="buyBook(${b.id})">🛒 Buy Now</button>`;
                 }
 
+                const coverSrc = getCoverUrl(b);
+                const safeTitle = escapeHTML(b.title);
+                const safeAuthor = escapeHTML(b.author || 'Unknown');
+
                 return `
                     <div class="book-card">
                         <div class="book-cover-container">
-                            <img src="${b.coverImage || '/assets/default-cover.png'}" alt="${b.title} cover" onerror="this.src='/assets/default-cover.png'">
+                            <img src="${coverSrc}" alt="${safeTitle} cover" onerror="this.onerror=null; this.src='/images/default-cover.png';">
                         </div>
                         <div class="book-info">
                             <div>
-                                <div class="book-title">${b.title}</div>
-                                <div class="book-author">by ${b.author}</div>
+                                <div class="book-title">${safeTitle}</div>
+                                <div class="book-author">by ${safeAuthor}</div>
                                 <div class="price-badge ${isFree ? 'free' : ''}">${priceText}</div>
                             </div>
                             ${actionButtonHtml}
@@ -443,8 +468,8 @@
         function filterStoreBooks() {
             const query = document.getElementById('store-search-input').value.toLowerCase();
             const filtered = allStoreBooks.filter(b => 
-                b.title.toLowerCase().includes(query) || 
-                b.author.toLowerCase().includes(query)
+                (b.title && b.title.toLowerCase().includes(query)) || 
+                (b.author && b.author.toLowerCase().includes(query))
             );
             renderStoreGrid(filtered);
         }
@@ -486,27 +511,32 @@
 
         function renderLibraryGrid(books) {
             const grid = document.getElementById('library-books-grid');
-            if (books.length === 0) {
+            if (!books || books.length === 0) {
                 grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #777;">You haven't unlocked any books yet.</p>`;
                 return;
             }
             grid.innerHTML = books.map(b => {
-                const isFree = parseFloat(b.price) === 0;
+                const numericPrice = parseFloat(b.price || 0);
+                const isFree = numericPrice === 0;
                 let actionBtn = `<button class="action-btn" onclick="openBook(${b.id})">📖 Open Book</button>`;
                 
                 if (isFree && b.mode === 'pdf') {
                     actionBtn = `<a href="/api/books/${b.id}/download-free" class="action-btn btn-free">📥 Download PDF</a>`;
                 }
 
+                const coverSrc = getCoverUrl(b);
+                const safeTitle = escapeHTML(b.title);
+                const safeAuthor = escapeHTML(b.author || 'Unknown');
+
                 return `
                     <div class="book-card">
                         <div class="book-cover-container">
-                            <img src="${b.coverImage || '/assets/default-cover.png'}" alt="${b.title} cover" onerror="this.src='/assets/default-cover.png'">
+                            <img src="${coverSrc}" alt="${safeTitle} cover" onerror="this.onerror=null; this.src='/images/default-cover.png';">
                         </div>
                         <div class="book-info">
                             <div>
-                                <div class="book-title">${b.title}</div>
-                                <div class="book-author">by ${b.author}</div>
+                                <div class="book-title">${safeTitle}</div>
+                                <div class="book-author">by ${safeAuthor}</div>
                             </div>
                             ${actionBtn}
                         </div>
@@ -518,8 +548,8 @@
         function filterLibraryBooks() {
             const query = document.getElementById('library-search-input').value.toLowerCase();
             const filtered = allLibraryBooks.filter(b => 
-                b.title.toLowerCase().includes(query) || 
-                b.author.toLowerCase().includes(query)
+                (b.title && b.title.toLowerCase().includes(query)) || 
+                (b.author && b.author.toLowerCase().includes(query))
             );
             renderLibraryGrid(filtered);
         }
