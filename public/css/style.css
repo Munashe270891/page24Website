@@ -5,6 +5,7 @@
     --dark-text: #1a1a1a;
     --card-bg: #eae7df;
     --white: #ffffff;
+    --border-tan: #e2dfd7;
 }
 
 body {
@@ -21,7 +22,7 @@ header {
     justify-content: space-between;
     align-items: center;
     padding: 18px 5%;
-    border-bottom: 1px solid #e2dfd7;
+    border-bottom: 1px solid var(--border-tan);
 }
 
 .logo {
@@ -71,6 +72,116 @@ nav a {
     margin: 0 auto;
 }
 
+/* ========================================== */
+/* CATEGORY & SUB-THEME FILTER SECTION        */
+/* ========================================== */
+
+.category-filter-container {
+    background-color: var(--white);
+    border-bottom: 1px solid var(--border-tan);
+    padding: 16px 5%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.02);
+}
+
+.category-pills-row,
+.subthemes-pills-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch; /* Smooth horizontal scroll on mobile */
+    scrollbar-width: thin; /* Slim scrollbar for desktop browsers */
+}
+
+.category-pills-row::-webkit-scrollbar,
+.subthemes-pills-row::-webkit-scrollbar {
+    height: 4px;
+}
+
+.category-pills-row::-webkit-scrollbar-thumb,
+.subthemes-pills-row::-webkit-scrollbar-thumb {
+    background: #ccc;
+    border-radius: 2px;
+}
+
+.filter-label {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--dark-text);
+    margin-right: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sub-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--primary-green);
+    margin-right: 5px;
+}
+
+/* Category Filter Button Pills */
+.cat-pill {
+    background: var(--bg-cream);
+    border: 1px solid var(--border-tan);
+    color: var(--dark-text);
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    outline: none;
+}
+
+.cat-pill:hover {
+    background: var(--card-bg);
+    border-color: var(--primary-green);
+}
+
+.cat-pill.active {
+    background: var(--primary-green);
+    color: var(--white);
+    border-color: var(--primary-green);
+    box-shadow: 0 2px 6px rgba(27, 61, 43, 0.25);
+}
+
+/* Sub-Theme Filter Button Pills */
+.subthemes-pills-row {
+    margin-top: 12px;
+    padding-top: 10px;
+    border-top: 1px dashed var(--border-tan);
+}
+
+.sub-pill {
+    background: var(--white);
+    border: 1px solid #27ae60;
+    color: #27ae60;
+    padding: 5px 12px;
+    border-radius: 15px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease-in-out;
+    outline: none;
+}
+
+.sub-pill:hover {
+    background: #e8f8f5;
+}
+
+.sub-pill.active {
+    background: #27ae60;
+    color: var(--white);
+    border-color: #27ae60;
+}
+
+/* ========================================== */
+/* CONTENT LAYOUT & BOOK CARDS GRID           */
+/* ========================================== */
+
 .content-wrapper {
     padding: 40px 5%;
 }
@@ -104,7 +215,7 @@ nav a {
     justify-content: center;
     font-size: 32px;
     margin-bottom: 14px;
-    border: 1px solid #e2dfd7;
+    border: 1px solid var(--border-tan);
 }
 
 .book-card img {
@@ -114,7 +225,7 @@ nav a {
     background-color: #e0dcd3; /* Subtle neutral frame filling any side margins */
     border-radius: 4px;
     margin-bottom: 14px;
-    border: 1px solid #e2dfd7;
+    border: 1px solid var(--border-tan);
     box-sizing: border-box;
 }
 
@@ -159,7 +270,7 @@ nav a {
 
 .ad-content {
     background: var(--white);
-    border: 1px solid #e2dfd7;
+    border: 1px solid var(--border-tan);
     border-radius: 6px;
     padding: 14px 20px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
@@ -257,5 +368,14 @@ nav a {
 
     .hero p {
         font-size: 14px;
+    }
+
+    .category-filter-container {
+        padding: 12px 15px;
+    }
+
+    .cat-pill {
+        padding: 6px 12px;
+        font-size: 12px;
     }
 }
