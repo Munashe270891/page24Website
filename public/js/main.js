@@ -44,17 +44,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 const card = document.createElement('div');
                 card.className = 'book-card';
                 
-                // Fallback for cover image field names (camelCase vs snake_case)
-                const coverSrc = book.coverImage || book.cover_image || '/images/default-cover.png';
+                // Fallback for cover image field names
+                const coverSrc = book.cover_image || book.coverImage || '/images/default-cover.png';
                 const safeTitle = escapeHTML(book.title);
                 const safeAuthor = escapeHTML(book.author || 'Unknown Author');
-                const priceFormatted = Number(book.price || 0).toFixed(2);
+                const numericPrice = Number(book.price || 0);
+                const priceFormatted = numericPrice.toFixed(2);
+                const priceLabel = numericPrice === 0 ? 'FREE' : `$${priceFormatted} USD`;
 
                 card.innerHTML = `
                     <img src="${coverSrc}" class="book-cover-placeholder" alt="${safeTitle} Cover" style="object-fit: cover; width: 100%; max-height: 240px;" onerror="this.src='/images/default-cover.png'">
                     <h3>${safeTitle}</h3>
                     <p class="author-tag">By ${safeAuthor}</p>
-                    <p class="price-tag" style="font-weight: 700; color: var(--accent-orange, #d97736); margin: 0 0 12px 0;">$${priceFormatted} USD</p>
+                    <p class="price-tag" style="font-weight: 700; color: var(--accent-orange, #d97736); margin: 0 0 12px 0;">${priceLabel}</p>
                     <button class="buy-btn" data-id="${book.id}">Read Preview</button>
                 `;
                 
@@ -82,26 +84,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 const selectedBook = localStoreBooksCache.find(b => Number(b.id) === bookId);
                 
                 if (selectedBook && previewModal) {
-                    const coverSrc = selectedBook.coverImage || selectedBook.cover_image || '/images/default-cover.png';
+                    const coverSrc = selectedBook.cover_image || selectedBook.coverImage || '/images/default-cover.png';
+                    const numericPrice = Number(selectedBook.price || 0);
                     
                     if (modalCover) modalCover.src = coverSrc;
                     if (modalTitle) modalTitle.textContent = selectedBook.title;
                     if (modalAuthor) modalAuthor.textContent = `By ${selectedBook.author || 'Unknown Author'}`;
-                    if (modalPrice) modalPrice.textContent = `$${Number(selectedBook.price || 0).toFixed(2)} USD`;
+                    if (modalPrice) modalPrice.textContent = numericPrice === 0 ? 'FREE' : `$${numericPrice.toFixed(2)} USD`;
                     if (modalDescription) {
                         modalDescription.textContent = selectedBook.description || 'No overview summary details text has been drafted for this volume yet.';
                     }
                     
-                    // Show modal
-                    previewModal.style.display = 'flex';
-                    
-                    // Direct redirect button to reader workspace
+                    // Action button inside preview modal
                     const modalBuyBtn = document.getElementById('modal-buy-btn');
                     if (modalBuyBtn) {
+                        modalBuyBtn.textContent = numericPrice === 0 ? 'Read / Download Free' : 'Open Reader';
                         modalBuyBtn.onclick = () => {
-                            window.location.href = `/read?bookId=${selectedBook.id}`;
+                            // Redirect using standard 'id' parameter matching reader workspace
+                            window.location.href = `/read?id=${selectedBook.id}`;
                         };
                     }
+
+                    // Show modal
+                    previewModal.style.display = 'flex';
                 }
             });
         });
