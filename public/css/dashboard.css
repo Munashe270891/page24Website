@@ -111,23 +111,30 @@ body {
     box-sizing: border-box;
 }
 
-.cover-thumb {
+.cover-thumb, .author-book-card img {
     width: 100px;
     height: 140px;
+    object-fit: contain; /* Prevents cover images from cropping or warping */
+    background-color: #e3e1d5; /* Soft neutral backdrop */
     border-radius: 4px;
-    padding: 10px;
+    padding: 4px;
     box-sizing: border-box;
     font-size: 11px;
     font-weight: bold;
     text-align: center;
-    color: var(--white);
+    color: var(--text-dark);
     display: flex;
     align-items: center;
     justify-content: center;
+    flex-shrink: 0;
 }
 
-.yellow-theme { background-color: #d9a05b; }
-.orange-theme { background-color: #b85c43; }
+.yellow-theme { background-color: #d9a05b; color: var(--white); }
+.orange-theme { background-color: #b85c43; color: var(--white); }
+
+.book-meta {
+    flex: 1;
+}
 
 .book-meta h3 {
     margin: 0 0 10px 0;
