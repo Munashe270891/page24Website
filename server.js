@@ -2,7 +2,6 @@ require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
-const fs = require('fs');
 const { Paynow } = require('paynow'); 
 const supabase = require('./database'); // Import Supabase Client
 const session = require('express-session');
@@ -67,10 +66,8 @@ async function requireAdmin(req, res, next) {
     }
 }
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => { cb(null, 'public/assets/'); },
-    filename: (req, file, cb) => { cb(null, Date.now() + path.extname(file.originalname)); }
-});
+// Memory Storage for Supabase Bucket Uploads
+const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 
 const dualUploadFields = upload.fields([
@@ -83,8 +80,22 @@ const profileUploadFields = upload.fields([
     { name: 'isbnDoc', maxCount: 1 }
 ]);
 
-if (!fs.existsSync('public/assets')) {
-    fs.mkdirSync('public/assets', { recursive: true });
+// Helper Function: Stream file directly to Supabase Storage Buckets
+async function uploadToSupabase(file, bucket) {
+    const fileName = `${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`;
+    const { data, error } = await supabase.storage
+        .from(bucket)
+        .upload(fileName, file.buffer, { contentType: file.mimetype });
+
+    if (error) throw error;
+
+    if (bucket === 'covers') {
+        const { data: publicUrlData } = supabase.storage
+            .from(bucket)
+            .getPublicUrl(fileName);
+        return publicUrlData.publicUrl;
+    }
+    return fileName; // Return storage identifier key for private PDF bucket
 }
 
 const integrationId = process.env.PAYNOW_INTEGRATION_ID || "25640"; 
@@ -194,50 +205,62 @@ app.get('/api/author/profile', requireLogin, async (req, res) => {
 
 // 2. Save / Update Author KYC Profile
 app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, res) => {
-    const userId = req.session.user.id;
-    const { legalName, idNumber, phone, address, kinName, kinRelation, kinPhone, isbn } = req.body;
+    try {
+        const userId = req.session.user.id;
+        const { legalName, idNumber, phone, address, kinName, kinRelation, kinPhone, isbn } = req.body;
 
-    if (!legalName || !idNumber || !phone || !address || !kinName || !kinRelation || !kinPhone) {
-        return res.status(400).json({ error: "All required KYC fields must be completed." });
+        if (!legalName || !idNumber || !phone || !address || !kinName || !kinRelation || !kinPhone) {
+            return res.status(400).json({ error: "All required KYC fields must be completed." });
+        }
+
+        let idDocPath = null;
+        let isbnDocPath = null;
+
+        if (req.files && req.files['idDoc']) {
+            idDocPath = await uploadToSupabase(req.files['idDoc'][0], 'covers');
+        }
+
+        if (req.files && req.files['isbnDoc']) {
+            isbnDocPath = await uploadToSupabase(req.files['isbnDoc'][0], 'covers');
+        }
+
+        const { data: user, error: userErr } = await supabase
+            .from('users')
+            .select('id_doc_path, isbn_doc_path')
+            .eq('id', userId)
+            .single();
+
+        if (userErr) return res.status(500).json({ error: userErr.message });
+
+        const finalIdDoc = idDocPath || (user ? user.id_doc_path : null);
+        const finalIsbnDoc = isbnDocPath || (user ? user.isbn_doc_path : null);
+
+        if (!finalIdDoc) {
+            return res.status(400).json({ error: "A clear Government ID image or document upload is required." });
+        }
+
+        const { error: updateErr } = await supabase
+            .from('users')
+            .update({ 
+                legal_name: legalName, 
+                id_number: idNumber, 
+                id_doc_path: finalIdDoc, 
+                phone, 
+                address, 
+                kin_name: kinName, 
+                kin_relation: kinRelation, 
+                kin_phone: kinPhone, 
+                isbn: isbn || null, 
+                isbn_doc_path: finalIsbnDoc,
+                profile_complete: 1
+            })
+            .eq('id', userId);
+
+        if (updateErr) return res.status(500).json({ error: updateErr.message });
+        res.json({ success: true, message: "KYC Author Verification Profile saved successfully!" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
-
-    const idDocPath = req.files && req.files['idDoc'] ? `/assets/${req.files['idDoc'][0].filename}` : null;
-    const isbnDocPath = req.files && req.files['isbnDoc'] ? `/assets/${req.files['isbnDoc'][0].filename}` : null;
-
-    const { data: user, error: userErr } = await supabase
-        .from('users')
-        .select('id_doc_path, isbn_doc_path')
-        .eq('id', userId)
-        .single();
-
-    if (userErr) return res.status(500).json({ error: userErr.message });
-
-    const finalIdDoc = idDocPath || (user ? user.id_doc_path : null);
-    const finalIsbnDoc = isbnDocPath || (user ? user.isbn_doc_path : null);
-
-    if (!finalIdDoc) {
-        return res.status(400).json({ error: "A clear Government ID image or document upload is required." });
-    }
-
-    const { error: updateErr } = await supabase
-        .from('users')
-        .update({ 
-            legal_name: legalName, 
-            id_number: idNumber, 
-            id_doc_path: finalIdDoc, 
-            phone, 
-            address, 
-            kin_name: kinName, 
-            kin_relation: kinRelation, 
-            kin_phone: kinPhone, 
-            isbn: isbn || null, 
-            isbn_doc_path: finalIsbnDoc,
-            profile_complete: 1
-        })
-        .eq('id', userId);
-
-    if (updateErr) return res.status(500).json({ error: updateErr.message });
-    res.json({ success: true, message: "KYC Author Verification Profile saved successfully!" });
 });
 
 // ==========================================
@@ -296,12 +319,13 @@ app.get('/api/books', async (req, res) => {
     res.json(data);
 });
 
+// Secure PDF Streaming from Private Bucket
 app.get('/api/books/:id/pdf-stream', async (req, res) => {
     const bookId = req.params.id;
 
     const { data: book, error } = await supabase
         .from('books')
-        .select('pdf_source')
+        .select('pdf_source, mode')
         .eq('id', bookId)
         .single();
 
@@ -309,22 +333,27 @@ app.get('/api/books/:id/pdf-stream', async (req, res) => {
         return res.status(404).json({ error: "PDF document file not found." });
     }
 
-    const cleanPath = book.pdf_source.replace(/^\//, '');
-    const filePath = path.join(__dirname, 'public', cleanPath);
+    const { data: fileData, error: downloadErr } = await supabase.storage
+        .from('pdfs')
+        .download(book.pdf_source);
 
-    if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: "PDF file does not exist on disk." });
-    }
+    if (downloadErr) return res.status(404).json({ error: "Failed to download PDF from bucket." });
 
-    res.sendFile(filePath);
+    const arrayBuffer = await fileData.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline');
+    res.send(buffer);
 });
 
+// Secure Free PDF Download Endpoint
 app.get('/api/books/:id/download-free', async (req, res) => {
     const bookId = req.params.id;
 
     const { data: book, error } = await supabase
         .from('books')
-        .select('title, pdf_source, price')
+        .select('title, pdf_source, price, allow_download')
         .eq('id', bookId)
         .single();
 
@@ -334,25 +363,32 @@ app.get('/api/books/:id/download-free', async (req, res) => {
         return res.status(403).json({ error: "This title requires purchase before downloading." });
     }
 
+    if (parseInt(book.allow_download) !== 1) {
+        return res.status(403).json({ error: "The author has restricted offline file downloads for this book." });
+    }
+
     if (!book.pdf_source) {
         return res.status(404).json({ error: "No PDF file attached to this book." });
     }
 
-    const cleanPath = book.pdf_source.replace(/^\//, '');
-    const filePath = path.join(__dirname, 'public', cleanPath);
+    const { data: fileData, error: downloadErr } = await supabase.storage
+        .from('pdfs')
+        .download(book.pdf_source);
 
-    if (!fs.existsSync(filePath)) {
-        return res.status(404).json({ error: "File not found on storage server." });
-    }
+    if (downloadErr) return res.status(404).json({ error: "File retrieval failed." });
 
+    const arrayBuffer = await fileData.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
     const downloadFileName = `${book.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
-    res.download(filePath, downloadFileName);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${downloadFileName}"`);
+    res.send(buffer);
 });
 
 app.get('/api/books/my-library', requireLogin, async (req, res) => {
     const userId = req.session.user.id;
 
-    // Retrieve purchases made by user
     const { data: purchases } = await supabase
         .from('purchases')
         .select('book_id')
@@ -360,7 +396,6 @@ app.get('/api/books/my-library', requireLogin, async (req, res) => {
 
     const purchasedBookIds = purchases ? purchases.map(p => p.book_id) : [];
 
-    // Query books user created, purchased, or are $0 free
     let filterString = `user_id.eq.${userId},price.eq.0`;
     if (purchasedBookIds.length > 0) {
         filterString += `,id.in.(${purchasedBookIds.join(',')})`;
@@ -389,70 +424,65 @@ app.get('/api/books/my-books', requireLogin, async (req, res) => {
     res.json(data);
 });
 
+// Book Publishing Endpoint connected directly to Supabase Storage
 app.post('/api/books/publish', requireLogin, dualUploadFields, async (req, res) => {
-    const userId = req.session.user.id;
+    try {
+        const userId = req.session.user.id;
+        const { title, description, price, mode, allowDownload, chapterTitle, chapterBody, agreeCopyright, agreeTerms } = req.body;
 
-    /* 
-    ===============================================================
-    KYC Verification Check (DISABLED)
-    ===============================================================
-    const { data: user, error: userErr } = await supabase
-        .from('users')
-        .select('profile_complete')
-        .eq('id', userId)
-        .single();
+        if (!agreeCopyright || !agreeTerms) {
+            return res.status(400).json({ 
+                error: "Legal Compliance Rejection: You must accept Copyright & Terms." 
+            });
+        }
 
-    if (userErr || !user || user.profile_complete !== 1) {
-        return res.status(403).json({ 
-            error: "KYC Verification Required: You must complete your 'My Author Profile' details before publishing titles." 
-        });
+        let coverImageUrl = null;
+        let securePdfPath = null;
+
+        if (req.files && req.files['coverImage']) {
+            coverImageUrl = await uploadToSupabase(req.files['coverImage'][0], 'covers');
+        } else {
+            return res.status(400).json({ error: "Front cover artwork is required." });
+        }
+
+        if (mode === 'pdf' && req.files && req.files['pdfBook']) {
+            securePdfPath = await uploadToSupabase(req.files['pdfBook'][0], 'pdfs');
+        }
+
+        const authorName = req.session.user.username;
+
+        const { data: newBook, error: bookErr } = await supabase
+            .from('books')
+            .insert([{
+                user_id: userId,
+                title,
+                author: authorName,
+                description,
+                price: parseFloat(price),
+                mode,
+                allow_download: parseInt(allowDownload) || 0,
+                status: 'active',
+                cover_image: coverImageUrl,
+                pdf_source: securePdfPath
+            }])
+            .select()
+            .single();
+
+        if (bookErr) return res.status(500).json({ error: bookErr.message });
+
+        if (mode === 'html' && chapterTitle) {
+            const { error: chapErr } = await supabase
+                .from('chapters')
+                .insert([{ book_id: newBook.id, title: chapterTitle, body: chapterBody }]);
+
+            if (chapErr) return res.status(500).json({ error: chapErr.message });
+        }
+
+        res.status(201).json({ success: true, bookId: newBook.id });
+    } catch (err) {
+        console.error(">>> [PUBLISH PIPELINE ERROR]:", err);
+        res.status(500).json({ error: err.message });
     }
-    ===============================================================
-    */
-
-    const { title, description, price, mode, allowDownload, chapterTitle, chapterBody, agreeCopyright, agreeTerms } = req.body;
-
-    if (!agreeCopyright || !agreeTerms) {
-        return res.status(400).json({ 
-            error: "Legal Compliance Rejection: You must accept the Copyright Affirmation and Terms of Service under Zimbabwean Law." 
-        });
-    }
-
-    const coverImageUrl = req.files && req.files['coverImage'] ? `/assets/${req.files['coverImage'][0].filename}` : null;
-    const securePdfUrl = req.files && req.files['pdfBook'] ? `/assets/${req.files['pdfBook'][0].filename}` : null;
-    
-    if (!coverImageUrl) return res.status(400).json({ error: "A book front cover artwork is required." });
-
-    const authorName = req.session.user.username;
-
-    const { data: newBook, error: bookErr } = await supabase
-        .from('books')
-        .insert([{
-            user_id: userId,
-            title,
-            author: authorName,
-            description,
-            price: parseFloat(price),
-            mode,
-            allow_download: parseInt(allowDownload),
-            status: 'active',
-            cover_image: coverImageUrl,
-            pdf_source: mode === 'pdf' ? securePdfUrl : null
-        }])
-        .select()
-        .single();
-
-    if (bookErr) return res.status(500).json({ error: bookErr.message });
-
-    if (mode === 'html' && chapterTitle) {
-        const { error: chapErr } = await supabase
-            .from('chapters')
-            .insert([{ book_id: newBook.id, title: chapterTitle, body: chapterBody }]);
-
-        if (chapErr) return res.status(500).json({ error: chapErr.message });
-    }
-
-    res.status(201).json({ success: true, bookId: newBook.id });
 });
 
 app.get('/api/books/secure-source', async (req, res) => {
