@@ -30,7 +30,28 @@
                 <a href="#" class="menu-item" id="menu-admin" onclick="switchTab('admin-view', event)">🛡️ Admin Panel</a>
                 <hr class="menu-divider">
                 <a href="/terms" target="_blank" class="menu-item">📜 Terms & Copyright</a>
-                <a href="/" class="menu-item view-site">👁️ Reader View</a>
+                
+                <!-- REVAMPED READER VIEW BUTTON -->
+                <div style="padding: 10px 0; text-align: center;">
+                    <a href="/catalog.html" style="
+                        display: inline-flex;
+                        align-items: center;
+                        justify-content: center;
+                        gap: 8px;
+                        width: 90%;
+                        background-color: #27ae60;
+                        color: #ffffff;
+                        padding: 10px 14px;
+                        border-radius: 20px;
+                        text-decoration: none;
+                        font-weight: bold;
+                        font-size: 13px;
+                        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+                        transition: background 0.2s ease;">
+                        📚 Browse Main Library
+                    </a>
+                </div>
+
                 <a href="/api/auth/logout" style="color: #d97736; font-weight: bold; margin-top: 20px; display: block; text-decoration: none; padding: 10px;">🚪 Sign Out</a>
             </nav>
         </aside>
@@ -111,6 +132,36 @@
                 
                 <div class="creator-card">
                     <form id="publish-master-form">
+                        <!-- AUTHOR NAME (PRE-FILLED VIA JS) -->
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label class="input-label">AUTHOR NAME</label>
+                            <input type="text" id="book-author-name" name="authorName" placeholder="Author Name" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box;" required>
+                        </div>
+
+                        <!-- CATEGORY SELECTOR -->
+                        <div class="form-group" style="margin-bottom: 15px;">
+                            <label class="input-label">BOOK CATEGORY</label>
+                            <select id="book-category" name="category" class="styled-select" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box;" required>
+                                <option value="Shona Novels">Shona Novels</option>
+                                <option value="Motivational">Motivational</option>
+                                <option value="Dating & Relationships">Dating & Relationships</option>
+                                <option value="Christian Devotional">Christian Devotional</option>
+                                <option value="Business">Business</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <!-- SUB-THEME SELECTOR (Dynamic display for Shona Novels) -->
+                        <div class="form-group" id="sub-theme-group" style="margin-bottom: 15px;">
+                            <label class="input-label">SHONA NOVEL SUB-THEME</label>
+                            <select id="book-sub-theme" name="subTheme" class="styled-select" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box;">
+                                <option value="Love / Rudo">Love / Rudo</option>
+                                <option value="Christian / Chitendero">Christian / Chitendero</option>
+                                <option value="Culture / Tsika neMagariro">Culture / Tsika neMagariro</option>
+                                <option value="Drama / Mutevedzano">Drama / Mutevedzano</option>
+                            </select>
+                        </div>
+
                         <label class="input-label">BOOK TITLE</label>
                         <input type="text" id="book-title" name="title" placeholder="Enter Book Title" required>
 
@@ -133,7 +184,7 @@
                             </label>
                         </div>
 
-                        <!-- UPDATED: SECURITY & DISTRIBUTION RULES DROPDOWN -->
+                        <!-- SECURITY & DISTRIBUTION RULES DROPDOWN -->
                         <div class="security-rules-group">
                             <label for="book-download-rule" class="input-label">SECURITY & DISTRIBUTION RULES</label>
                             <div class="select-wrapper">
@@ -488,6 +539,25 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // CATEGORY / SUB-THEME TOGGLE LOGIC
+            const categorySelect = document.getElementById('book-category');
+            const subThemeGroup = document.getElementById('sub-theme-group');
+
+            function handleCategoryChange() {
+                if (categorySelect && subThemeGroup) {
+                    if (categorySelect.value === 'Shona Novels') {
+                        subThemeGroup.style.display = 'block';
+                    } else {
+                        subThemeGroup.style.display = 'none';
+                    }
+                }
+            }
+
+            if (categorySelect) {
+                categorySelect.addEventListener('change', handleCategoryChange);
+                handleCategoryChange(); // Initial check on page load
+            }
+
             // PUBLISH FORMAT & SECURITY RULE DISABLING LOGIC
             const pdfRadio = document.getElementById('format-pdf');
             const htmlRadio = document.getElementById('format-html');
