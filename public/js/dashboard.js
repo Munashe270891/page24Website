@@ -7,8 +7,7 @@ document.addEventListener('DOMContentLoaded', () => {
         'creator-view': document.getElementById('menu-create'),
         'studio-view': document.getElementById('menu-studio'),
         'sales-view': document.getElementById('menu-sales'),
-        'profile-view': document.getElementById('menu-profile'),
-        'admin-view': document.getElementById('menu-admin')
+        'profile-view': document.getElementById('menu-profile')
     };
 
     window.switchTab = function(targetTabId, evt) {
@@ -33,9 +32,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetTabId === 'studio-view') loadStudioWebBooks();
         if (targetTabId === 'sales-view') loadSalesAnalytics();
         if (targetTabId === 'profile-view') loadAuthorProfile();
-        if (targetTabId === 'admin-view' && typeof window.loadAdminBooks === 'function') {
-            window.loadAdminBooks();
-        }
     };
 
     // Quick create shortcut from dashboard view
@@ -233,7 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -------------------------------------------------------------
-    // 6. AUTHOR PROFILE & KYC SUBMISSION & LOAD
+    // 6. AUTHOR PROFILE & PAYOUT DETAILS SUBMISSION & LOAD
     // -------------------------------------------------------------
     const profileForm = document.getElementById('author-profile-form');
 
@@ -242,19 +238,13 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(res => res.json())
             .then(data => {
                 if (!data) return;
-                if (data.legal_name) document.getElementById('author-legal-name').value = data.legal_name;
-                if (data.id_number) document.getElementById('author-id-number').value = data.id_number;
-                if (data.phone) document.getElementById('author-phone').value = data.phone;
-                if (data.address) document.getElementById('author-address').value = data.address;
-                if (data.kin_name) document.getElementById('kin-name').value = data.kin_name;
-                if (data.kin_relation) document.getElementById('kin-relation').value = data.kin_relation;
-                if (data.kin_phone) document.getElementById('kin-phone').value = data.kin_phone;
-                if (data.isbn) document.getElementById('author-isbn').value = data.isbn;
+                const legalName = document.getElementById('author-legal-name');
+                const phone = document.getElementById('author-phone');
+                const isbn = document.getElementById('author-isbn');
 
-                if (data.id_doc_path) {
-                    const idUpload = document.getElementById('author-id-upload');
-                    if (idUpload) idUpload.removeAttribute('required');
-                }
+                if (legalName && data.legal_name) legalName.value = data.legal_name;
+                if (phone && data.phone) phone.value = data.phone;
+                if (isbn && data.isbn) isbn.value = data.isbn;
             })
             .catch(err => console.error("Failed to load author profile:", err));
     }
@@ -264,22 +254,18 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
 
             const formData = new FormData();
-            formData.append('legalName', document.getElementById('author-legal-name').value);
-            formData.append('idNumber', document.getElementById('author-id-number').value);
-            formData.append('phone', document.getElementById('author-phone').value);
-            formData.append('address', document.getElementById('author-address').value);
-            formData.append('kinName', document.getElementById('kin-name').value);
-            formData.append('kinRelation', document.getElementById('kin-relation').value);
-            formData.append('kinPhone', document.getElementById('kin-phone').value);
+            const legalNameInput = document.getElementById('author-legal-name');
+            const phoneInput = document.getElementById('author-phone');
+            const isbnInput = document.getElementById('author-isbn');
+            const isbnDocInput = document.getElementById('author-isbn-proof');
 
-            const isbn = document.getElementById('author-isbn').value;
-            if (isbn) formData.append('isbn', isbn);
+            if (legalNameInput) formData.append('legalName', legalNameInput.value.trim());
+            if (phoneInput) formData.append('phone', phoneInput.value.trim());
+            if (isbnInput && isbnInput.value.trim()) formData.append('isbn', isbnInput.value.trim());
 
-            const idDoc = document.getElementById('author-id-upload').files[0];
-            if (idDoc) formData.append('idDoc', idDoc);
-
-            const isbnDoc = document.getElementById('author-isbn-proof').files[0];
-            if (isbnDoc) formData.append('isbnDoc', isbnDoc);
+            if (isbnDocInput && isbnDocInput.files[0]) {
+                formData.append('isbnDoc', isbnDocInput.files[0]);
+            }
 
             fetch('/api/author/profile', {
                 method: 'POST',
@@ -290,7 +276,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.error) {
                     alert(`❌ ${data.error}`);
                 } else {
-                    alert("✅ Profile & KYC Verification details updated successfully!");
+                    alert("✅ Author profile details updated successfully!");
                 }
             })
             .catch(err => alert("⚠️ Profile update failed."));
