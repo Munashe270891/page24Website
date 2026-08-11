@@ -13,8 +13,9 @@ const PORT = process.env.PORT || 3000;
 // ==========================================
 //              MIDDLEWARE SETUP
 // ==========================================
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+// Expand payload size limits to handle large HTML chapter bodies and rich text content
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Trust Render's reverse proxy for secure HTTPS cookies
@@ -68,7 +69,10 @@ async function requireAdmin(req, res, next) {
 
 // Memory Storage for Supabase Bucket Uploads
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const upload = multer({ 
+    storage: storage,
+    limits: { fileSize: 50 * 1024 * 1024 } // 50MB File Limit
+});
 
 const dualUploadFields = upload.fields([
     { name: 'coverImage', maxCount: 1 }, 
@@ -428,9 +432,28 @@ app.get('/api/books/my-books', requireLogin, async (req, res) => {
 app.post('/api/books/publish', requireLogin, dualUploadFields, async (req, res) => {
     try {
         const userId = req.session.user.id;
-        const { title, description, price, mode, allowDownload, chapterTitle, chapterBody, agreeCopyright, agreeTerms } = req.body;
+        const { 
+            title, 
+            description, 
+            price, 
+            mode, 
+            allowDownload, 
+            downloadRule,
+            category,
+            subTheme,
+            authorName,
+            chapterTitle, 
+            chapterBody, 
+            content,
+            agreeCopyright, 
+            agreeTerms 
+        } = req.body;
 
-        if (!agreeCopyright || !agreeTerms) {
+        // Verify checkbox terms boolean values or presence
+        const isCopyrightAgreed = agreeCopyright === 'true' || agreeCopyright === true || agreeCopyright === 'on';
+        const isTermsAgreed = agreeTerms === 'true' || agreeTerms === true || agreeTerms === 'on';
+
+        if (!isCopyrightAgreed || !isTermsAgreed) {
             return res.status(400).json({ 
                 error: "Legal Compliance Rejection: You must accept Copyright & Terms." 
             });
@@ -445,22 +468,31 @@ app.post('/api/books/publish', requireLogin, dualUploadFields, async (req, res) 
             return res.status(400).json({ error: "Front cover artwork is required." });
         }
 
-        if (mode === 'pdf' && req.files && req.files['pdfBook']) {
-            securePdfPath = await uploadToSupabase(req.files['pdfBook'][0], 'pdfs');
+        if (mode === 'pdf') {
+            if (req.files && req.files['pdfBook']) {
+                securePdfPath = await uploadToSupabase(req.files['pdfBook'][0], 'pdfs');
+            } else {
+                return res.status(400).json({ error: "PDF file document is required when publishing in PDF mode." });
+            }
         }
 
-        const authorName = req.session.user.username;
+        const effectiveAuthorName = authorName || req.session.user.username;
+        const finalAllowDownload = allowDownload !== undefined ? allowDownload : downloadRule;
 
+        // 1. Insert Master Book Record
         const { data: newBook, error: bookErr } = await supabase
             .from('books')
             .insert([{
                 user_id: userId,
                 title,
-                author: authorName,
+                author: effectiveAuthorName,
+                author_name: effectiveAuthorName,
+                category: category || null,
+                sub_theme: subTheme || null,
                 description,
-                price: parseFloat(price),
-                mode,
-                allow_download: parseInt(allowDownload) || 0,
+                price: parseFloat(price) || 0,
+                mode: mode || 'pdf',
+                allow_download: parseInt(finalAllowDownload) || 0,
                 status: 'active',
                 cover_image: coverImageUrl,
                 pdf_source: securePdfPath
@@ -468,14 +500,27 @@ app.post('/api/books/publish', requireLogin, dualUploadFields, async (req, res) 
             .select()
             .single();
 
-        if (bookErr) return res.status(500).json({ error: bookErr.message });
+        if (bookErr) {
+            console.error(">>> [BOOK INSERT ERROR]:", bookErr);
+            return res.status(500).json({ error: bookErr.message });
+        }
 
-        if (mode === 'html' && chapterTitle) {
+        // 2. Insert First Chapter if mode is HTML / Web Book
+        const finalBody = chapterBody || content;
+        if (mode === 'html' && (chapterTitle || finalBody)) {
             const { error: chapErr } = await supabase
                 .from('chapters')
-                .insert([{ book_id: newBook.id, title: chapterTitle, body: chapterBody }]);
+                .insert([{ 
+                    book_id: newBook.id, 
+                    chapter_number: 1,
+                    title: chapterTitle || "Chapter 1", 
+                    body: finalBody || "" 
+                }]);
 
-            if (chapErr) return res.status(500).json({ error: chapErr.message });
+            if (chapErr) {
+                console.error(">>> [CHAPTER INSERT ERROR]:", chapErr);
+                return res.status(500).json({ error: chapErr.message });
+            }
         }
 
         res.status(201).json({ success: true, bookId: newBook.id });
@@ -500,6 +545,7 @@ app.get('/api/books/secure-source', async (req, res) => {
         .from('chapters')
         .select('title, body')
         .eq('book_id', bookId)
+        .order('chapter_number', { ascending: true })
         .maybeSingle();
 
     res.json({
@@ -540,16 +586,17 @@ app.get('/api/books/:bookId/chapters', requireLogin, async (req, res) => {
         .from('chapters')
         .select('*')
         .eq('book_id', bookId)
-        .order('id', { ascending: true });
+        .order('chapter_number', { ascending: true });
 
     if (chapErr) return res.status(500).json({ error: 'Failed to retrieve chapters.' });
     res.json(chapters);
 });
 
 app.post('/api/books/chapters', requireLogin, async (req, res) => {
-    const { bookId, title, content } = req.body;
+    const { bookId, title, content, body } = req.body;
+    const finalContent = content || body;
 
-    if (!bookId || !title || !content) {
+    if (!bookId || !title || !finalContent) {
         return res.status(400).json({ error: 'Missing required chapter parameters.' });
     }
 
@@ -562,9 +609,19 @@ app.post('/api/books/chapters', requireLogin, async (req, res) => {
 
     if (bookErr || !book) return res.status(403).json({ error: 'Unauthorized book pipeline action.' });
 
+    // Calculate next chapter number automatically
+    const { data: existingChapters } = await supabase
+        .from('chapters')
+        .select('chapter_number')
+        .eq('book_id', bookId)
+        .order('chapter_number', { ascending: false })
+        .limit(1);
+
+    const nextChapterNum = (existingChapters && existingChapters.length > 0) ? (existingChapters[0].chapter_number + 1) : 1;
+
     const { data: chapter, error: insertErr } = await supabase
         .from('chapters')
-        .insert([{ book_id: bookId, title, body: content }])
+        .insert([{ book_id: bookId, chapter_number: nextChapterNum, title, body: finalContent }])
         .select()
         .single();
 
