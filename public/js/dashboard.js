@@ -86,8 +86,15 @@ document.addEventListener('DOMContentLoaded', () => {
         .then(res => res.json())
         .then(data => {
             if (data.loggedIn && data.user) {
+                const displayName = data.user.name || data.user.username || '';
                 const welcomeTag = document.querySelector('.welcome-tag');
-                if (welcomeTag) welcomeTag.innerText = `Welcome 👤 ${data.user.username}`;
+                if (welcomeTag) welcomeTag.innerText = `Welcome 👤 ${displayName}`;
+
+                // Pre-fill the Author Name in the book creation form
+                const authorNameInput = document.getElementById('book-author-name');
+                if (authorNameInput && !authorNameInput.value) {
+                    authorNameInput.value = displayName;
+                }
             }
         })
         .catch(err => console.error("Failed to load user info:", err));
@@ -151,9 +158,24 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
 
             const formData = new FormData();
+            const authorNameInput = document.getElementById('book-author-name');
+            const categorySelect = document.getElementById('book-category');
+            const subThemeSelect = document.getElementById('book-sub-theme');
             const titleInput = document.getElementById('book-title');
             const priceInput = document.getElementById('book-price');
             const descInput = document.getElementById('book-description');
+
+            formData.append('authorName', authorNameInput ? authorNameInput.value.trim() : '');
+            
+            const categoryVal = categorySelect ? categorySelect.value : 'Other';
+            formData.append('category', categoryVal);
+
+            // Append subTheme if category is Shona Novels
+            if (categoryVal === 'Shona Novels' && subThemeSelect) {
+                formData.append('subTheme', subThemeSelect.value);
+            } else {
+                formData.append('subTheme', '');
+            }
 
             formData.append('title', titleInput ? titleInput.value.trim() : '');
             formData.append('description', descInput ? descInput.value.trim() : '');
