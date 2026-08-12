@@ -16,12 +16,16 @@ body {
     color: var(--dark-text);
 }
 
+/* ========================================== */
+/* HEADER & NAVIGATION BUTTON GROUP           */
+/* ========================================== */
+
 header {
     background-color: var(--white);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 18px 5%;
+    padding: 16px 5%;
     border-bottom: 1px solid var(--border-tan);
 }
 
@@ -32,7 +36,69 @@ header {
     color: var(--dark-text);
 }
 
-nav a {
+/* Container Box for Header Buttons */
+.nav-button-group {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+    background: var(--bg-cream);
+    padding: 6px 8px;
+    border-radius: 10px;
+    border: 1px solid var(--border-tan);
+}
+
+/* Base Nav Button Rules */
+.nav-btn-secondary,
+.nav-btn-primary {
+    text-decoration: none;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 14px;
+    border-radius: 6px;
+    transition: all 0.2s ease-in-out;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Secondary Navigation Buttons (Browse Books, My Library, Top Authors) */
+.nav-btn-secondary {
+    background-color: var(--white);
+    color: var(--dark-text);
+    border: 1px solid var(--border-tan);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.nav-btn-secondary:hover {
+    background-color: var(--card-bg);
+    border-color: #d1cdc4;
+}
+
+.nav-btn-secondary:active {
+    transform: translateY(1px);
+}
+
+/* Primary CTA Button (Author Portal) */
+.nav-btn-primary {
+    background-color: var(--dark-text);
+    color: var(--white);
+    border: 1px solid var(--dark-text);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
+}
+
+.nav-btn-primary:hover {
+    background-color: var(--primary-green);
+    border-color: var(--primary-green);
+}
+
+.nav-btn-primary:active {
+    transform: translateY(1px);
+}
+
+/* Legacy Header Anchor Fallback */
+nav a:not(.nav-btn-secondary):not(.nav-btn-primary) {
     margin-left: 24px;
     text-decoration: none;
     font-weight: 500;
@@ -40,17 +106,9 @@ nav a {
     font-size: 14px;
 }
 
-.nav-btn {
-    background: var(--dark-text);
-    color: var(--white);
-    padding: 10px 18px;
-    border-radius: 4px;
-    transition: opacity 0.2s;
-}
-
-.nav-btn:hover {
-    opacity: 0.9;
-}
+/* ========================================== */
+/* HERO SECTION                               */
+/* ========================================== */
 
 .hero {
     background-color: var(--primary-green);
@@ -221,8 +279,8 @@ nav a {
 .book-card img {
     width: 100%;
     height: 280px;
-    object-fit: contain; /* Keeps the entire cover visible without cropping */
-    background-color: #e0dcd3; /* Subtle neutral frame filling any side margins */
+    object-fit: contain; /* Keeps cover visible without cropping */
+    background-color: #e0dcd3;
     border-radius: 4px;
     margin-bottom: 14px;
     border: 1px solid var(--border-tan);
@@ -341,16 +399,18 @@ nav a {
         text-align: center;
     }
 
-    nav {
-        display: flex;
-        flex-wrap: wrap;
-        justify-content: center;
-        gap: 10px;
+    .nav-button-group {
+        width: 100%;
+        gap: 6px;
+        padding: 6px;
     }
 
-    nav a {
-        margin-left: 0;
-        font-size: 13px;
+    .nav-btn-secondary,
+    .nav-btn-primary {
+        flex: 1 1 auto;
+        font-size: 12px;
+        padding: 7px 10px;
+        white-space: nowrap;
     }
 
     .house-ad {
