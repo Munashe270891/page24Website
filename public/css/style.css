@@ -439,3 +439,55 @@ nav a:not(.nav-btn-secondary):not(.nav-btn-primary) {
         font-size: 12px;
     }
 }
+/* ========================================== */
+/* FOOTER & COPYRIGHT SECTION                 */
+/* ========================================== */
+
+.site-footer {
+    background-color: var(--white);
+    border-top: 1px solid var(--border-tan);
+    padding: 24px 5%;
+    margin-top: 40px;
+    text-align: center;
+}
+
+.footer-content {
+    max-width: 800px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.copyright-text {
+    margin: 0;
+    font-size: 13px;
+    color: var(--dark-text);
+    opacity: 0.85;
+    line-height: 1.5;
+}
+
+.footer-links {
+    margin-top: 4px;
+}
+
+/* Explicit Clickable Link Styling */
+.footer-link {
+    color: var(--primary-green);
+    font-size: 13px;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: opacity 0.2s ease, color 0.2s ease;
+}
+
+.footer-link:hover {
+    color: var(--accent-orange);
+    opacity: 0.9;
+}
+
+.footer-link:active {
+    color: var(--primary-green);
+}
+
