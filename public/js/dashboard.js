@@ -243,6 +243,8 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(res => res.json())
             .then(data => {
                 if (!data) return;
+
+                // Legal identity & contact fields
                 const legalName = document.getElementById('author-legal-name');
                 const phone = document.getElementById('author-phone');
                 const isbn = document.getElementById('author-isbn');
@@ -250,6 +252,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (legalName && (data.legal_name || data.legalName)) legalName.value = data.legal_name || data.legalName;
                 if (phone && data.phone) phone.value = data.phone;
                 if (isbn && data.isbn) isbn.value = data.isbn;
+
+                // Bio & Social Media Branding fields
+                const bio = document.getElementById('author-bio');
+                const fbHandle = document.getElementById('author-fb-handle');
+                const fbFollowers = document.getElementById('author-fb-followers');
+                const twHandle = document.getElementById('author-tw-handle');
+                const twFollowers = document.getElementById('author-tw-followers');
+                const igHandle = document.getElementById('author-ig-handle');
+                const igFollowers = document.getElementById('author-ig-followers');
+
+                if (bio && data.bio) bio.value = data.bio;
+                if (fbHandle && (data.facebook_handle || data.facebookHandle)) fbHandle.value = data.facebook_handle || data.facebookHandle;
+                if (fbFollowers && (data.facebook_followers || data.facebookFollowers)) fbFollowers.value = data.facebook_followers || data.facebookFollowers;
+                if (twHandle && (data.twitter_handle || data.twitterHandle)) twHandle.value = data.twitter_handle || data.twitterHandle;
+                if (twFollowers && (data.twitter_followers || data.twitterFollowers)) twFollowers.value = data.twitter_followers || data.twitterFollowers;
+                if (igHandle && (data.instagram_handle || data.instagramHandle)) igHandle.value = data.instagram_handle || data.instagramHandle;
+                if (igFollowers && (data.instagram_followers || data.instagramFollowers)) igFollowers.value = data.instagram_followers || data.instagramFollowers;
             })
             .catch(err => console.error("Failed to load author profile:", err));
     }
@@ -259,6 +278,8 @@ document.addEventListener('DOMContentLoaded', () => {
             e.preventDefault();
 
             const formData = new FormData();
+
+            // Legal identity & contact fields
             const legalNameInput = document.getElementById('author-legal-name');
             const phoneInput = document.getElementById('author-phone');
             const isbnInput = document.getElementById('author-isbn');
@@ -271,6 +292,27 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isbnDocInput && isbnDocInput.files[0]) {
                 formData.append('isbnDoc', isbnDocInput.files[0]);
             }
+
+            // Public branding & social media handles
+            const profilePicInput = document.getElementById('author-profile-pic');
+            const bioInput = document.getElementById('author-bio');
+            const fbHandleInput = document.getElementById('author-fb-handle');
+            const fbFollowersInput = document.getElementById('author-fb-followers');
+            const twHandleInput = document.getElementById('author-tw-handle');
+            const twFollowersInput = document.getElementById('author-tw-followers');
+            const igHandleInput = document.getElementById('author-ig-handle');
+            const igFollowersInput = document.getElementById('author-ig-followers');
+
+            if (profilePicInput && profilePicInput.files[0]) {
+                formData.append('profilePic', profilePicInput.files[0]);
+            }
+            if (bioInput) formData.append('bio', bioInput.value.trim());
+            if (fbHandleInput) formData.append('facebookHandle', fbHandleInput.value.trim());
+            if (fbFollowersInput) formData.append('facebookFollowers', fbFollowersInput.value || 0);
+            if (twHandleInput) formData.append('twitterHandle', twHandleInput.value.trim());
+            if (twFollowersInput) formData.append('twitterFollowers', twFollowersInput.value || 0);
+            if (igHandleInput) formData.append('instagramHandle', igHandleInput.value.trim());
+            if (igFollowersInput) formData.append('instagramFollowers', igFollowersInput.value || 0);
 
             fetch('/api/author/profile', {
                 method: 'POST',
