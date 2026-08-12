@@ -81,7 +81,8 @@ const dualUploadFields = upload.fields([
 
 const profileUploadFields = upload.fields([
     { name: 'idDoc', maxCount: 1 },
-    { name: 'isbnDoc', maxCount: 1 }
+    { name: 'isbnDoc', maxCount: 1 },
+    { name: 'profilePic', maxCount: 1 }
 ]);
 
 // Helper Function: Stream file directly to Supabase Storage Buckets
@@ -193,13 +194,18 @@ app.get('/api/auth/me', (req, res) => {
 //        AUTHOR PROFILE & KYC ENDPOINTS
 // ==========================================
 
-// 1. Get Logged-in Author's KYC Profile
+// 1. Get Logged-in Author's KYC & Social Profile
 app.get('/api/author/profile', requireLogin, async (req, res) => {
     const userId = req.session.user.id;
 
     const { data, error } = await supabase
         .from('users')
-        .select('legal_name, id_number, id_doc_path, phone, address, kin_name, kin_relation, kin_phone, isbn, isbn_doc_path, profile_complete')
+        .select(`
+            legal_name, id_number, id_doc_path, phone, address, kin_name, 
+            kin_relation, kin_phone, isbn, isbn_doc_path, profile_complete,
+            bio, profile_pic_url, facebook_handle, twitter_handle, instagram_handle,
+            facebook_followers, twitter_followers, instagram_followers
+        `)
         .eq('id', userId)
         .single();
 
@@ -207,11 +213,15 @@ app.get('/api/author/profile', requireLogin, async (req, res) => {
     res.json(data || {});
 });
 
-// 2. Save / Update Author KYC Profile
+// 2. Save / Update Author KYC & Social Profile
 app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, res) => {
     try {
         const userId = req.session.user.id;
-        const { legalName, idNumber, phone, address, kinName, kinRelation, kinPhone, isbn } = req.body;
+        const { 
+            legalName, idNumber, phone, address, kinName, kinRelation, kinPhone, isbn,
+            bio, facebookHandle, twitterHandle, instagramHandle,
+            facebookFollowers, twitterFollowers, instagramFollowers
+        } = req.body;
 
         if (!legalName || !idNumber || !phone || !address || !kinName || !kinRelation || !kinPhone) {
             return res.status(400).json({ error: "All required KYC fields must be completed." });
@@ -219,18 +229,23 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
 
         let idDocPath = null;
         let isbnDocPath = null;
+        let profilePicUrl = null;
 
-        if (req.files && req.files['idDoc']) {
-            idDocPath = await uploadToSupabase(req.files['idDoc'][0], 'covers');
-        }
-
-        if (req.files && req.files['isbnDoc']) {
-            isbnDocPath = await uploadToSupabase(req.files['isbnDoc'][0], 'covers');
+        if (req.files) {
+            if (req.files['idDoc']) {
+                idDocPath = await uploadToSupabase(req.files['idDoc'][0], 'covers');
+            }
+            if (req.files['isbnDoc']) {
+                isbnDocPath = await uploadToSupabase(req.files['isbnDoc'][0], 'covers');
+            }
+            if (req.files['profilePic']) {
+                profilePicUrl = await uploadToSupabase(req.files['profilePic'][0], 'covers');
+            }
         }
 
         const { data: user, error: userErr } = await supabase
             .from('users')
-            .select('id_doc_path, isbn_doc_path')
+            .select('id_doc_path, isbn_doc_path, profile_pic_url')
             .eq('id', userId)
             .single();
 
@@ -238,6 +253,7 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
 
         const finalIdDoc = idDocPath || (user ? user.id_doc_path : null);
         const finalIsbnDoc = isbnDocPath || (user ? user.isbn_doc_path : null);
+        const finalProfilePic = profilePicUrl || (user ? user.profile_pic_url : null);
 
         if (!finalIdDoc) {
             return res.status(400).json({ error: "A clear Government ID image or document upload is required." });
@@ -256,12 +272,20 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
                 kin_phone: kinPhone, 
                 isbn: isbn || null, 
                 isbn_doc_path: finalIsbnDoc,
-                profile_complete: 1
+                profile_complete: 1,
+                bio: bio ? bio.substring(0, 160) : null,
+                profile_pic_url: finalProfilePic,
+                facebook_handle: facebookHandle || null,
+                twitter_handle: twitterHandle || null,
+                instagram_handle: instagramHandle || null,
+                facebook_followers: parseInt(facebookFollowers) || 0,
+                twitter_followers: parseInt(twitterFollowers) || 0,
+                instagram_followers: parseInt(instagramFollowers) || 0
             })
             .eq('id', userId);
 
         if (updateErr) return res.status(500).json({ error: updateErr.message });
-        res.json({ success: true, message: "KYC Author Verification Profile saved successfully!" });
+        res.json({ success: true, message: "KYC & Author Profile saved successfully!" });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
@@ -273,15 +297,19 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
 
 app.get('/api/top-authors', async (req, res) => {
     try {
-        // Fetch users who are authors or admins
+        // Fetch users who are authors or admins along with their profile/social fields
         const { data: authors, error: authorsErr } = await supabase
             .from('users')
-            .select('id, username, legal_name, address')
+            .select(`
+                id, username, legal_name, address, bio, profile_pic_url,
+                facebook_handle, twitter_handle, instagram_handle,
+                facebook_followers, twitter_followers, instagram_followers
+            `)
             .or('role.eq.author,role.eq.admin');
 
         if (authorsErr) return res.status(500).json({ error: authorsErr.message });
 
-        // Aggregate sales counts from purchasesjoined with books
+        // Aggregate sales counts from purchases joined with books
         const { data: purchases, error: purchasesErr } = await supabase
             .from('purchases')
             .select('id, books!inner(user_id)');
@@ -316,15 +344,24 @@ app.get('/api/top-authors', async (req, res) => {
             const totalSales = salesCountMap[author.id] || 0;
             const siteFollowers = followerCountMap[author.id] || 0;
 
+            const totalSocialFollowers = (author.facebook_followers || 0) + 
+                                         (author.twitter_followers || 0) + 
+                                         (author.instagram_followers || 0);
+
             return {
                 id: author.id,
                 name: displayName,
-                bio: author.address ? `Author based in ${author.address}` : 'Page 24 Published Author.',
-                profile_picture_url: null,
+                bio: author.bio || (author.address ? `Author based in ${author.address}` : 'Page 24 Published Author.'),
+                profile_picture_url: author.profile_pic_url || null,
                 total_books_sold: totalSales,
                 books_read: totalSales,
                 site_followers: siteFollowers,
-                social_followers: Math.floor(totalSales * 3.5)
+                social_followers: totalSocialFollowers,
+                social_links: {
+                    facebook: author.facebook_handle ? `https://facebook.com/${author.facebook_handle}` : null,
+                    twitter: author.twitter_handle ? `https://x.com/${author.twitter_handle}` : null,
+                    instagram: author.instagram_handle ? `https://instagram.com/${author.instagram_handle}` : null
+                }
             };
         });
 
@@ -340,7 +377,7 @@ app.post('/api/authors/:id/follow', requireLogin, async (req, res) => {
     const targetAuthorId = req.params.id;
     const currentUserId = req.session.user.id;
 
-    if (targetAuthorId === currentUserId) {
+    if (targetAuthorId == currentUserId) {
         return res.status(400).json({ error: "You cannot follow yourself." });
     }
 
