@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const subThemeRow = document.getElementById('shona-subthemes-row');
     const catalogHeading = document.getElementById('catalog-heading');
     
-    // Modal Element Pointers
+    // Preview Modal Element Pointers
     const previewModal = document.getElementById('preview-modal');
     const closeModalBtn = document.getElementById('close-modal-btn');
     const modalCover = document.getElementById('modal-cover');
@@ -14,7 +14,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalPrice = document.getElementById('modal-price');
     const modalDescription = document.getElementById('modal-description');
 
+    // Top Authors Modal Element Pointers
+    const topAuthorsBtn = document.getElementById('top-authors-nav-btn');
+    const authorsModal = document.getElementById('authors-modal');
+    const closeAuthorsModalBtn = document.getElementById('close-authors-modal');
+    const rankingCriteriaSelect = document.getElementById('ranking-criteria');
+    const topAuthorsListContainer = document.getElementById('top-authors-list');
+
     let localStoreBooksCache = []; // Master store from API
+    let cachedAuthorsData = [];     // Master authors array for dynamic sorting
     let selectedCategory = 'All';
     let selectedSubTheme = 'All';
 
@@ -212,11 +220,132 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeModalBtn && previewModal) {
         closeModalBtn.addEventListener('click', () => { previewModal.style.display = 'none'; });
     }
-    if (previewModal) {
-        window.addEventListener('click', (e) => { 
-            if (e.target === previewModal) previewModal.style.display = 'none'; 
+
+    // 5. TOP AUTHORS CONTROLLER MODULE
+    if (topAuthorsBtn && authorsModal) {
+        topAuthorsBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            authorsModal.style.display = 'flex';
+            loadTopAuthors();
         });
     }
+
+    if (closeAuthorsModalBtn && authorsModal) {
+        closeAuthorsModalBtn.addEventListener('click', () => {
+            authorsModal.style.display = 'none';
+        });
+    }
+
+    if (rankingCriteriaSelect) {
+        rankingCriteriaSelect.addEventListener('change', () => {
+            renderAuthorsList(rankingCriteriaSelect.value);
+        });
+    }
+
+    async function loadTopAuthors() {
+        if (!topAuthorsListContainer) return;
+        topAuthorsListContainer.innerHTML = '<p style="text-align: center; padding: 20px; opacity: 0.7;">Loading top authors...</p>';
+
+        try {
+            const response = await fetch('/api/top-authors');
+            if (!response.ok) throw new Error('Failed to fetch author analytics.');
+
+            const data = await response.json();
+            
+            if (!data.success || !Array.isArray(data.authors) || data.authors.length === 0) {
+                topAuthorsListContainer.innerHTML = '<p style="text-align: center; padding: 20px; opacity: 0.7;">No active authors found on Page 24 yet.</p>';
+                return;
+            }
+
+            cachedAuthorsData = data.authors;
+            renderAuthorsList(rankingCriteriaSelect ? rankingCriteriaSelect.value : 'overall');
+
+        } catch (error) {
+            console.error('Top Authors Fetch Error:', error);
+            topAuthorsListContainer.innerHTML = '<p style="text-align: center; color: #dc3545; padding: 20px;">Could not load top authors list.</p>';
+        }
+    }
+
+    function renderAuthorsList(criteria) {
+        if (!topAuthorsListContainer || cachedAuthorsData.length === 0) return;
+
+        // Dynamic Sorting Logic
+        const sortedAuthors = [...cachedAuthorsData].sort((a, b) => {
+            const aSales = Number(a.total_books_sold || a.books_read || 0);
+            const bSales = Number(b.total_books_sold || b.books_read || 0);
+            
+            const aSiteFollowers = Number(a.site_followers || 0);
+            const bSiteFollowers = Number(b.site_followers || 0);
+            
+            const aSocial = Number(a.social_followers || 0);
+            const bSocial = Number(b.social_followers || 0);
+
+            // Composite Weighted Score
+            const aScore = (aSales * 10) + (aSiteFollowers * 5) + (aSocial * 0.1);
+            const bScore = (bSales * 10) + (bSiteFollowers * 5) + (bSocial * 0.1);
+
+            if (criteria === 'sales') return bSales - aSales;
+            if (criteria === 'site_followers') return bSiteFollowers - aSiteFollowers;
+            if (criteria === 'social_reach') return bSocial - aSocial;
+            return bScore - aScore; // Default: 'overall'
+        });
+
+        topAuthorsListContainer.innerHTML = sortedAuthors.map((author, index) => {
+            const safeName = escapeHTML(author.name || 'Anonymous Author');
+            const safeBio = escapeHTML(author.bio || 'Page 24 Published Author.');
+            const avatarSrc = author.profile_picture_url || '/images/default-avatar.png';
+            
+            const salesCount = Number(author.total_books_sold || author.books_read || 0);
+            const siteFollowersCount = Number(author.site_followers || 0);
+            const socialReachCount = Number(author.social_followers || 0);
+
+            return `
+                <div class="author-card" style="display: flex; gap: 15px; background: #fff; padding: 14px; border-radius: 8px; border: 1px solid var(--border-tan, #E2DACD); align-items: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
+                    <span style="font-size: 18px; font-weight: 800; color: var(--accent-orange, #d97736); width: 30px; text-align: center;">#${index + 1}</span>
+                    <img src="${avatarSrc}" alt="${safeName}" style="width: 55px; height: 55px; border-radius: 50%; object-fit: cover; border: 1px solid #ccc;" onerror="this.src='/images/default-avatar.png'">
+                    
+                    <div style="flex: 1;">
+                        <h3 style="margin: 0 0 3px 0; font-size: 15px; color: var(--text-dark, #2C3E50);">${safeName}</h3>
+                        <p style="margin: 0 0 6px 0; font-size: 12px; color: #555; line-height: 1.3;">${safeBio}</p>
+                        
+                        <div style="font-size: 11px; color: var(--primary-green, #1B4D3E); font-weight: 600; display: flex; gap: 10px; flex-wrap: wrap;">
+                            <span>📚 ${salesCount} Reads/Purchases</span>
+                            <span>👥 ${siteFollowersCount} Site Followers</span>
+                            <span>🌐 ${socialReachCount.toLocaleString()} Social Reach</span>
+                        </div>
+                    </div>
+
+                    <button onclick="followAuthor('${author.id}')" style="background: var(--primary-green, #1B4D3E); color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap;">
+                        + Follow
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+
+    // Global Follow Author Action Handler
+    window.followAuthor = async function(authorId) {
+        try {
+            const response = await fetch(`/api/authors/${authorId}/follow`, { method: 'POST' });
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                alert('Author followed successfully!');
+                loadTopAuthors(); // Refresh metrics list
+            } else {
+                alert(result.error || result.message || 'Please log in to follow authors.');
+            }
+        } catch (err) {
+            console.error('Follow request error:', err);
+            alert('Could not follow author. Please try again.');
+        }
+    };
+
+    // Close Modals when clicking outside
+    window.addEventListener('click', (e) => { 
+        if (e.target === previewModal) previewModal.style.display = 'none'; 
+        if (e.target === authorsModal) authorsModal.style.display = 'none';
+    });
 
     // Real-time search input trigger
     if (searchInput) {
