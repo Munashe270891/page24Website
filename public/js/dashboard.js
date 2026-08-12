@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -------------------------------------------------------------
-    // 2. PUBLISH FORMAT SWITCH & ANTI-PIRACY AUTO-LOCK
+    // 2. PUBLISH FORMAT SWITCH & CATEGORY DEPENDENCIES
     // -------------------------------------------------------------
     const modeRadios = document.querySelectorAll('input[name="upload-mode"]');
     const pdfGroup = document.getElementById('pdf-input-group');
@@ -71,9 +71,23 @@ document.addEventListener('DOMContentLoaded', () => {
         radio.addEventListener('change', (e) => handleFormatChange(e.target.value));
     });
 
-    // Run once on load to set initial state
+    // Run once on load to set initial format state
     const checkedRadio = document.querySelector('input[name="upload-mode"]:checked');
     if (checkedRadio) handleFormatChange(checkedRadio.value);
+
+    // Dynamic Category Handler matching `#sub-theme-group` in dashboard.html
+    const categorySelect = document.getElementById('book-category');
+    const subThemeGroup = document.getElementById('sub-theme-group');
+    
+    if (categorySelect && subThemeGroup) {
+        categorySelect.addEventListener('change', (e) => {
+            if (e.target.value === 'Shona Novels') {
+                subThemeGroup.style.display = 'block';
+            } else {
+                subThemeGroup.style.display = 'none';
+            }
+        });
+    }
 
     // -------------------------------------------------------------
     // 3. FETCH CURRENT USER & INITIALIZE DASHBOARD
@@ -86,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const welcomeTag = document.querySelector('.welcome-tag');
                 if (welcomeTag) welcomeTag.innerText = `Welcome 👤 ${displayName}`;
 
-                // Pre-fill the Author Name in the book creation form
+                // Pre-fill Author Name input in creation form
                 const authorNameInput = document.getElementById('book-author-name');
                 if (authorNameInput && !authorNameInput.value) {
                     authorNameInput.value = displayName;
@@ -111,29 +125,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 booksContainer.innerHTML = '';
 
                 if (!books || books.length === 0) {
-                    booksContainer.innerHTML = '<p style="color: var(--text-dark, #222); opacity: 0.6;">You have not published any books yet.</p>';
+                    booksContainer.innerHTML = '<p style="color: var(--text-dark, #222); opacity: 0.6; width: 100%;">You have not published any books yet.</p>';
                     return;
                 }
 
                 books.forEach(book => {
                     const card = document.createElement('div');
-                    card.className = 'book-card';
-                    card.style.cssText = "background: white; border: 1px solid var(--border-tan, #ccc); border-radius: 8px; padding: 15px; margin-bottom: 15px; display: flex; gap: 15px; align-items: center;";
+                    card.className = 'author-book-card';
 
                     const rawPrice = parseFloat(book.price) || 0;
                     const coverSrc = book.coverImage || book.cover_image || '/images/default-cover.png';
 
                     card.innerHTML = `
-                        <img src="${coverSrc}" alt="${book.title}" style="width: 70px; height: 100px; object-fit: cover; border-radius: 4px;" onerror="this.src='/images/default-cover.png'">
-                        <div style="flex-grow: 1;">
-                            <h3 style="margin: 0 0 5px 0; color: var(--primary-green, #1e4d2b);">${book.title}</h3>
-                            <p style="font-size: 13px; color: #666; margin: 0 0 5px 0;">${book.description ? book.description.substring(0, 80) + '...' : ''}</p>
-                            <span style="font-weight: bold; color: #27ae60;">$${rawPrice.toFixed(2)} USD</span> | 
-                            <span style="font-size: 12px; color: #888; text-transform: uppercase;">Format: ${book.mode}</span>
-                        </div>
-                        <div style="display: flex; gap: 8px;">
-                            <button onclick="openEditModal(${book.id}, '${escapeHtml(book.description || '')}', ${rawPrice})" style="background: #2980b9; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Edit</button>
-                            <button onclick="deleteBook(${book.id})" style="background: #c0392b; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Delete</button>
+                        <img src="${coverSrc}" alt="${book.title}" class="cover-thumb" onerror="this.src='/images/default-cover.png'">
+                        <div class="book-meta">
+                            <h3>${book.title}</h3>
+                            <p>${book.description ? book.description.substring(0, 80) + '...' : ''}</p>
+                            <p><strong>Price:</strong> <span style="color: var(--primary-green-light, #27ae60);">$${rawPrice.toFixed(2)} USD</span></p>
+                            <p><span class="badge ${book.status === 'Draft' ? 'status-draft' : 'status-pub'}">${book.mode ? book.mode.toUpperCase() : 'PDF'}</span></p>
+                            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                                <button onclick="openEditModal(${book.id}, '${escapeHtml(book.description || '')}', ${rawPrice})" style="background: var(--primary-green, #1b3d2b); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Edit</button>
+                                <button onclick="deleteBook(${book.id})" style="background: var(--danger-red, #dc3545); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Delete</button>
+                            </div>
                         </div>
                     `;
                     booksContainer.appendChild(card);
@@ -142,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error("Failed to fetch author books:", err));
     }
 
-    // Safe string escaping helper for onclick handlers
+    // Safe string escaping helper for inline onclick handlers
     window.escapeHtml = function(text) {
         return text ? text.replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
     };
@@ -168,7 +181,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const categoryVal = categorySelect ? categorySelect.value : 'Other';
             formData.append('category', categoryVal);
 
-            // Append subTheme if category is Shona Novels
             if (categoryVal === 'Shona Novels' && subThemeSelect) {
                 formData.append('subTheme', subThemeSelect.value);
             } else {
@@ -203,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 formData.append('chapterTitle', chapterTitleInput ? chapterTitleInput.value.trim() : '');
                 formData.append('chapterBody', initialBody);
-                formData.append('content', initialBody); // Dual keys for complete fallback safety
+                formData.append('content', initialBody);
             }
 
             const copyrightCheck = document.getElementById('copyright-ownership-check');
@@ -228,7 +240,7 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch(err => {
                 console.error(err);
-                alert("⚠️ Publishing failed. Please check network connection and try again.");
+                alert("⚠️ Publishing failed. Please check your network connection and try again.");
             });
         });
     }
@@ -244,31 +256,37 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(data => {
                 if (!data) return;
 
-                // Legal identity & contact fields
+                // Contact & Legal Identity
                 const legalName = document.getElementById('author-legal-name');
                 const phone = document.getElementById('author-phone');
                 const isbn = document.getElementById('author-isbn');
 
-                if (legalName && (data.legal_name || data.legalName)) legalName.value = data.legal_name || data.legalName;
-                if (phone && data.phone) phone.value = data.phone;
-                if (isbn && data.isbn) isbn.value = data.isbn;
+                if (legalName) legalName.value = data.legal_name || data.legalName || '';
+                if (phone) phone.value = data.phone || '';
+                if (isbn) isbn.value = data.isbn || '';
 
-                // Bio & Social Media Branding fields
+                // Social Media Handles, Bio & Checkboxes
                 const bio = document.getElementById('author-bio');
                 const fbHandle = document.getElementById('author-fb-handle');
-                const fbFollowers = document.getElementById('author-fb-followers');
+                const ttHandle = document.getElementById('author-tt-handle');
                 const twHandle = document.getElementById('author-tw-handle');
-                const twFollowers = document.getElementById('author-tw-followers');
                 const igHandle = document.getElementById('author-ig-handle');
-                const igFollowers = document.getElementById('author-ig-followers');
 
-                if (bio && data.bio) bio.value = data.bio;
-                if (fbHandle && (data.facebook_handle || data.facebookHandle)) fbHandle.value = data.facebook_handle || data.facebookHandle;
-                if (fbFollowers && (data.facebook_followers || data.facebookFollowers)) fbFollowers.value = data.facebook_followers || data.facebookFollowers;
-                if (twHandle && (data.twitter_handle || data.twitterHandle)) twHandle.value = data.twitter_handle || data.twitterHandle;
-                if (twFollowers && (data.twitter_followers || data.twitterFollowers)) twFollowers.value = data.twitter_followers || data.twitterFollowers;
-                if (igHandle && (data.instagram_handle || data.instagramHandle)) igHandle.value = data.instagram_handle || data.instagramHandle;
-                if (igFollowers && (data.instagram_followers || data.instagramFollowers)) igFollowers.value = data.instagram_followers || data.instagramFollowers;
+                const showFb = document.getElementById('show-fb');
+                const showTt = document.getElementById('show-tt');
+                const showTw = document.getElementById('show-tw');
+                const showIg = document.getElementById('show-ig');
+
+                if (bio) bio.value = data.bio || '';
+                if (fbHandle) fbHandle.value = data.facebook_handle || data.facebookHandle || '';
+                if (ttHandle) ttHandle.value = data.tiktok_handle || data.tiktokHandle || '';
+                if (twHandle) twHandle.value = data.twitter_handle || data.twitterHandle || '';
+                if (igHandle) igHandle.value = data.instagram_handle || data.instagramHandle || '';
+
+                if (showFb) showFb.checked = data.show_facebook !== undefined ? data.show_facebook : true;
+                if (showTt) showTt.checked = data.show_tiktok !== undefined ? data.show_tiktok : true;
+                if (showTw) showTw.checked = data.show_twitter !== undefined ? data.show_twitter : true;
+                if (showIg) showIg.checked = data.show_instagram !== undefined ? data.show_instagram : true;
             })
             .catch(err => console.error("Failed to load author profile:", err));
     }
@@ -279,7 +297,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const formData = new FormData();
 
-            // Legal identity & contact fields
+            // Legal & Identity
             const legalNameInput = document.getElementById('author-legal-name');
             const phoneInput = document.getElementById('author-phone');
             const isbnInput = document.getElementById('author-isbn');
@@ -288,31 +306,36 @@ document.addEventListener('DOMContentLoaded', () => {
             if (legalNameInput) formData.append('legalName', legalNameInput.value.trim());
             if (phoneInput) formData.append('phone', phoneInput.value.trim());
             if (isbnInput && isbnInput.value.trim()) formData.append('isbn', isbnInput.value.trim());
-
             if (isbnDocInput && isbnDocInput.files[0]) {
                 formData.append('isbnDoc', isbnDocInput.files[0]);
             }
 
-            // Public branding & social media handles
+            // Public Profile & Social Handles
             const profilePicInput = document.getElementById('author-profile-pic');
             const bioInput = document.getElementById('author-bio');
             const fbHandleInput = document.getElementById('author-fb-handle');
-            const fbFollowersInput = document.getElementById('author-fb-followers');
+            const ttHandleInput = document.getElementById('author-tt-handle');
             const twHandleInput = document.getElementById('author-tw-handle');
-            const twFollowersInput = document.getElementById('author-tw-followers');
             const igHandleInput = document.getElementById('author-ig-handle');
-            const igFollowersInput = document.getElementById('author-ig-followers');
+
+            const showFbCheck = document.getElementById('show-fb');
+            const showTtCheck = document.getElementById('show-tt');
+            const showTwCheck = document.getElementById('show-tw');
+            const showIgCheck = document.getElementById('show-ig');
 
             if (profilePicInput && profilePicInput.files[0]) {
                 formData.append('profilePic', profilePicInput.files[0]);
             }
             if (bioInput) formData.append('bio', bioInput.value.trim());
             if (fbHandleInput) formData.append('facebookHandle', fbHandleInput.value.trim());
-            if (fbFollowersInput) formData.append('facebookFollowers', fbFollowersInput.value || 0);
+            if (ttHandleInput) formData.append('tiktokHandle', ttHandleInput.value.trim());
             if (twHandleInput) formData.append('twitterHandle', twHandleInput.value.trim());
-            if (twFollowersInput) formData.append('twitterFollowers', twFollowersInput.value || 0);
             if (igHandleInput) formData.append('instagramHandle', igHandleInput.value.trim());
-            if (igFollowersInput) formData.append('instagramFollowers', igFollowersInput.value || 0);
+
+            formData.append('showFacebook', showFbCheck && showFbCheck.checked ? 'true' : 'false');
+            formData.append('showTiktok', showTtCheck && showTtCheck.checked ? 'true' : 'false');
+            formData.append('showTwitter', showTwCheck && showTwCheck.checked ? 'true' : 'false');
+            formData.append('showInstagram', showIgCheck && showIgCheck.checked ? 'true' : 'false');
 
             fetch('/api/author/profile', {
                 method: 'POST',
@@ -324,6 +347,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert(`❌ ${data.error}`);
                 } else {
                     alert("✅ Author profile details updated successfully!");
+                    loadAuthorProfile();
                 }
             })
             .catch(err => alert("⚠️ Profile update failed."));
@@ -346,7 +370,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(books => {
                 studioBooksList.innerHTML = '';
                 if (!books || books.length === 0) {
-                    studioBooksList.innerHTML = '<p style="font-size: 13px; color: gray;">No web books found. Create one under "Create New Book" with HTML/Web option!</p>';
+                    studioBooksList.innerHTML = '<p style="font-size: 13px; color: var(--text-muted, #777);">No web books found. Create one under "Create New Book" with HTML/Web option!</p>';
                     return;
                 }
 
@@ -366,8 +390,11 @@ document.addEventListener('DOMContentLoaded', () => {
         if (studioEditorPlaceholder) studioEditorPlaceholder.classList.add('hidden');
         if (studioEditorPanel) studioEditorPanel.classList.remove('hidden');
 
-        document.getElementById('current-editing-book-title').innerText = book.title;
-        document.getElementById('editor-book-id').value = book.id;
+        const titleElem = document.getElementById('current-editing-book-title');
+        const idInput = document.getElementById('editor-book-id');
+
+        if (titleElem) titleElem.innerText = book.title;
+        if (idInput) idInput.value = book.id;
 
         loadChapters(book.id);
     }
@@ -379,7 +406,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!studioChaptersList) return;
                 studioChaptersList.innerHTML = '';
                 if (!chapters || chapters.length === 0) {
-                    studioChaptersList.innerHTML = '<p style="font-size: 12px; color: gray;">No chapters added yet.</p>';
+                    studioChaptersList.innerHTML = '<p style="font-size: 12px; color: var(--text-muted, #777);">No chapters added yet.</p>';
                     return;
                 }
 
@@ -397,8 +424,11 @@ document.addEventListener('DOMContentLoaded', () => {
         addChapterForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const bookId = document.getElementById('editor-book-id').value;
-            const title = document.getElementById('new-chapter-title').value;
-            const bodyContent = document.getElementById('new-chapter-body').value;
+            const titleInput = document.getElementById('new-chapter-title');
+            const bodyInput = document.getElementById('new-chapter-body');
+
+            const title = titleInput ? titleInput.value : '';
+            const bodyContent = bodyInput ? bodyInput.value : '';
 
             fetch(`/api/books/${bookId}/chapters`, {
                 method: 'POST',
@@ -416,8 +446,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert(`❌ ${data.error}`);
                 } else {
                     alert("📖 Chapter added and published successfully!");
-                    document.getElementById('new-chapter-title').value = '';
-                    document.getElementById('new-chapter-body').value = '';
+                    if (titleInput) titleInput.value = '';
+                    if (bodyInput) bodyInput.value = '';
                     loadChapters(bookId);
                 }
             })
@@ -446,12 +476,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (breakdownList) {
                     breakdownList.innerHTML = '';
                     if (!data.bookBreakdown || Object.keys(data.bookBreakdown).length === 0) {
-                        breakdownList.innerHTML = '<p style="font-size: 13px; color: gray;">No sales recorded yet.</p>';
+                        breakdownList.innerHTML = '<p style="font-size: 13px; color: var(--text-muted, #777);">No sales recorded yet.</p>';
                     } else {
                         for (const [title, stats] of Object.entries(data.bookBreakdown)) {
                             const row = document.createElement('div');
-                            row.style.cssText = "display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding-bottom: 8px; font-size: 13px;";
-                            row.innerHTML = `<span><strong>${title}</strong> (${stats.sales} sold)</span><strong style="color: var(--primary-green, #1e4d2b);">$${parseFloat(stats.earnings || 0).toFixed(2)}</strong>`;
+                            row.style.cssText = "display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding: 8px 0; font-size: 13px;";
+                            row.innerHTML = `<span><strong>${title}</strong> (${stats.sales} sold)</span><strong style="color: var(--primary-green, #1b3d2b);">$${parseFloat(stats.earnings || 0).toFixed(2)}</strong>`;
                             breakdownList.appendChild(row);
                         }
                     }
@@ -461,18 +491,42 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (txList) {
                     txList.innerHTML = '';
                     if (!data.recentTransactions || data.recentTransactions.length === 0) {
-                        txList.innerHTML = '<p style="font-size: 13px; color: gray;">No transactions available.</p>';
+                        txList.innerHTML = '<p style="font-size: 13px; color: var(--text-muted, #777);">No transactions available.</p>';
                     } else {
                         data.recentTransactions.forEach(tx => {
                             const row = document.createElement('div');
-                            row.style.cssText = "background: #f8f9fa; border: 1px solid #eee; padding: 10px; border-radius: 4px; font-size: 12px; margin-bottom: 6px;";
-                            row.innerHTML = `<strong>${tx.buyer_name || 'Anonymous'}</strong> purchased <em>${tx.book_title}</em> for <span style="color: var(--primary-green, #1e4d2b); font-weight: bold;">$${parseFloat(tx.sale_price || 0).toFixed(2)}</span> on ${new Date(tx.sale_date || tx.created_at).toLocaleDateString()}`;
+                            row.className = 'log-item';
+                            row.innerHTML = `
+                                <span><strong>${tx.buyer_name || 'Anonymous'}</strong> purchased <em>${tx.book_title}</em></span>
+                                <span style="color: var(--primary-green-light, #27ae60); font-weight: bold;">+$${parseFloat(tx.sale_price || 0).toFixed(2)}</span>
+                            `;
                             txList.appendChild(row);
                         });
                     }
                 }
             })
             .catch(err => console.error("Error loading sales data:", err));
+    }
+
+    // Payout withdrawal handler
+    const withdrawBtn = document.querySelector('.withdraw-btn');
+    if (withdrawBtn) {
+        withdrawBtn.addEventListener('click', () => {
+            const phoneInput = document.getElementById('author-phone');
+            const phone = phoneInput ? phoneInput.value.trim() : '';
+
+            fetch('/api/payouts/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) alert(`❌ ${data.error}`);
+                else alert("✅ Withdrawal request submitted successfully!");
+            })
+            .catch(err => alert("⚠️ Withdrawal request failed."));
+        });
     }
 
     // -------------------------------------------------------------
@@ -484,13 +538,18 @@ document.addEventListener('DOMContentLoaded', () => {
 
     window.openEditModal = function(id, description, price) {
         if (!editModal) return;
-        document.getElementById('edit-book-id').value = id;
-        document.getElementById('edit-book-description').value = description;
-        document.getElementById('edit-book-price').value = price;
+        const idInput = document.getElementById('edit-book-id');
+        const descInput = document.getElementById('edit-book-description');
+        const priceInput = document.getElementById('edit-book-price');
+
+        if (idInput) idInput.value = id;
+        if (descInput) descInput.value = description;
+        if (priceInput) priceInput.value = price;
+
         editModal.style.display = 'flex';
     };
 
-    if (closeModalBtn) {
+    if (closeModalBtn && editModal) {
         closeModalBtn.addEventListener('click', () => { editModal.style.display = 'none'; });
     }
 
@@ -512,7 +571,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     alert(`❌ ${data.error}`);
                 } else {
                     alert("✅ Book details updated!");
-                    editModal.style.display = 'none';
+                    if (editModal) editModal.style.display = 'none';
                     loadDashboardBooks();
                 }
             });
@@ -547,7 +606,7 @@ function loadNotifications() {
             const badge = document.getElementById('notif-badge');
             if (!listContainer || !Array.isArray(notifications)) return;
 
-            const unreadCount = notifications.filter(n => n.is_read === 0 || n.is_read === false).length;
+            const unreadCount = notifications.filter(n => !n.is_read).length;
 
             if (unreadCount > 0 && badge) {
                 badge.textContent = unreadCount;
@@ -562,10 +621,10 @@ function loadNotifications() {
             }
 
             listContainer.innerHTML = notifications.map(notif => `
-                <div class="notif-card ${notif.is_read ? '' : 'unread'}">
-                    <span class="notif-card-title">📢 ${notif.title}</span>
-                    <p class="notif-card-body">${notif.message}</p>
-                    <small class="notif-card-date">${new Date(notif.createdAt || notif.created_at).toLocaleDateString()}</small>
+                <div class="notif-card ${notif.is_read ? '' : 'unread'}" onclick="markNotificationRead(${notif.id})">
+                    <span class="notif-card-title" style="font-weight: bold; font-size: 13px; display: block;">📢 ${notif.title}</span>
+                    <p class="notif-card-body" style="margin: 4px 0; font-size: 12px; color: var(--text-dark, #222);">${notif.message}</p>
+                    <small class="notif-card-date" style="font-size: 10px; color: var(--text-muted, #777);">${new Date(notif.createdAt || notif.created_at).toLocaleDateString()}</small>
                 </div>
             `).join('');
         })
@@ -576,3 +635,19 @@ window.toggleNotifDropdown = function() {
     const dropdown = document.getElementById('notif-dropdown');
     if (dropdown) dropdown.classList.toggle('hidden');
 };
+
+window.markNotificationRead = function(id) {
+    fetch(`/api/notifications/${id}/read`, { method: 'POST' })
+        .then(() => loadNotifications())
+        .catch(err => console.error("Failed to mark notification as read:", err));
+};
+
+// Global click listener to dismiss notification dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('notif-dropdown');
+    const bellBtn = document.getElementById('notif-bell-btn');
+    
+    if (dropdown && !dropdown.classList.contains('hidden') && bellBtn && !bellBtn.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add('hidden');
+    }
+});
