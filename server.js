@@ -268,6 +268,107 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
 });
 
 // ==========================================
+//          TOP AUTHORS LEADERBOARD
+// ==========================================
+
+app.get('/api/top-authors', async (req, res) => {
+    try {
+        // Fetch users who are authors or admins
+        const { data: authors, error: authorsErr } = await supabase
+            .from('users')
+            .select('id, username, legal_name, address')
+            .or('role.eq.author,role.eq.admin');
+
+        if (authorsErr) return res.status(500).json({ error: authorsErr.message });
+
+        // Aggregate sales counts from purchasesjoined with books
+        const { data: purchases, error: purchasesErr } = await supabase
+            .from('purchases')
+            .select('id, books!inner(user_id)');
+
+        if (purchasesErr) console.warn("Could not calculate purchases count:", purchasesErr.message);
+
+        const salesCountMap = {};
+        if (purchases) {
+            purchases.forEach(p => {
+                const authorId = p.books ? p.books.user_id : null;
+                if (authorId) {
+                    salesCountMap[authorId] = (salesCountMap[authorId] || 0) + 1;
+                }
+            });
+        }
+
+        // Aggregate followers per author
+        let followerCountMap = {};
+        const { data: followers } = await supabase
+            .from('followers')
+            .select('author_id');
+
+        if (followers) {
+            followers.forEach(f => {
+                followerCountMap[f.author_id] = (followerCountMap[f.author_id] || 0) + 1;
+            });
+        }
+
+        // Format author ranking objects
+        const formattedAuthors = (authors || []).map(author => {
+            const displayName = author.legal_name || author.username || 'Anonymous Author';
+            const totalSales = salesCountMap[author.id] || 0;
+            const siteFollowers = followerCountMap[author.id] || 0;
+
+            return {
+                id: author.id,
+                name: displayName,
+                bio: author.address ? `Author based in ${author.address}` : 'Page 24 Published Author.',
+                profile_picture_url: null,
+                total_books_sold: totalSales,
+                books_read: totalSales,
+                site_followers: siteFollowers,
+                social_followers: Math.floor(totalSales * 3.5)
+            };
+        });
+
+        res.json({ success: true, authors: formattedAuthors });
+    } catch (err) {
+        console.error(">>> [TOP AUTHORS FETCH ERROR]:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// Follow / Unfollow Author Action
+app.post('/api/authors/:id/follow', requireLogin, async (req, res) => {
+    const targetAuthorId = req.params.id;
+    const currentUserId = req.session.user.id;
+
+    if (targetAuthorId === currentUserId) {
+        return res.status(400).json({ error: "You cannot follow yourself." });
+    }
+
+    try {
+        const { error } = await supabase
+            .from('followers')
+            .insert([{ author_id: targetAuthorId, follower_id: currentUserId }]);
+
+        if (error) {
+            if (error.code === '23505') { // Unique constraint violation -> Unfollow
+                await supabase
+                    .from('followers')
+                    .delete()
+                    .eq('author_id', targetAuthorId)
+                    .eq('follower_id', currentUserId);
+
+                return res.json({ success: true, message: "Unfollowed author." });
+            }
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.json({ success: true, message: "Author followed successfully!" });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ==========================================
 //          NOTIFICATIONS SYSTEM
 // ==========================================
 
@@ -449,7 +550,6 @@ app.post('/api/books/publish', requireLogin, dualUploadFields, async (req, res) 
             agreeTerms 
         } = req.body;
 
-        // Verify checkbox terms boolean values or presence
         const isCopyrightAgreed = agreeCopyright === 'true' || agreeCopyright === true || agreeCopyright === 'on';
         const isTermsAgreed = agreeTerms === 'true' || agreeTerms === true || agreeTerms === 'on';
 
@@ -479,7 +579,6 @@ app.post('/api/books/publish', requireLogin, dualUploadFields, async (req, res) 
         const effectiveAuthorName = authorName || req.session.user.username;
         const finalAllowDownload = allowDownload !== undefined ? allowDownload : downloadRule;
 
-        // 1. Insert Master Book Record
         const { data: newBook, error: bookErr } = await supabase
             .from('books')
             .insert([{
@@ -505,7 +604,6 @@ app.post('/api/books/publish', requireLogin, dualUploadFields, async (req, res) 
             return res.status(500).json({ error: bookErr.message });
         }
 
-        // 2. Insert First Chapter if mode is HTML / Web Book
         const finalBody = chapterBody || content;
         if (mode === 'html' && (chapterTitle || finalBody)) {
             const { error: chapErr } = await supabase
@@ -609,7 +707,6 @@ app.post('/api/books/chapters', requireLogin, async (req, res) => {
 
     if (bookErr || !book) return res.status(403).json({ error: 'Unauthorized book pipeline action.' });
 
-    // Calculate next chapter number automatically
     const { data: existingChapters } = await supabase
         .from('chapters')
         .select('chapter_number')
