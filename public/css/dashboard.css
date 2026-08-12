@@ -442,6 +442,10 @@ textarea:focus {
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
 }
 
+.notif-bell-btn i {
+    vertical-align: middle;
+}
+
 .notif-badge {
     position: absolute;
     top: -4px;
@@ -558,6 +562,12 @@ textarea:focus {
         white-space: nowrap;
         padding: 10px 15px;
         gap: 5px;
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    .side-menu::-webkit-scrollbar {
+        display: none;
     }
 
     .menu-item {
