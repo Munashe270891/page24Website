@@ -1,26 +1,38 @@
 :root {
     --primary-green: #1b3d2b;
+    --primary-green-light: #27ae60;
+    --accent-orange: #d97736;
     --bg-cream-light: #fdfcf7;
     --bg-cream-dark: #f5f4ee;
     --border-tan: #e3e1d5;
     --text-dark: #2a2d2b;
     --text-muted: #6b6f6c;
     --white: #ffffff;
+    --danger-red: #dc3545;
 }
 
 body {
     margin: 0;
+    padding: 0;
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
     background-color: var(--bg-cream-light);
     color: var(--text-dark);
 }
+
+.hidden {
+    display: none !important;
+}
+
+/* ========================================== */
+/* DASHBOARD LAYOUT & SIDEBAR                 */
+/* ========================================== */
 
 .dashboard-container {
     display: flex;
     min-height: 100vh;
 }
 
-/* Sidebar Styling Context */
+/* Sidebar Navigation */
 .sidebar {
     width: 250px;
     background-color: var(--primary-green);
@@ -65,9 +77,11 @@ body {
     transition: all 0.2s;
 }
 
-.menu-item:hover, .menu-item.active {
+.menu-item:hover,
+.menu-item.active {
     background-color: rgba(255, 255, 255, 0.15);
     color: var(--white);
+    border-left: 4px solid var(--accent-orange);
 }
 
 .menu-divider {
@@ -76,25 +90,77 @@ body {
     margin: 15px 0;
 }
 
-/* Dashboard Panel Workspace */
+.nav-library-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 90%;
+    margin: 10px auto;
+    background-color: var(--primary-green-light);
+    color: var(--white);
+    padding: 10px 14px;
+    border-radius: 20px;
+    text-decoration: none;
+    font-weight: bold;
+    font-size: 13px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+    transition: background 0.2s ease;
+}
+
+.nav-library-btn:hover {
+    background-color: #219150;
+}
+
+.nav-logout-btn {
+    color: var(--accent-orange);
+    font-weight: bold;
+    margin-top: 20px;
+    display: block;
+    text-decoration: none;
+    padding: 12px 20px;
+}
+
+.nav-logout-btn:hover {
+    background-color: rgba(217, 119, 54, 0.1);
+}
+
+/* ========================================== */
+/* MAIN CONTENT WORKSPACE                     */
+/* ========================================== */
+
 .main-content {
     flex: 1;
     background-color: var(--bg-cream-dark);
-    padding: 40px;
+    padding: 30px 40px;
     box-sizing: border-box;
     width: 100%;
+    overflow-y: auto;
+}
+
+.topbar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid var(--border-tan);
 }
 
 .view-title {
     font-size: 22px;
     font-weight: 700;
+    color: var(--primary-green);
     margin: 0 0 25px 0;
 }
 
-/* Horizontal Book Showcase Cards layout */
+/* ========================================== */
+/* BOOK SHOWCASE CARDS                        */
+/* ========================================== */
+
 .books-horizontal-grid {
     display: flex;
-    gap: 25px;
+    gap: 20px;
     margin-bottom: 25px;
     flex-wrap: wrap;
 }
@@ -111,11 +177,12 @@ body {
     box-sizing: border-box;
 }
 
-.cover-thumb, .author-book-card img {
+.cover-thumb, 
+.author-book-card img {
     width: 100px;
     height: 140px;
-    object-fit: contain; /* Prevents cover images from cropping or warping */
-    background-color: #e3e1d5; /* Soft neutral backdrop */
+    object-fit: contain;
+    background-color: #e3e1d5;
     border-radius: 4px;
     padding: 4px;
     box-sizing: border-box;
@@ -129,15 +196,12 @@ body {
     flex-shrink: 0;
 }
 
-.yellow-theme { background-color: #d9a05b; color: var(--white); }
-.orange-theme { background-color: #b85c43; color: var(--white); }
-
 .book-meta {
     flex: 1;
 }
 
 .book-meta h3 {
-    margin: 0 0 10px 0;
+    margin: 0 0 8px 0;
     font-size: 16px;
 }
 
@@ -157,15 +221,18 @@ body {
 .status-pub { background-color: #d4edda; color: #155724; }
 .status-draft { background-color: #fff3cd; color: #856404; }
 
-/* Dashboard Action Trigger Components */
+/* ========================================== */
+/* DASHBOARD ACTION & FINANCIALS              */
+/* ========================================== */
+
 .action-trigger-card {
     background-color: var(--white);
     border: 2px dashed var(--border-tan);
     border-radius: 6px;
-    padding: 25px;
+    padding: 20px;
     text-align: center;
     cursor: pointer;
-    margin-bottom: 40px;
+    margin-bottom: 30px;
     transition: background 0.2s;
 }
 
@@ -185,20 +252,15 @@ body {
     margin-bottom: 8px;
 }
 
-.action-trigger-card h3 {
-    margin: 0;
-    font-size: 15px;
-    font-weight: 600;
-}
-
-/* Financial Ledger Section layouts */
 .financials-row {
     display: grid;
     grid-template-columns: 1.5fr 1fr;
-    gap: 30px;
+    gap: 25px;
 }
 
-.activity-log-box, .earnings-withdrawal-box, .creator-card {
+.activity-log-box, 
+.earnings-withdrawal-box, 
+.creator-card {
     background-color: var(--white);
     border: 1px solid var(--border-tan);
     border-radius: 6px;
@@ -206,9 +268,13 @@ body {
     box-sizing: border-box;
 }
 
-.activity-log-box h3, .earnings-withdrawal-box h3, .creator-card h2 {
-    margin: 0 0 20px 0;
+.activity-log-box h3, 
+.earnings-withdrawal-box h3, 
+.creator-card h2,
+.creator-card h3 {
+    margin: 0 0 15px 0;
     font-size: 16px;
+    color: var(--primary-green);
     border-bottom: 1px solid var(--border-tan);
     padding-bottom: 10px;
 }
@@ -216,27 +282,20 @@ body {
 .log-item {
     display: flex;
     justify-content: space-between;
-    padding: 12px 0;
+    padding: 10px 0;
     border-bottom: 1px solid #f9f9f6;
     font-size: 13px;
-}
-
-.log-item small { color: var(--text-muted); }
-
-.sub-label {
-    font-size: 13px;
-    color: var(--text-muted);
-    margin-bottom: 15px;
 }
 
 .payout-row {
     display: flex;
     justify-content: space-between;
-    padding: 12px 0;
+    padding: 10px 0;
     font-size: 14px;
 }
 
-.withdraw-btn, .save-master-btn {
+.withdraw-btn, 
+.save-master-btn {
     background-color: var(--primary-green);
     color: var(--white);
     border: none;
@@ -246,50 +305,126 @@ body {
     border-radius: 4px;
     cursor: pointer;
     margin-top: 15px;
+    transition: background 0.2s;
 }
 
-/* Creator Form Layout Components */
+.withdraw-btn:hover, 
+.save-master-btn:hover {
+    background-color: #122b1e;
+}
+
+/* ========================================== */
+/* FORMS, INPUTS & SELECTORS                  */
+/* ========================================== */
+
 .input-label {
     display: block;
     font-size: 11px;
     font-weight: 700;
     margin: 15px 0 6px 0;
     letter-spacing: 0.5px;
+    color: var(--text-dark);
 }
 
-input[type="text"], input[type="number"], textarea {
+.form-group {
+    margin-bottom: 15px;
+}
+
+input[type="text"], 
+input[type="number"], 
+input[type="tel"], 
+select, 
+textarea {
     width: 100%;
     border: 1px solid var(--border-tan);
     background-color: var(--bg-cream-light);
     border-radius: 4px;
     padding: 12px;
     box-sizing: border-box;
+    font-size: 14px;
+    color: var(--text-dark);
+}
+
+input:focus, 
+select:focus, 
+textarea:focus {
+    outline: none;
+    border-color: var(--primary-green);
+    box-shadow: 0 0 0 2px rgba(27, 61, 43, 0.15);
 }
 
 .mode-select-row {
     display: flex;
-    gap: 20px;
-    margin: 10px 0;
+    flex-direction: column;
+    gap: 10px;
+    margin: 10px 0 15px 0;
 }
 
 .radio-option {
     font-size: 14px;
     cursor: pointer;
-}
-
-.hidden { display: none !important; }
-
-/* ==========================================
-   NOTIFICATION CENTER STYLES
-   ========================================== */
-.topbar-header {
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-bottom: 25px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid var(--border-tan);
+    gap: 8px;
 }
+
+/* Security Distribution Select Override */
+.security-rules-group {
+    margin-bottom: 25px;
+    width: 100%;
+}
+
+.security-rules-group select {
+    appearance: none !important;
+    -webkit-appearance: none !important;
+    background-color: var(--primary-green) !important;
+    color: var(--white) !important;
+    border: 1px solid var(--primary-green) !important;
+    border-radius: 6px !important;
+    padding: 12px 16px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+}
+
+/* ========================================== */
+/* LEGAL DECLARATION CARD                     */
+/* ========================================== */
+
+.legal-declaration-card {
+    background-color: #fbfbfa;
+    border: 1px solid var(--border-tan);
+    border-radius: 6px;
+    padding: 18px;
+    margin: 20px 0;
+    box-sizing: border-box;
+}
+
+.checkbox-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.custom-checkbox-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    font-size: 13px;
+    line-height: 1.45;
+    cursor: pointer;
+}
+
+.custom-checkbox-label input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    margin-top: 2px;
+    flex-shrink: 0;
+    accent-color: var(--primary-green);
+}
+
+/* ========================================== */
+/* NOTIFICATION CENTER                        */
+/* ========================================== */
 
 .notification-wrapper {
     position: relative;
@@ -305,18 +440,13 @@ input[type="text"], input[type="number"], textarea {
     font-size: 18px;
     color: var(--text-dark);
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
-    transition: background 0.2s;
-}
-
-.notif-bell-btn:hover {
-    background-color: var(--bg-cream-light);
 }
 
 .notif-badge {
     position: absolute;
     top: -4px;
     right: -4px;
-    background: #dc3545;
+    background: var(--danger-red);
     color: var(--white);
     border-radius: 50%;
     padding: 2px 6px;
@@ -353,15 +483,6 @@ input[type="text"], input[type="number"], textarea {
     font-size: 14px;
 }
 
-.mark-read-btn {
-    background: transparent;
-    border: none;
-    color: #d9a05b;
-    font-size: 11px;
-    cursor: pointer;
-    text-decoration: underline;
-}
-
 .notif-list-container {
     max-height: 350px;
     overflow-y: auto;
@@ -378,120 +499,49 @@ input[type="text"], input[type="number"], textarea {
 
 .notif-card.unread {
     background: #f4f8f5;
+    border-left: 3px solid var(--primary-green);
 }
 
-.notif-card-title {
-    font-size: 13px;
-    color: var(--primary-green);
-    display: block;
-    margin-bottom: 3px;
-    font-weight: bold;
+/* ========================================== */
+/* WEB STUDIO & MODAL OVERLAYS                */
+/* ========================================== */
+
+.studio-grid-container {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 20px;
 }
 
-.notif-card-body {
-    margin: 0 0 5px 0;
-    font-size: 12px;
-    color: var(--text-dark);
-    line-height: 1.3;
-}
-
-.notif-card-date {
-    font-size: 10px;
-    color: var(--text-muted);
-}
-
-/* ==========================================
-   SECURITY & DISTRIBUTION SELECTOR OVERRIDES
-   ========================================== */
-.security-rules-group {
-    margin-bottom: 25px;
-    width: 100%;
-}
-
-.security-rules-group input,
-.security-rules-group select,
-.security-rules-group .styled-select,
-.security-rules-group .select-wrapper {
-    appearance: none !important;
-    -webkit-appearance: none !important;
-    -moz-appearance: none !important;
-    display: block !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    background-color: var(--primary-green, #1b3d2b) !important;
-    color: var(--white, #ffffff) !important;
-    border: 1px solid var(--primary-green, #1b3d2b) !important;
-    border-radius: 8px !important;
-    padding: 12px 16px !important;
-    font-size: 13px !important;
-    font-weight: 600 !important;
-    line-height: 1.4 !important;
-    text-align: left !important;
-    box-shadow: 0 2px 6px rgba(27, 61, 43, 0.2) !important;
-    outline: none !important;
-    white-space: normal !important;
-    word-break: break-word !important;
-    box-sizing: border-box !important;
-    background-image: none !important;
-    cursor: pointer !important;
-}
-
-.security-rules-group input:focus,
-.security-rules-group select:focus {
-    outline: none !important;
-    box-shadow: 0 0 0 3px rgba(27, 61, 43, 0.3) !important;
-}
-
-/* ==========================================
-   LEGAL & COPYRIGHT DECLARATION CARD
-   ========================================== */
-.legal-declaration-card {
-    background-color: #fbfbfa;
-    border: 1px solid var(--border-tan, #e3e1d5);
-    border-radius: 6px;
-    padding: 16px;
-    margin: 20px 0;
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
     box-sizing: border-box;
 }
 
-.checkbox-group {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
+.modal-card {
+    background: var(--white);
+    padding: 25px;
+    border-radius: 8px;
     width: 100%;
+    max-width: 500px;
+    box-sizing: border-box;
+    border: 1px solid var(--border-tan);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
-.custom-checkbox-label {
-    display: flex !important;
-    align-items: flex-start;
-    gap: 12px;
-    font-size: 13px;
-    line-height: 1.45;
-    color: var(--text-dark, #2a2d2b);
-    cursor: pointer;
-    width: 100%;
-    margin-bottom: 0 !important;
-}
+/* ========================================== */
+/* RESPONSIVE BREAKPOINTS                     */
+/* ========================================== */
 
-.custom-checkbox-label input[type="checkbox"] {
-    width: 18px !important;
-    height: 18px !important;
-    min-width: 18px;
-    min-height: 18px;
-    margin-top: 2px;
-    flex-shrink: 0;
-    cursor: pointer;
-    accent-color: var(--primary-green, #1b3d2b);
-}
-
-.checkbox-text {
-    flex: 1;
-    display: block;
-}
-
-/* ==========================================
-   MOBILE DASHBOARD RESPONSIVE STYLES
-   ========================================== */
 @media (max-width: 768px) {
     .dashboard-container {
         flex-direction: column;
@@ -500,10 +550,6 @@ input[type="text"], input[type="number"], textarea {
     .sidebar {
         width: 100%;
         padding: 15px 0;
-    }
-
-    .brand-section {
-        padding: 0 15px 15px 15px;
     }
 
     .side-menu {
@@ -521,7 +567,9 @@ input[type="text"], input[type="number"], textarea {
         background: rgba(255, 255, 255, 0.05);
     }
 
-    .menu-divider {
+    .menu-divider,
+    .nav-library-btn,
+    .nav-logout-btn {
         display: none;
     }
 
@@ -529,7 +577,8 @@ input[type="text"], input[type="number"], textarea {
         padding: 20px 15px;
     }
 
-    .financials-row {
+    .financials-row,
+    .studio-grid-container {
         grid-template-columns: 1fr;
         gap: 20px;
     }
