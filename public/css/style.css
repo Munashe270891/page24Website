@@ -490,4 +490,34 @@ nav a:not(.nav-btn-secondary):not(.nav-btn-primary) {
 .footer-link:active {
     color: var(--primary-green);
 }
+/* ========================================== */
+/* PWA TO MAIN WEBSITE NAVIGATION             */
+/* ========================================== */
+
+.main-site-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: rgba(255, 255, 255, 0.15);
+    color: var(--white, #ffffff);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease-in-out;
+    white-space: nowrap;
+}
+
+.main-site-btn:hover {
+    background-color: var(--white, #ffffff);
+    color: var(--primary-green, #1b3d2b);
+    border-color: var(--white, #ffffff);
+}
+
+.main-site-btn:active {
+    transform: translateY(1px);
+}
+
 
