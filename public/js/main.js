@@ -10,9 +10,24 @@ document.addEventListener('DOMContentLoaded', () => {
     const closeModalBtn = document.getElementById('close-modal-btn');
     const modalCover = document.getElementById('modal-cover');
     const modalTitle = document.getElementById('modal-title');
-    const modalAuthor = document.getElementById('modal-author');
+    const modalAuthorName = document.getElementById('modal-author-name');
+    const modalAuthorRank = document.getElementById('modal-author-rank');
+    const modalSiteFollowers = document.getElementById('modal-site-followers');
+    const followAuthorBtn = document.getElementById('follow-author-btn');
     const modalPrice = document.getElementById('modal-price');
+    
+    // Preview Modal - Author Card Pointers
+    const modalAuthorPic = document.getElementById('modal-author-pic');
+    const modalAuthorLegal = document.getElementById('modal-author-legal');
+    const modalSocialReach = document.getElementById('modal-social-reach');
+    const modalAuthorBio = document.getElementById('modal-author-bio');
     const modalDescription = document.getElementById('modal-description');
+
+    // Preview Modal - Social Links Pointers
+    const linkFb = document.getElementById('link-fb');
+    const linkTt = document.getElementById('link-tt');
+    const linkTw = document.getElementById('link-tw');
+    const linkIg = document.getElementById('link-ig');
 
     // Top Authors Modal Element Pointers
     const topAuthorsBtn = document.getElementById('top-authors-nav-btn');
@@ -178,6 +193,17 @@ document.addEventListener('DOMContentLoaded', () => {
         renderFilteredGrid();
     };
 
+    // Helper function to handle social media links display
+    function setupSocialLink(element, url) {
+        if (!element) return;
+        if (url && url.trim() !== '') {
+            element.href = url;
+            element.classList.remove('hidden');
+        } else {
+            element.classList.add('hidden');
+        }
+    }
+
     // 4. MODAL INTERACTION CONTROLLER INTERFACE
     function attachPreviewButtonListeners() {
         const previewButtons = document.querySelectorAll('.buy-btn');
@@ -190,17 +216,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (selectedBook && previewModal) {
                     const coverSrc = selectedBook.cover_image || selectedBook.coverImage || '/images/default-cover.png';
                     const numericPrice = Number(selectedBook.price || 0);
+                    const authorNameText = selectedBook.author || selectedBook.author_name || 'Unknown Author';
+                    const authorId = selectedBook.author_id || selectedBook.user_id || selectedBook.authorId;
                     
+                    // Book details
                     if (modalCover) {
                         modalCover.src = coverSrc;
                         modalCover.style.objectFit = 'contain';
                     }
                     if (modalTitle) modalTitle.textContent = selectedBook.title;
-                    if (modalAuthor) modalAuthor.textContent = `By ${selectedBook.author || selectedBook.author_name || 'Unknown Author'}`;
+                    if (modalAuthorName) modalAuthorName.textContent = authorNameText;
                     if (modalPrice) modalPrice.textContent = numericPrice === 0 ? 'FREE' : `$${numericPrice.toFixed(2)} USD`;
                     if (modalDescription) {
                         modalDescription.textContent = selectedBook.description || 'No overview summary details text has been drafted for this volume yet.';
                     }
+
+                    // Author details & counts
+                    if (modalAuthorLegal) modalAuthorLegal.textContent = authorNameText;
+                    if (modalAuthorBio) modalAuthorBio.textContent = selectedBook.author_bio || selectedBook.bio || 'Page 24 Published Author.';
+                    if (modalAuthorPic) modalAuthorPic.src = selectedBook.author_picture || selectedBook.profile_picture_url || '/images/default-avatar.png';
+                    if (modalAuthorRank) modalAuthorRank.textContent = selectedBook.author_rank ? `Rank #${selectedBook.author_rank}` : 'Top Creator';
+                    
+                    const siteFollowers = Number(selectedBook.site_followers || 0);
+                    const socialReach = Number(selectedBook.social_followers || 0);
+                    
+                    if (modalSiteFollowers) modalSiteFollowers.textContent = `👥 ${siteFollowers.toLocaleString()} Followers`;
+                    if (modalSocialReach) modalSocialReach.textContent = `🌐 Total Social Reach: ${socialReach.toLocaleString()}`;
+
+                    // Set author ID on follow button
+                    if (followAuthorBtn) {
+                        if (authorId) {
+                            followAuthorBtn.setAttribute('data-author-id', authorId);
+                        } else {
+                            followAuthorBtn.removeAttribute('data-author-id');
+                        }
+                        followAuthorBtn.textContent = '+ Follow Author';
+                        followAuthorBtn.style.background = 'var(--primary-green-light, #27ae60)';
+                    }
+
+                    // Social Links
+                    setupSocialLink(linkFb, selectedBook.facebook_url || selectedBook.facebook);
+                    setupSocialLink(linkTt, selectedBook.tiktok_url || selectedBook.tiktok);
+                    setupSocialLink(linkTw, selectedBook.twitter_url || selectedBook.twitter);
+                    setupSocialLink(linkIg, selectedBook.instagram_url || selectedBook.instagram);
                     
                     const modalBuyBtn = document.getElementById('modal-buy-btn');
                     if (modalBuyBtn) {
@@ -323,7 +381,41 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
 
-    // Global Follow Author Action Handler
+    // Global Follow Author Handler for Book Preview Modal
+    window.toggleFollowAuthor = async function() {
+        const followBtn = document.getElementById('follow-author-btn');
+        const authorId = followBtn ? followBtn.getAttribute('data-author-id') : null;
+
+        if (!authorId) {
+            alert('Author information not available.');
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/authors/${authorId}/follow`, { method: 'POST' });
+            const result = await response.json();
+
+            if (response.ok && result.success) {
+                alert('Author followed successfully!');
+                const followersEl = document.getElementById('modal-site-followers');
+                if (followersEl) {
+                    const currentCount = parseInt(followersEl.textContent.replace(/\D/g, '')) || 0;
+                    followersEl.textContent = `👥 ${(currentCount + 1).toLocaleString()} Followers`;
+                }
+                if (followBtn) {
+                    followBtn.textContent = '✓ Following';
+                    followBtn.style.background = '#6b6f6c';
+                }
+            } else {
+                alert(result.error || result.message || 'Please log in to follow authors.');
+            }
+        } catch (err) {
+            console.error('Follow request error:', err);
+            alert('Could not follow author. Please try again.');
+        }
+    };
+
+    // Global Follow Author Action Handler for Top Authors Modal
     window.followAuthor = async function(authorId) {
         try {
             const response = await fetch(`/api/authors/${authorId}/follow`, { method: 'POST' });
