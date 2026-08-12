@@ -378,7 +378,7 @@ app.post('/api/authors/:id/follow', requireLogin, async (req, res) => {
     const currentUserId = req.session.user.id;
 
     if (targetAuthorId == currentUserId) {
-        return res.status(400).json({ error: "You cannot follow yourself." });
+        return res.status(400).json({ success: false, error: "You cannot follow yourself." });
     }
 
     try {
@@ -394,14 +394,14 @@ app.post('/api/authors/:id/follow', requireLogin, async (req, res) => {
                     .eq('author_id', targetAuthorId)
                     .eq('follower_id', currentUserId);
 
-                return res.json({ success: true, message: "Unfollowed author." });
+                return res.json({ success: true, action: 'unfollowed', message: "Unfollowed author." });
             }
-            return res.status(500).json({ error: error.message });
+            return res.status(500).json({ success: false, error: error.message });
         }
 
-        res.json({ success: true, message: "Author followed successfully!" });
+        res.json({ success: true, action: 'followed', message: "Author followed successfully!" });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(500).json({ success: false, error: err.message });
     }
 });
 
@@ -451,14 +451,62 @@ app.get('/secret-admin-console', requireAdmin, (req, res) => res.sendFile(path.j
 // ==========================================
 
 app.get('/api/books', async (req, res) => {
-    const { data, error } = await supabase
-        .from('books')
-        .select('*')
-        .or('status.eq.active,status.is.null')
-        .order('id', { ascending: false });
+    try {
+        const { data: books, error } = await supabase
+            .from('books')
+            .select(`
+                *,
+                users (
+                    id,
+                    bio,
+                    profile_pic_url,
+                    facebook_handle,
+                    twitter_handle,
+                    instagram_handle,
+                    facebook_followers,
+                    twitter_followers,
+                    instagram_followers
+                )
+            `)
+            .or('status.eq.active,status.is.null')
+            .order('id', { ascending: false });
 
-    if (error) return res.status(500).json({ error: error.message });
-    res.json(data);
+        if (error) return res.status(500).json({ error: error.message });
+
+        // Aggregate site followers count for authors
+        const { data: followers } = await supabase.from('followers').select('author_id');
+        const followerCountMap = {};
+        if (followers) {
+            followers.forEach(f => {
+                followerCountMap[f.author_id] = (followerCountMap[f.author_id] || 0) + 1;
+            });
+        }
+
+        // Format books with author metadata expected by main.js
+        const formattedBooks = (books || []).map(book => {
+            const author = book.users || {};
+            const siteFollowers = followerCountMap[author.id] || 0;
+            const socialFollowers = (author.facebook_followers || 0) + 
+                                    (author.twitter_followers || 0) + 
+                                    (author.instagram_followers || 0);
+
+            return {
+                ...book,
+                author_id: author.id || book.user_id,
+                author_bio: author.bio || null,
+                author_picture: author.profile_pic_url || null,
+                site_followers: siteFollowers,
+                social_followers: socialFollowers,
+                facebook_url: author.facebook_handle ? `https://facebook.com/${author.facebook_handle}` : null,
+                twitter_url: author.twitter_handle ? `https://x.com/${author.twitter_handle}` : null,
+                instagram_url: author.instagram_handle ? `https://instagram.com/${author.instagram_handle}` : null
+            };
+        });
+
+        res.json(formattedBooks);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
 // Secure PDF Streaming from Private Bucket
