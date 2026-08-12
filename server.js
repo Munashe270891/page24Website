@@ -13,12 +13,10 @@ const PORT = process.env.PORT || 3000;
 // ==========================================
 //              MIDDLEWARE SETUP
 // ==========================================
-// Expand payload size limits to handle large HTML chapter bodies and rich text content
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Trust Render's reverse proxy for secure HTTPS cookies
 app.set('trust proxy', 1);
 
 app.use(session({
@@ -67,11 +65,10 @@ async function requireAdmin(req, res, next) {
     }
 }
 
-// Memory Storage for Supabase Bucket Uploads
 const storage = multer.memoryStorage();
 const upload = multer({ 
     storage: storage,
-    limits: { fileSize: 50 * 1024 * 1024 } // 50MB File Limit
+    limits: { fileSize: 50 * 1024 * 1024 }
 });
 
 const dualUploadFields = upload.fields([
@@ -85,7 +82,6 @@ const profileUploadFields = upload.fields([
     { name: 'profilePic', maxCount: 1 }
 ]);
 
-// Helper Function: Stream file directly to Supabase Storage Buckets
 async function uploadToSupabase(file, bucket) {
     const fileName = `${Date.now()}_${file.originalname.replace(/\s+/g, '_')}`;
     const { data, error } = await supabase.storage
@@ -100,7 +96,7 @@ async function uploadToSupabase(file, bucket) {
             .getPublicUrl(fileName);
         return publicUrlData.publicUrl;
     }
-    return fileName; // Return storage identifier key for private PDF bucket
+    return fileName;
 }
 
 const integrationId = process.env.PAYNOW_INTEGRATION_ID || "25640"; 
@@ -111,7 +107,6 @@ const paynow = new Paynow(integrationId, integrationKey);
 //           USER AUTH ENDPOINTS
 // ==========================================
 
-// 1. Register User
 app.post('/api/auth/register', async (req, res) => {
     const { username, email, password, role } = req.body;
     if (!username || !email || !password) {
@@ -125,7 +120,7 @@ app.post('/api/auth/register', async (req, res) => {
         .insert([{ username, email, password: hashedPassword, role: role || 'author' }]);
 
     if (error) {
-        if (error.code === '23505') { // Postgres unique constraint failure
+        if (error.code === '23505') {
             return res.status(400).json({ error: "Username or Email already exists." });
         }
         return res.status(500).json({ error: error.message });
@@ -134,7 +129,6 @@ app.post('/api/auth/register', async (req, res) => {
     res.status(201).json({ success: true, message: "Registration successful!" });
 });
 
-// 2. Login User
 app.post('/api/auth/login', async (req, res) => {
     const { email, password, redirectTo } = req.body;
     if (!email || !password) {
@@ -173,7 +167,6 @@ app.post('/api/auth/login', async (req, res) => {
     });
 });
 
-// 3. Logout User
 app.get('/api/auth/logout', (req, res) => {
     req.session.destroy((err) => {
         if (err) return res.status(500).json({ error: "Could not log out." });
@@ -184,7 +177,6 @@ app.get('/api/auth/logout', (req, res) => {
     });
 });
 
-// 4. Get Current User Details
 app.get('/api/auth/me', (req, res) => {
     if (!req.session.user) return res.status(401).json({ loggedIn: false });
     res.json({ loggedIn: true, user: req.session.user });
@@ -194,7 +186,6 @@ app.get('/api/auth/me', (req, res) => {
 //        AUTHOR PROFILE & KYC ENDPOINTS
 // ==========================================
 
-// 1. Get Logged-in Author's KYC & Social Profile
 app.get('/api/author/profile', requireLogin, async (req, res) => {
     const userId = req.session.user.id;
 
@@ -203,8 +194,8 @@ app.get('/api/author/profile', requireLogin, async (req, res) => {
         .select(`
             legal_name, id_number, id_doc_path, phone, address, kin_name, 
             kin_relation, kin_phone, isbn, isbn_doc_path, profile_complete,
-            bio, profile_pic_url, facebook_handle, twitter_handle, instagram_handle,
-            facebook_followers, twitter_followers, instagram_followers
+            bio, profile_pic_url, facebook_handle, tiktok_handle, twitter_handle, instagram_handle,
+            facebook_followers, tiktok_followers, twitter_followers, instagram_followers
         `)
         .eq('id', userId)
         .single();
@@ -213,14 +204,13 @@ app.get('/api/author/profile', requireLogin, async (req, res) => {
     res.json(data || {});
 });
 
-// 2. Save / Update Author KYC & Social Profile
 app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, res) => {
     try {
         const userId = req.session.user.id;
         const { 
             legalName, idNumber, phone, address, kinName, kinRelation, kinPhone, isbn,
-            bio, facebookHandle, twitterHandle, instagramHandle,
-            facebookFollowers, twitterFollowers, instagramFollowers
+            bio, facebookHandle, tiktokHandle, twitterHandle, instagramHandle,
+            facebookFollowers, tiktokFollowers, twitterFollowers, instagramFollowers
         } = req.body;
 
         if (!legalName || !idNumber || !phone || !address || !kinName || !kinRelation || !kinPhone) {
@@ -276,9 +266,11 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
                 bio: bio ? bio.substring(0, 160) : null,
                 profile_pic_url: finalProfilePic,
                 facebook_handle: facebookHandle || null,
+                tiktok_handle: tiktokHandle || null,
                 twitter_handle: twitterHandle || null,
                 instagram_handle: instagramHandle || null,
                 facebook_followers: parseInt(facebookFollowers) || 0,
+                tiktok_followers: parseInt(tiktokFollowers) || 0,
                 twitter_followers: parseInt(twitterFollowers) || 0,
                 instagram_followers: parseInt(instagramFollowers) || 0
             })
@@ -297,19 +289,17 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
 
 app.get('/api/top-authors', async (req, res) => {
     try {
-        // Fetch users who are authors or admins along with their profile/social fields
         const { data: authors, error: authorsErr } = await supabase
             .from('users')
             .select(`
                 id, username, legal_name, address, bio, profile_pic_url,
-                facebook_handle, twitter_handle, instagram_handle,
-                facebook_followers, twitter_followers, instagram_followers
+                facebook_handle, tiktok_handle, twitter_handle, instagram_handle,
+                facebook_followers, tiktok_followers, twitter_followers, instagram_followers
             `)
             .or('role.eq.author,role.eq.admin');
 
         if (authorsErr) return res.status(500).json({ error: authorsErr.message });
 
-        // Aggregate sales counts from purchases joined with books
         const { data: purchases, error: purchasesErr } = await supabase
             .from('purchases')
             .select('id, books!inner(user_id)');
@@ -326,7 +316,6 @@ app.get('/api/top-authors', async (req, res) => {
             });
         }
 
-        // Aggregate followers per author
         let followerCountMap = {};
         const { data: followers } = await supabase
             .from('followers')
@@ -338,13 +327,13 @@ app.get('/api/top-authors', async (req, res) => {
             });
         }
 
-        // Format author ranking objects
         const formattedAuthors = (authors || []).map(author => {
             const displayName = author.legal_name || author.username || 'Anonymous Author';
             const totalSales = salesCountMap[author.id] || 0;
             const siteFollowers = followerCountMap[author.id] || 0;
 
             const totalSocialFollowers = (author.facebook_followers || 0) + 
+                                         (author.tiktok_followers || 0) + 
                                          (author.twitter_followers || 0) + 
                                          (author.instagram_followers || 0);
 
@@ -359,6 +348,7 @@ app.get('/api/top-authors', async (req, res) => {
                 social_followers: totalSocialFollowers,
                 social_links: {
                     facebook: author.facebook_handle ? `https://facebook.com/${author.facebook_handle}` : null,
+                    tiktok: author.tiktok_handle ? `https://tiktok.com/@${author.tiktok_handle.replace('@', '')}` : null,
                     twitter: author.twitter_handle ? `https://x.com/${author.twitter_handle}` : null,
                     instagram: author.instagram_handle ? `https://instagram.com/${author.instagram_handle}` : null
                 }
@@ -372,7 +362,6 @@ app.get('/api/top-authors', async (req, res) => {
     }
 });
 
-// Follow / Unfollow Author Action
 app.post('/api/authors/:id/follow', requireLogin, async (req, res) => {
     const targetAuthorId = req.params.id;
     const currentUserId = req.session.user.id;
@@ -387,7 +376,7 @@ app.post('/api/authors/:id/follow', requireLogin, async (req, res) => {
             .insert([{ author_id: targetAuthorId, follower_id: currentUserId }]);
 
         if (error) {
-            if (error.code === '23505') { // Unique constraint violation -> Unfollow
+            if (error.code === '23505') {
                 await supabase
                     .from('followers')
                     .delete()
@@ -461,9 +450,11 @@ app.get('/api/books', async (req, res) => {
                     bio,
                     profile_pic_url,
                     facebook_handle,
+                    tiktok_handle,
                     twitter_handle,
                     instagram_handle,
                     facebook_followers,
+                    tiktok_followers,
                     twitter_followers,
                     instagram_followers
                 )
@@ -473,7 +464,6 @@ app.get('/api/books', async (req, res) => {
 
         if (error) return res.status(500).json({ error: error.message });
 
-        // Aggregate site followers count for authors
         const { data: followers } = await supabase.from('followers').select('author_id');
         const followerCountMap = {};
         if (followers) {
@@ -482,11 +472,11 @@ app.get('/api/books', async (req, res) => {
             });
         }
 
-        // Format books with author metadata expected by main.js
         const formattedBooks = (books || []).map(book => {
             const author = book.users || {};
             const siteFollowers = followerCountMap[author.id] || 0;
             const socialFollowers = (author.facebook_followers || 0) + 
+                                    (author.tiktok_followers || 0) + 
                                     (author.twitter_followers || 0) + 
                                     (author.instagram_followers || 0);
 
@@ -498,6 +488,7 @@ app.get('/api/books', async (req, res) => {
                 site_followers: siteFollowers,
                 social_followers: socialFollowers,
                 facebook_url: author.facebook_handle ? `https://facebook.com/${author.facebook_handle}` : null,
+                tiktok_url: author.tiktok_handle ? `https://tiktok.com/@${author.tiktok_handle.replace('@', '')}` : null,
                 twitter_url: author.twitter_handle ? `https://x.com/${author.twitter_handle}` : null,
                 instagram_url: author.instagram_handle ? `https://instagram.com/${author.instagram_handle}` : null
             };
@@ -509,7 +500,6 @@ app.get('/api/books', async (req, res) => {
     }
 });
 
-// Secure PDF Streaming from Private Bucket
 app.get('/api/books/:id/pdf-stream', async (req, res) => {
     const bookId = req.params.id;
 
@@ -537,7 +527,6 @@ app.get('/api/books/:id/pdf-stream', async (req, res) => {
     res.send(buffer);
 });
 
-// Secure Free PDF Download Endpoint
 app.get('/api/books/:id/download-free', async (req, res) => {
     const bookId = req.params.id;
 
@@ -614,7 +603,6 @@ app.get('/api/books/my-books', requireLogin, async (req, res) => {
     res.json(data);
 });
 
-// Book Publishing Endpoint connected directly to Supabase Storage
 app.post('/api/books/publish', requireLogin, dualUploadFields, async (req, res) => {
     try {
         const userId = req.session.user.id;
@@ -903,7 +891,6 @@ app.post('/api/payments/callback', (req, res) => {
     res.sendStatus(200); 
 });
 
-// SANDBOX BUY ROUTE
 app.post('/api/books/:id/buy', requireLogin, async (req, res) => {
     const bookId = req.params.id;
     const buyerId = req.session.user.id;
