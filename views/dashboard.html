@@ -318,7 +318,7 @@
             <!-- VIEW 5: AUTHOR PROFILE -->
             <div id="profile-view" class="view-section hidden">
                 <h1 class="view-title">👤 Author Profile</h1>
-                <p style="margin-bottom: 20px; opacity: 0.8;">Manage your public author details and payout destination details below.</p>
+                <p style="margin-bottom: 20px; opacity: 0.8;">Manage your public author details, social links, and payout destination details below.</p>
 
                 <!-- PAYOUT NOTICE -->
                 <div style="background: #ebf5fb; border-left: 4px solid #2980b9; padding: 15px; margin-bottom: 20px; border-radius: 4px; max-width: 650px;">
@@ -329,15 +329,64 @@
                 </div>
 
                 <div class="creator-card" style="max-width: 650px;">
-                    <form id="author-profile-form">
+                    <form id="author-profile-form" enctype="multipart/form-data">
+                        <!-- PUBLIC AUTHOR BRANDING -->
+                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">🌟 Public Author Branding</h3>
+
+                        <label class="input-label">PROFILE PICTURE</label>
+                        <input type="file" id="author-profile-pic" name="profilePic" accept="image/*" style="display: block; margin-bottom: 15px;">
+
+                        <label class="input-label">AUTHOR BIO (Max 160 characters)</label>
+                        <textarea id="author-bio" name="bio" rows="3" maxlength="160" placeholder="A short bio to present on your author profile..." style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;"></textarea>
+
+                        <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-tan, #ccc);">
+
+                        <!-- SOCIAL MEDIA HANDLES & AUDIENCE -->
+                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">📲 Social Media & Reach</h3>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                            <div>
+                                <label class="input-label">FACEBOOK HANDLE</label>
+                                <input type="text" id="author-fb-handle" name="facebookHandle" placeholder="username" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 10px; box-sizing: border-box;">
+                            </div>
+                            <div>
+                                <label class="input-label">FACEBOOK FOLLOWERS</label>
+                                <input type="number" id="author-fb-followers" name="facebookFollowers" placeholder="0" min="0" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 10px; box-sizing: border-box;">
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
+                            <div>
+                                <label class="input-label">X / TWITTER HANDLE</label>
+                                <input type="text" id="author-tw-handle" name="twitterHandle" placeholder="username" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 10px; box-sizing: border-box;">
+                            </div>
+                            <div>
+                                <label class="input-label">X / TWITTER FOLLOWERS</label>
+                                <input type="number" id="author-tw-followers" name="twitterFollowers" placeholder="0" min="0" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 10px; box-sizing: border-box;">
+                            </div>
+                        </div>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;">
+                            <div>
+                                <label class="input-label">INSTAGRAM HANDLE</label>
+                                <input type="text" id="author-ig-handle" name="instagramHandle" placeholder="username" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 10px; box-sizing: border-box;">
+                            </div>
+                            <div>
+                                <label class="input-label">INSTAGRAM FOLLOWERS</label>
+                                <input type="number" id="author-ig-followers" name="instagramFollowers" placeholder="0" min="0" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 10px; box-sizing: border-box;">
+                            </div>
+                        </div>
+
+                        <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-tan, #ccc);">
+
                         <!-- LEGAL IDENTITY -->
                         <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">🪪 Identity Information</h3>
                         
                         <label class="input-label">FULL LEGAL NAME</label>
-                        <input type="text" id="author-legal-name" placeholder="e.g. Tendai Samuel Moyo" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
+                        <input type="text" id="author-legal-name" name="legalName" placeholder="e.g. Tendai Samuel Moyo" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
 
                         <label class="input-label">MOBILE PHONE NUMBER (EcoCash / OneMoney Registered Number)</label>
-                        <input type="tel" id="author-phone" placeholder="e.g. +263 77 123 4567" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 20px;" required>
+                        <input type="tel" id="author-phone" name="phone" placeholder="e.g. +263 77 123 4567" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 20px;" required>
 
                         <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-tan, #ccc);">
 
@@ -346,10 +395,10 @@
                         <p style="font-size: 12px; color: gray; margin-bottom: 15px;">If you have registered an official ISBN for your publication, add it below to increase reader trust.</p>
 
                         <label class="input-label">ISBN NUMBER (Optional)</label>
-                        <input type="text" id="author-isbn" placeholder="e.g. 978-3-16-148410-0" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;">
+                        <input type="text" id="author-isbn" name="isbn" placeholder="e.g. 978-3-16-148410-0" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;">
 
                         <label class="input-label">UPLOAD ISBN / COPYRIGHT CERTIFICATE PROOF (Optional)</label>
-                        <input type="file" id="author-isbn-proof" accept="image/*,.pdf" style="display: block; margin-bottom: 20px;">
+                        <input type="file" id="author-isbn-proof" name="isbnDoc" accept="image/*,.pdf" style="display: block; margin-bottom: 20px;">
 
                         <button type="submit" class="save-master-btn">Save Profile</button>
                     </form>
