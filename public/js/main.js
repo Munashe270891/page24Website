@@ -193,14 +193,38 @@ document.addEventListener('DOMContentLoaded', () => {
         renderFilteredGrid();
     };
 
-    // Helper function to handle social media links display
-    function setupSocialLink(element, url) {
+    // Helper function to handle social media links display (Handles handles or full URLs)
+    function setupSocialLink(element, value, platform) {
         if (!element) return;
-        if (url && url.trim() !== '') {
+        
+        if (value && value.trim() !== '') {
+            let url = value.trim();
+            
+            // Format handle into full URL if user provided raw username
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                const cleanHandle = url.replace('@', '');
+                switch (platform) {
+                    case 'facebook':
+                        url = `https://facebook.com/${cleanHandle}`;
+                        break;
+                    case 'tiktok':
+                        url = `https://tiktok.com/@${cleanHandle}`;
+                        break;
+                    case 'twitter':
+                        url = `https://x.com/${cleanHandle}`;
+                        break;
+                    case 'instagram':
+                        url = `https://instagram.com/${cleanHandle}`;
+                        break;
+                }
+            }
+            
             element.href = url;
             element.classList.remove('hidden');
+            element.style.display = 'inline-flex';
         } else {
             element.classList.add('hidden');
+            element.style.display = 'none';
         }
     }
 
@@ -254,11 +278,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         followAuthorBtn.style.background = 'var(--primary-green-light, #27ae60)';
                     }
 
-                    // Social Links
-                    setupSocialLink(linkFb, selectedBook.facebook_url || selectedBook.facebook);
-                    setupSocialLink(linkTt, selectedBook.tiktok_url || selectedBook.tiktok);
-                    setupSocialLink(linkTw, selectedBook.twitter_url || selectedBook.twitter);
-                    setupSocialLink(linkIg, selectedBook.instagram_url || selectedBook.instagram);
+                    // Social Links (Facebook, TikTok, Twitter/X, Instagram)
+                    setupSocialLink(linkFb, selectedBook.facebook_url || selectedBook.facebook_handle || selectedBook.facebook, 'facebook');
+                    setupSocialLink(linkTt, selectedBook.tiktok_url || selectedBook.tiktok_handle || selectedBook.tiktok, 'tiktok');
+                    setupSocialLink(linkTw, selectedBook.twitter_url || selectedBook.twitter_handle || selectedBook.twitter, 'twitter');
+                    setupSocialLink(linkIg, selectedBook.instagram_url || selectedBook.instagram_handle || selectedBook.instagram, 'instagram');
                     
                     const modalBuyBtn = document.getElementById('modal-buy-btn');
                     if (modalBuyBtn) {
@@ -357,6 +381,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const siteFollowersCount = Number(author.site_followers || 0);
             const socialReachCount = Number(author.social_followers || 0);
 
+            // Render Social Icons dynamically
+            const socialLinks = author.social_links || {};
+            const fbUrl = socialLinks.facebook;
+            const ttUrl = socialLinks.tiktok;
+            const twUrl = socialLinks.twitter;
+            const igUrl = socialLinks.instagram;
+
+            const socialBadges = [];
+            if (fbUrl) socialBadges.push(`<a href="${escapeHTML(fbUrl)}" target="_blank" style="color: #1877F2; text-decoration: none;" title="Facebook">FB</a>`);
+            if (ttUrl) socialBadges.push(`<a href="${escapeHTML(ttUrl)}" target="_blank" style="color: #000000; text-decoration: none;" title="TikTok">TikTok</a>`);
+            if (twUrl) socialBadges.push(`<a href="${escapeHTML(twUrl)}" target="_blank" style="color: #1DA1F2; text-decoration: none;" title="X/Twitter">X</a>`);
+            if (igUrl) socialBadges.push(`<a href="${escapeHTML(igUrl)}" target="_blank" style="color: #E4405F; text-decoration: none;" title="Instagram">IG</a>`);
+
+            const socialBadgesHTML = socialBadges.length > 0 ? ` • ${socialBadges.join(' ')}` : '';
+
             return `
                 <div class="author-card" style="display: flex; gap: 15px; background: #fff; padding: 14px; border-radius: 8px; border: 1px solid var(--border-tan, #E2DACD); align-items: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
                     <span style="font-size: 18px; font-weight: 800; color: var(--accent-orange, #d97736); width: 30px; text-align: center;">#${index + 1}</span>
@@ -366,10 +405,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h3 style="margin: 0 0 3px 0; font-size: 15px; color: var(--text-dark, #2C3E50);">${safeName}</h3>
                         <p style="margin: 0 0 6px 0; font-size: 12px; color: #555; line-height: 1.3;">${safeBio}</p>
                         
-                        <div style="font-size: 11px; color: var(--primary-green, #1B4D3E); font-weight: 600; display: flex; gap: 10px; flex-wrap: wrap;">
+                        <div style="font-size: 11px; color: var(--primary-green, #1B4D3E); font-weight: 600; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
                             <span>📚 ${salesCount} Reads/Purchases</span>
                             <span>👥 ${siteFollowersCount} Site Followers</span>
-                            <span>🌐 ${socialReachCount.toLocaleString()} Social Reach</span>
+                            <span>🌐 ${socialReachCount.toLocaleString()} Social Reach${socialBadgesHTML}</span>
                         </div>
                     </div>
 
