@@ -27,7 +27,7 @@
             <!-- DEFAULT: Internal House Ad / Promo -->
             <div class="house-ad">
                 <span class="ad-badge">PROMO</span>
-                <p>Are you a writer? <strong>Publish your books on Page 24 today</strong> and earn directly via EcoCash & OneMoney!</p>
+                <p>Are you a writer? <strong>Publish your books on Page 24 today</strong> and earn directly via EcoCash &amp; OneMoney!</p>
                 <a href="/dashboard" class="ad-cta-btn">Start Publishing</a>
             </div>
         </div>
@@ -35,7 +35,7 @@
 
     <section class="hero">
         <h1>Zimbabwean Voices, Reimagined</h1>
-        <p>Discover locally published books. Simple ecosystem payments using EcoCash & OneMoney.</p>
+        <p>Discover locally published books. Simple ecosystem payments using EcoCash &amp; OneMoney.</p>
         
         <!-- SEARCH BAR CONTAINER COMPONENT -->
         <div class="search-container" style="margin-top: 25px;">
@@ -52,7 +52,7 @@
             <button class="cat-pill active" onclick="filterByCategory('All', this)">All Books</button>
             <button class="cat-pill" onclick="filterByCategory('Shona Novels', this)">Shona Novels</button>
             <button class="cat-pill" onclick="filterByCategory('Motivational', this)">Motivational</button>
-            <button class="cat-pill" onclick="filterByCategory('Dating & Relationships', this)">Dating & Relationships</button>
+            <button class="cat-pill" onclick="filterByCategory('Dating &amp; Relationships', this)">Dating &amp; Relationships</button>
             <button class="cat-pill" onclick="filterByCategory('Christian Devotional', this)">Christian Devotional</button>
             <button class="cat-pill" onclick="filterByCategory('Business', this)">Business</button>
             <button class="cat-pill" onclick="filterByCategory('Other', this)">Other</button>
@@ -102,10 +102,9 @@
                     <p style="margin: 0 0 5px 0; font-style: italic;">
                         By <span id="modal-author-name" style="font-weight: bold;">Author Name</span>
                     </p>
-                    <!-- AUTHOR RANK BADGE & FOLLOWER STATS -->
+                    <!-- AUTHOR RANK BADGE -->
                     <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
                         <span id="modal-author-rank" class="badge" style="background: var(--accent-orange, #d97736); color: white;">Rank #--</span>
-                        <span id="modal-site-followers" style="font-size: 12px; color: var(--text-muted, #6b6f6c);">👥 0 Followers</span>
                     </div>
                     <button id="follow-author-btn" onclick="toggleFollowAuthor()" style="background: var(--primary-green-light, #27ae60); color: white; border: none; padding: 4px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; font-weight: bold; margin-bottom: 8px;">+ Follow Author</button>
                     <p id="modal-price" style="margin: 0; font-weight: bold; color: var(--accent-orange, #d97736); font-size: 18px;">$0.00 USD</p>
@@ -118,17 +117,19 @@
                     <img id="modal-author-pic" src="/images/default-avatar.png" alt="Author" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
                     <div>
                         <strong id="modal-author-legal" style="font-size: 13px; display: block; color: var(--text-dark, #2a2d2b);">Author Profile</strong>
-                        <small id="modal-social-reach" style="font-size: 11px; color: var(--text-muted, #6b6f6c);">🌐 Total Social Reach: 0</small>
                     </div>
                 </div>
                 <p id="modal-author-bio" style="font-size: 12px; color: var(--text-dark, #2a2d2b); margin: 0 0 8px 0; line-height: 1.4;">Author bio will load here...</p>
                 
-                <!-- SOCIAL MEDIA HANDLES -->
-                <div id="modal-social-links" style="display: flex; gap: 10px; font-size: 12px; flex-wrap: wrap;">
-                    <a id="link-fb" href="#" target="_blank" class="hidden" style="color: #3b5998; text-decoration: none;">📘 Facebook</a>
-                    <a id="link-tt" href="#" target="_blank" class="hidden" style="color: #000000; text-decoration: none;">🎵 TikTok</a>
-                    <a id="link-tw" href="#" target="_blank" class="hidden" style="color: #1da1f2; text-decoration: none;">🐦 Twitter</a>
-                    <a id="link-ig" href="#" target="_blank" class="hidden" style="color: #e1306c; text-decoration: none;">📸 Instagram</a>
+                <!-- SOCIAL MEDIA LINKS (DIRECT LINKS ONLY) -->
+                <div style="margin-top: 8px; border-top: 1px dashed var(--border-tan, #e3e1d5); padding-top: 8px;">
+                    <span style="font-size: 11px; font-weight: bold; color: var(--text-muted, #6b6f6c); display: block; margin-bottom: 6px;">Follow Author on Social Media:</span>
+                    <div id="modal-social-links" style="display: flex; gap: 12px; font-size: 12px; flex-wrap: wrap; align-items: center;">
+                        <a id="link-fb" href="#" target="_blank" class="hidden" style="color: #3b5998; text-decoration: none; font-weight: 600;">📘 Facebook</a>
+                        <a id="link-tt" href="#" target="_blank" class="hidden" style="color: #000000; text-decoration: none; font-weight: 600;">🎵 TikTok</a>
+                        <a id="link-tw" href="#" target="_blank" class="hidden" style="color: #1da1f2; text-decoration: none; font-weight: 600;">🐦 Twitter</a>
+                        <a id="link-ig" href="#" target="_blank" class="hidden" style="color: #e1306c; text-decoration: none; font-weight: 600;">📸 Instagram</a>
+                    </div>
                 </div>
             </div>
             
@@ -154,14 +155,12 @@
                 <select id="ranking-criteria" style="padding: 8px 12px; border-radius: 4px; border: 1px solid var(--border-tan, #e3e1d5); font-size: 13px; font-weight: 600; background: #fafafa; flex: 1; min-width: 200px;">
                     <option value="overall" selected>⭐ Overall Combined Ranking</option>
                     <option value="sales">📚 Books Purchased / Read</option>
-                    <option value="site_followers">👥 On-Site Followers</option>
-                    <option value="social_reach">🌐 Social Media Reach</option>
                 </select>
             </div>
 
             <!-- DYNAMIC LIST CONTAINER -->
             <div id="top-authors-list" style="display: flex; flex-direction: column; gap: 12px;">
-                <!-- main.js renders author cards with rank badges, follow buttons, and social stats here -->
+                <!-- main.js renders author cards with rank badges and social links here -->
             </div>
         </div>
     </div>
