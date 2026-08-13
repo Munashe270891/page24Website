@@ -211,45 +211,43 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
     try {
         const userId = req.session.user.id;
 
-        // Support both camelCase and snake_case field key variants sent from frontend
+        // Essential profile fields
         const legalName = req.body.legalName || req.body.legal_name;
-        const idNumber = req.body.idNumber || req.body.id_number;
         const phone = req.body.phone;
-        const address = req.body.address;
-        const kinName = req.body.kinName || req.body.kin_name || req.body.nextOfKinName;
-        const kinRelation = req.body.kinRelation || req.body.kin_relation || req.body.nextOfKinRelation;
-        const kinPhone = req.body.kinPhone || req.body.kin_phone || req.body.nextOfKinPhone;
-        const isbn = req.body.isbn;
         const bio = req.body.bio;
+        const isbn = req.body.isbn;
 
-        const facebookHandle = req.body.facebookHandle || req.body.facebook_handle;
-        const tiktokHandle = req.body.tiktokHandle || req.body.tiktok_handle;
-        const twitterHandle = req.body.twitterHandle || req.body.twitter_handle;
-        const instagramHandle = req.body.instagramHandle || req.body.instagram_handle;
+        // Optional legacy KYC fields
+        const idNumber = req.body.idNumber || req.body.id_number || null;
+        const address = req.body.address || null;
+        const kinName = req.body.kinName || req.body.kin_name || req.body.nextOfKinName || null;
+        const kinRelation = req.body.kinRelation || req.body.kin_relation || req.body.nextOfKinRelation || null;
+        const kinPhone = req.body.kinPhone || req.body.kin_phone || req.body.nextOfKinPhone || null;
 
-        const facebookFollowers = req.body.facebookFollowers || req.body.facebook_followers;
-        const tiktokFollowers = req.body.tiktokFollowers || req.body.tiktok_followers;
-        const twitterFollowers = req.body.twitterFollowers || req.body.twitter_followers;
-        const instagramFollowers = req.body.instagramFollowers || req.body.instagram_followers;
+        // Social links
+        const facebookHandle = req.body.facebookHandle || req.body.facebook_handle || null;
+        const tiktokHandle = req.body.tiktokHandle || req.body.tiktok_handle || null;
+        const twitterHandle = req.body.twitterHandle || req.body.twitter_handle || null;
+        const instagramHandle = req.body.instagramHandle || req.body.instagram_handle || null;
 
-        // Validate required KYC fields
-        if (!legalName || !idNumber || !phone || !address || !kinName || !kinRelation || !kinPhone) {
+        const facebookFollowers = req.body.facebookFollowers || req.body.facebook_followers || 0;
+        const tiktokFollowers = req.body.tiktokFollowers || req.body.tiktok_followers || 0;
+        const twitterFollowers = req.body.twitterFollowers || req.body.twitter_followers || 0;
+        const instagramFollowers = req.body.instagramFollowers || req.body.instagram_followers || 0;
+
+        // Streamlined Validation: Only Legal Name and Phone are mandatory
+        if (!legalName || !phone) {
             return res.status(400).json({ 
-                error: "All required KYC fields (Legal Name, ID Number, Phone, Address, Next of Kin Details) must be completed." 
+                error: "Please complete your Full Legal Name and Phone Number." 
             });
         }
 
-        // Fetch existing user to keep old file paths if no new files are uploaded
-        const { data: existingUser, error: userErr } = await supabase
+        // Fetch existing user to preserve document paths if no new ones are provided
+        const { data: existingUser } = await supabase
             .from('users')
             .select('id_doc_path, isbn_doc_path, profile_pic_url')
             .eq('id', userId)
             .single();
-
-        if (userErr) {
-            console.error(">>> [PROFILE FETCH ERROR]:", userErr);
-            return res.status(500).json({ error: "Failed to locate author record." });
-        }
 
         let idDocPath = existingUser ? existingUser.id_doc_path : null;
         let isbnDocPath = existingUser ? existingUser.isbn_doc_path : null;
@@ -267,30 +265,26 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
             }
         }
 
-        if (!idDocPath) {
-            return res.status(400).json({ error: "A clear Government ID image or document upload is required." });
-        }
-
         const { error: updateErr } = await supabase
             .from('users')
             .update({ 
                 legal_name: legalName, 
-                id_number: idNumber, 
-                id_doc_path: idDocPath, 
                 phone: phone, 
-                address: address, 
-                kin_name: kinName, 
-                kin_relation: kinRelation, 
-                kin_phone: kinPhone, 
+                id_number: idNumber,
+                id_doc_path: idDocPath,
+                address: address,
+                kin_name: kinName,
+                kin_relation: kinRelation,
+                kin_phone: kinPhone,
                 isbn: isbn || null, 
                 isbn_doc_path: isbnDocPath,
                 profile_complete: 1,
                 bio: bio ? bio.substring(0, 160) : null,
                 profile_pic_url: profilePicUrl,
-                facebook_handle: facebookHandle || null,
-                tiktok_handle: tiktokHandle || null,
-                twitter_handle: twitterHandle || null,
-                instagram_handle: instagramHandle || null,
+                facebook_handle: facebookHandle,
+                tiktok_handle: tiktokHandle,
+                twitter_handle: twitterHandle,
+                instagram_handle: instagramHandle,
                 facebook_followers: parseInt(facebookFollowers) || 0,
                 tiktok_followers: parseInt(tiktokFollowers) || 0,
                 twitter_followers: parseInt(twitterFollowers) || 0,
@@ -303,7 +297,7 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
             return res.status(500).json({ error: updateErr.message });
         }
 
-        res.json({ success: true, message: "KYC & Author Profile saved successfully!" });
+        res.json({ success: true, message: "Author profile saved successfully!" });
     } catch (err) {
         console.error(">>> [PROFILE EXCEPTION]:", err);
         res.status(500).json({ error: err.message });
