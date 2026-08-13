@@ -33,6 +33,9 @@ app.use(session({
 
 function requireLogin(req, res, next) {
     if (!req.session.user) {
+        if (req.headers['accept'] && req.headers['accept'].includes('application/json')) {
+            return res.status(401).json({ error: "Unauthorized access. Please log in." });
+        }
         return res.redirect('/login');
     }
     next();
@@ -207,19 +210,50 @@ app.get('/api/author/profile', requireLogin, async (req, res) => {
 app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, res) => {
     try {
         const userId = req.session.user.id;
-        const { 
-            legalName, idNumber, phone, address, kinName, kinRelation, kinPhone, isbn,
-            bio, facebookHandle, tiktokHandle, twitterHandle, instagramHandle,
-            facebookFollowers, tiktokFollowers, twitterFollowers, instagramFollowers
-        } = req.body;
 
+        // Support both camelCase and snake_case field key variants sent from frontend
+        const legalName = req.body.legalName || req.body.legal_name;
+        const idNumber = req.body.idNumber || req.body.id_number;
+        const phone = req.body.phone;
+        const address = req.body.address;
+        const kinName = req.body.kinName || req.body.kin_name || req.body.nextOfKinName;
+        const kinRelation = req.body.kinRelation || req.body.kin_relation || req.body.nextOfKinRelation;
+        const kinPhone = req.body.kinPhone || req.body.kin_phone || req.body.nextOfKinPhone;
+        const isbn = req.body.isbn;
+        const bio = req.body.bio;
+
+        const facebookHandle = req.body.facebookHandle || req.body.facebook_handle;
+        const tiktokHandle = req.body.tiktokHandle || req.body.tiktok_handle;
+        const twitterHandle = req.body.twitterHandle || req.body.twitter_handle;
+        const instagramHandle = req.body.instagramHandle || req.body.instagram_handle;
+
+        const facebookFollowers = req.body.facebookFollowers || req.body.facebook_followers;
+        const tiktokFollowers = req.body.tiktokFollowers || req.body.tiktok_followers;
+        const twitterFollowers = req.body.twitterFollowers || req.body.twitter_followers;
+        const instagramFollowers = req.body.instagramFollowers || req.body.instagram_followers;
+
+        // Validate required KYC fields
         if (!legalName || !idNumber || !phone || !address || !kinName || !kinRelation || !kinPhone) {
-            return res.status(400).json({ error: "All required KYC fields must be completed." });
+            return res.status(400).json({ 
+                error: "All required KYC fields (Legal Name, ID Number, Phone, Address, Next of Kin Details) must be completed." 
+            });
         }
 
-        let idDocPath = null;
-        let isbnDocPath = null;
-        let profilePicUrl = null;
+        // Fetch existing user to keep old file paths if no new files are uploaded
+        const { data: existingUser, error: userErr } = await supabase
+            .from('users')
+            .select('id_doc_path, isbn_doc_path, profile_pic_url')
+            .eq('id', userId)
+            .single();
+
+        if (userErr) {
+            console.error(">>> [PROFILE FETCH ERROR]:", userErr);
+            return res.status(500).json({ error: "Failed to locate author record." });
+        }
+
+        let idDocPath = existingUser ? existingUser.id_doc_path : null;
+        let isbnDocPath = existingUser ? existingUser.isbn_doc_path : null;
+        let profilePicUrl = existingUser ? existingUser.profile_pic_url : null;
 
         if (req.files) {
             if (req.files['idDoc']) {
@@ -233,19 +267,7 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
             }
         }
 
-        const { data: user, error: userErr } = await supabase
-            .from('users')
-            .select('id_doc_path, isbn_doc_path, profile_pic_url')
-            .eq('id', userId)
-            .single();
-
-        if (userErr) return res.status(500).json({ error: userErr.message });
-
-        const finalIdDoc = idDocPath || (user ? user.id_doc_path : null);
-        const finalIsbnDoc = isbnDocPath || (user ? user.isbn_doc_path : null);
-        const finalProfilePic = profilePicUrl || (user ? user.profile_pic_url : null);
-
-        if (!finalIdDoc) {
+        if (!idDocPath) {
             return res.status(400).json({ error: "A clear Government ID image or document upload is required." });
         }
 
@@ -254,17 +276,17 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
             .update({ 
                 legal_name: legalName, 
                 id_number: idNumber, 
-                id_doc_path: finalIdDoc, 
-                phone, 
-                address, 
+                id_doc_path: idDocPath, 
+                phone: phone, 
+                address: address, 
                 kin_name: kinName, 
                 kin_relation: kinRelation, 
                 kin_phone: kinPhone, 
                 isbn: isbn || null, 
-                isbn_doc_path: finalIsbnDoc,
+                isbn_doc_path: isbnDocPath,
                 profile_complete: 1,
                 bio: bio ? bio.substring(0, 160) : null,
-                profile_pic_url: finalProfilePic,
+                profile_pic_url: profilePicUrl,
                 facebook_handle: facebookHandle || null,
                 tiktok_handle: tiktokHandle || null,
                 twitter_handle: twitterHandle || null,
@@ -276,9 +298,14 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
             })
             .eq('id', userId);
 
-        if (updateErr) return res.status(500).json({ error: updateErr.message });
+        if (updateErr) {
+            console.error(">>> [PROFILE UPDATE ERROR]:", updateErr);
+            return res.status(500).json({ error: updateErr.message });
+        }
+
         res.json({ success: true, message: "KYC & Author Profile saved successfully!" });
     } catch (err) {
+        console.error(">>> [PROFILE EXCEPTION]:", err);
         res.status(500).json({ error: err.message });
     }
 });
@@ -376,6 +403,7 @@ app.post('/api/authors/:id/follow', requireLogin, async (req, res) => {
             .insert([{ author_id: targetAuthorId, follower_id: currentUserId }]);
 
         if (error) {
+            // Unique violation: User already follows author -> treat request as Unfollow action
             if (error.code === '23505') {
                 await supabase
                     .from('followers')
