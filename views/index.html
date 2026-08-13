@@ -6,6 +6,47 @@
     <title>Page 24 - Zimbabwean Voices, Reimagined</title>
     <!-- Cache-busting query parameter added to force browser/Render CSS refresh -->
     <link rel="stylesheet" href="/css/style.css?v=2.2">
+    <!-- Font Awesome for Social Media Badge Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Social Media Clickable Badges */
+        .modal-social-badges,
+        .author-social-badges {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .social-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            color: #ffffff !important;
+            font-size: 13px;
+            text-decoration: none;
+            transition: transform 0.2s ease, opacity 0.2s ease;
+        }
+
+        .social-badge:hover {
+            transform: scale(1.1);
+            opacity: 0.9;
+        }
+
+        .social-badge.fb { background-color: #1877f2; }
+        .social-badge.tt { background-color: #000000; }
+        .social-badge.tw { background-color: #000000; }
+        .social-badge.ig { background-color: #e1306c; }
+
+        .no-social-text {
+            font-size: 11px;
+            color: #888888;
+            font-style: italic;
+        }
+    </style>
 </head>
 <body>
 
@@ -121,14 +162,15 @@
                 </div>
                 <p id="modal-author-bio" style="font-size: 12px; color: var(--text-dark, #2a2d2b); margin: 0 0 8px 0; line-height: 1.4;">Author bio will load here...</p>
                 
-                <!-- SOCIAL MEDIA LINKS (DIRECT LINKS ONLY) -->
+                <!-- CLICKABLE SOCIAL MEDIA BADGES -->
                 <div style="margin-top: 8px; border-top: 1px dashed var(--border-tan, #e3e1d5); padding-top: 8px;">
-                    <span style="font-size: 11px; font-weight: bold; color: var(--text-muted, #6b6f6c); display: block; margin-bottom: 6px;">Follow Author on Social Media:</span>
-                    <div id="modal-social-links" style="display: flex; gap: 12px; font-size: 12px; flex-wrap: wrap; align-items: center;">
-                        <a id="link-fb" href="#" target="_blank" class="hidden" style="color: #3b5998; text-decoration: none; font-weight: 600;">📘 Facebook</a>
-                        <a id="link-tt" href="#" target="_blank" class="hidden" style="color: #000000; text-decoration: none; font-weight: 600;">🎵 TikTok</a>
-                        <a id="link-tw" href="#" target="_blank" class="hidden" style="color: #1da1f2; text-decoration: none; font-weight: 600;">🐦 Twitter</a>
-                        <a id="link-ig" href="#" target="_blank" class="hidden" style="color: #e1306c; text-decoration: none; font-weight: 600;">📸 Instagram</a>
+                    <span style="font-size: 11px; font-weight: bold; color: var(--text-muted, #6b6f6c); display: block; margin-bottom: 6px;">Connect with Author:</span>
+                    <div id="modal-social-links" class="modal-social-badges">
+                        <a id="link-fb" href="#" target="_blank" class="social-badge fb hidden" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a id="link-tt" href="#" target="_blank" class="social-badge tt hidden" title="TikTok"><i class="fab fa-tiktok"></i></a>
+                        <a id="link-tw" href="#" target="_blank" class="social-badge tw hidden" title="X / Twitter"><i class="fab fa-x-twitter"></i></a>
+                        <a id="link-ig" href="#" target="_blank" class="social-badge ig hidden" title="Instagram"><i class="fab fa-instagram"></i></a>
+                        <span id="no-social-msg" class="no-social-text hidden">No social channels linked</span>
                     </div>
                 </div>
             </div>
