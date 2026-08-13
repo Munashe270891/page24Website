@@ -12,14 +12,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalTitle = document.getElementById('modal-title');
     const modalAuthorName = document.getElementById('modal-author-name');
     const modalAuthorRank = document.getElementById('modal-author-rank');
-    const modalSiteFollowers = document.getElementById('modal-site-followers');
     const followAuthorBtn = document.getElementById('follow-author-btn');
     const modalPrice = document.getElementById('modal-price');
     
     // Preview Modal - Author Card Pointers
     const modalAuthorPic = document.getElementById('modal-author-pic');
     const modalAuthorLegal = document.getElementById('modal-author-legal');
-    const modalSocialReach = document.getElementById('modal-social-reach');
     const modalAuthorBio = document.getElementById('modal-author-bio');
     const modalDescription = document.getElementById('modal-description');
 
@@ -28,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const linkTt = document.getElementById('link-tt');
     const linkTw = document.getElementById('link-tw');
     const linkIg = document.getElementById('link-ig');
+    const noSocialMsg = document.getElementById('no-social-msg');
 
     // Top Authors Modal Element Pointers
     const topAuthorsBtn = document.getElementById('top-authors-nav-btn');
@@ -195,10 +194,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Helper function to handle social media links display (Handles handles or full URLs)
     function setupSocialLink(element, value, platform) {
-        if (!element) return;
+        if (!element) return false;
         
-        if (value && value.trim() !== '') {
-            let url = value.trim();
+        if (value && String(value).trim() !== '') {
+            let url = String(value).trim();
             
             // Format handle into full URL if user provided raw username
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
@@ -222,10 +221,28 @@ document.addEventListener('DOMContentLoaded', () => {
             element.href = url;
             element.classList.remove('hidden');
             element.style.display = 'inline-flex';
+            return true;
         } else {
             element.classList.add('hidden');
             element.style.display = 'none';
+            return false;
         }
+    }
+
+    // Helper to format social links for dynamically generated cards
+    function formatSocialUrl(value, platform) {
+        if (!value || String(value).trim() === '') return null;
+        let url = String(value).trim();
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            const cleanHandle = url.replace('@', '');
+            switch (platform) {
+                case 'facebook': return `https://facebook.com/${cleanHandle}`;
+                case 'tiktok': return `https://tiktok.com/@${cleanHandle}`;
+                case 'twitter': return `https://x.com/${cleanHandle}`;
+                case 'instagram': return `https://instagram.com/${cleanHandle}`;
+            }
+        }
+        return url;
     }
 
     // 4. MODAL INTERACTION CONTROLLER INTERFACE
@@ -255,17 +272,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         modalDescription.textContent = selectedBook.description || 'No overview summary details text has been drafted for this volume yet.';
                     }
 
-                    // Author details & counts
+                    // Author details
                     if (modalAuthorLegal) modalAuthorLegal.textContent = authorNameText;
                     if (modalAuthorBio) modalAuthorBio.textContent = selectedBook.author_bio || selectedBook.bio || 'Page 24 Published Author.';
                     if (modalAuthorPic) modalAuthorPic.src = selectedBook.author_picture || selectedBook.profile_picture_url || '/images/default-avatar.png';
                     if (modalAuthorRank) modalAuthorRank.textContent = selectedBook.author_rank ? `Rank #${selectedBook.author_rank}` : 'Top Creator';
-                    
-                    const siteFollowers = Number(selectedBook.site_followers || 0);
-                    const socialReach = Number(selectedBook.social_followers || 0);
-                    
-                    if (modalSiteFollowers) modalSiteFollowers.textContent = `👥 ${siteFollowers.toLocaleString()} Followers`;
-                    if (modalSocialReach) modalSocialReach.textContent = `🌐 Total Social Reach: ${socialReach.toLocaleString()}`;
 
                     // Set author ID on follow button
                     if (followAuthorBtn) {
@@ -279,11 +290,21 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
 
                     // Social Links (Facebook, TikTok, Twitter/X, Instagram)
-                    setupSocialLink(linkFb, selectedBook.facebook_url || selectedBook.facebook_handle || selectedBook.facebook, 'facebook');
-                    setupSocialLink(linkTt, selectedBook.tiktok_url || selectedBook.tiktok_handle || selectedBook.tiktok, 'tiktok');
-                    setupSocialLink(linkTw, selectedBook.twitter_url || selectedBook.twitter_handle || selectedBook.twitter, 'twitter');
-                    setupSocialLink(linkIg, selectedBook.instagram_url || selectedBook.instagram_handle || selectedBook.instagram, 'instagram');
+                    const hasFb = setupSocialLink(linkFb, selectedBook.facebook_url || selectedBook.facebook_handle || selectedBook.facebook, 'facebook');
+                    const hasTt = setupSocialLink(linkTt, selectedBook.tiktok_url || selectedBook.tiktok_handle || selectedBook.tiktok, 'tiktok');
+                    const hasTw = setupSocialLink(linkTw, selectedBook.twitter_url || selectedBook.twitter_handle || selectedBook.twitter, 'twitter');
+                    const hasIg = setupSocialLink(linkIg, selectedBook.instagram_url || selectedBook.instagram_handle || selectedBook.instagram, 'instagram');
                     
+                    if (noSocialMsg) {
+                        if (!hasFb && !hasTt && !hasTw && !hasIg) {
+                            noSocialMsg.classList.remove('hidden');
+                            noSocialMsg.style.display = 'inline';
+                        } else {
+                            noSocialMsg.classList.add('hidden');
+                            noSocialMsg.style.display = 'none';
+                        }
+                    }
+
                     const modalBuyBtn = document.getElementById('modal-buy-btn');
                     if (modalBuyBtn) {
                         modalBuyBtn.textContent = numericPrice === 0 ? 'Read / Download Free' : 'Open Reader';
@@ -355,46 +376,34 @@ document.addEventListener('DOMContentLoaded', () => {
         const sortedAuthors = [...cachedAuthorsData].sort((a, b) => {
             const aSales = Number(a.total_books_sold || a.books_read || 0);
             const bSales = Number(b.total_books_sold || b.books_read || 0);
-            
-            const aSiteFollowers = Number(a.site_followers || 0);
-            const bSiteFollowers = Number(b.site_followers || 0);
-            
-            const aSocial = Number(a.social_followers || 0);
-            const bSocial = Number(b.social_followers || 0);
-
-            // Composite Weighted Score
-            const aScore = (aSales * 10) + (aSiteFollowers * 5) + (aSocial * 0.1);
-            const bScore = (bSales * 10) + (bSiteFollowers * 5) + (bSocial * 0.1);
 
             if (criteria === 'sales') return bSales - aSales;
-            if (criteria === 'site_followers') return bSiteFollowers - aSiteFollowers;
-            if (criteria === 'social_reach') return bSocial - aSocial;
-            return bScore - aScore; // Default: 'overall'
+            return bSales - aSales; // Default ranking by book sales
         });
 
         topAuthorsListContainer.innerHTML = sortedAuthors.map((author, index) => {
-            const safeName = escapeHTML(author.name || 'Anonymous Author');
+            const safeName = escapeHTML(author.name || author.legal_name || 'Anonymous Author');
             const safeBio = escapeHTML(author.bio || 'Page 24 Published Author.');
-            const avatarSrc = author.profile_picture_url || '/images/default-avatar.png';
-            
+            const avatarSrc = author.profile_picture_url || author.profile_pic_url || '/images/default-avatar.png';
             const salesCount = Number(author.total_books_sold || author.books_read || 0);
-            const siteFollowersCount = Number(author.site_followers || 0);
-            const socialReachCount = Number(author.social_followers || 0);
 
-            // Render Social Icons dynamically
-            const socialLinks = author.social_links || {};
-            const fbUrl = socialLinks.facebook;
-            const ttUrl = socialLinks.tiktok;
-            const twUrl = socialLinks.twitter;
-            const igUrl = socialLinks.instagram;
+            // Extract social URLs
+            const socialLinksObj = author.social_links || {};
+            const fbUrl = formatSocialUrl(socialLinksObj.facebook || author.facebook_handle || author.facebook_url, 'facebook');
+            const ttUrl = formatSocialUrl(socialLinksObj.tiktok || author.tiktok_handle || author.tiktok_url, 'tiktok');
+            const twUrl = formatSocialUrl(socialLinksObj.twitter || author.twitter_handle || author.twitter_url, 'twitter');
+            const igUrl = formatSocialUrl(socialLinksObj.instagram || author.instagram_handle || author.instagram_url, 'instagram');
 
-            const socialBadges = [];
-            if (fbUrl) socialBadges.push(`<a href="${escapeHTML(fbUrl)}" target="_blank" style="color: #1877F2; text-decoration: none;" title="Facebook">FB</a>`);
-            if (ttUrl) socialBadges.push(`<a href="${escapeHTML(ttUrl)}" target="_blank" style="color: #000000; text-decoration: none;" title="TikTok">TikTok</a>`);
-            if (twUrl) socialBadges.push(`<a href="${escapeHTML(twUrl)}" target="_blank" style="color: #1DA1F2; text-decoration: none;" title="X/Twitter">X</a>`);
-            if (igUrl) socialBadges.push(`<a href="${escapeHTML(igUrl)}" target="_blank" style="color: #E4405F; text-decoration: none;" title="Instagram">IG</a>`);
+            // Build Clickable Badges Array
+            const badges = [];
+            if (fbUrl) badges.push(`<a href="${escapeHTML(fbUrl)}" target="_blank" class="social-badge fb" title="Facebook"><i class="fab fa-facebook-f"></i></a>`);
+            if (ttUrl) badges.push(`<a href="${escapeHTML(ttUrl)}" target="_blank" class="social-badge tt" title="TikTok"><i class="fab fa-tiktok"></i></a>`);
+            if (twUrl) badges.push(`<a href="${escapeHTML(twUrl)}" target="_blank" class="social-badge tw" title="X / Twitter"><i class="fab fa-x-twitter"></i></a>`);
+            if (igUrl) badges.push(`<a href="${escapeHTML(igUrl)}" target="_blank" class="social-badge ig" title="Instagram"><i class="fab fa-instagram"></i></a>`);
 
-            const socialBadgesHTML = socialBadges.length > 0 ? ` • ${socialBadges.join(' ')}` : '';
+            const badgesHTML = badges.length > 0 
+                ? `<div class="author-social-badges" style="margin-top: 6px;">${badges.join('')}</div>` 
+                : `<span style="font-size: 11px; color: #888; font-style: italic; display: block; margin-top: 4px;">No social links</span>`;
 
             return `
                 <div class="author-card" style="display: flex; gap: 15px; background: #fff; padding: 14px; border-radius: 8px; border: 1px solid var(--border-tan, #E2DACD); align-items: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
@@ -405,11 +414,12 @@ document.addEventListener('DOMContentLoaded', () => {
                         <h3 style="margin: 0 0 3px 0; font-size: 15px; color: var(--text-dark, #2C3E50);">${safeName}</h3>
                         <p style="margin: 0 0 6px 0; font-size: 12px; color: #555; line-height: 1.3;">${safeBio}</p>
                         
-                        <div style="font-size: 11px; color: var(--primary-green, #1B4D3E); font-weight: 600; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
-                            <span>📚 ${salesCount} Reads/Purchases</span>
-                            <span>👥 ${siteFollowersCount} Site Followers</span>
-                            <span>🌐 ${socialReachCount.toLocaleString()} Social Reach${socialBadgesHTML}</span>
+                        <div style="font-size: 11px; color: var(--primary-green, #1B4D3E); font-weight: 600; margin-bottom: 4px;">
+                            📚 ${salesCount} Reads/Purchases
                         </div>
+
+                        <!-- CLICKABLE SOCIAL BADGES -->
+                        ${badgesHTML}
                     </div>
 
                     <button onclick="followAuthor('${author.id}')" style="background: var(--primary-green, #1B4D3E); color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap;">
@@ -436,11 +446,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok && result.success) {
                 alert('Author followed successfully!');
-                const followersEl = document.getElementById('modal-site-followers');
-                if (followersEl) {
-                    const currentCount = parseInt(followersEl.textContent.replace(/\D/g, '')) || 0;
-                    followersEl.textContent = `👥 ${(currentCount + 1).toLocaleString()} Followers`;
-                }
                 if (followBtn) {
                     followBtn.textContent = '✓ Following';
                     followBtn.style.background = '#6b6f6c';
