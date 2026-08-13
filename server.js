@@ -197,8 +197,7 @@ app.get('/api/author/profile', requireLogin, async (req, res) => {
         .select(`
             legal_name, id_number, id_doc_path, phone, address, kin_name, 
             kin_relation, kin_phone, isbn, isbn_doc_path, profile_complete,
-            bio, profile_pic_url, facebook_handle, tiktok_handle, twitter_handle, instagram_handle,
-            facebook_followers, tiktok_followers, twitter_followers, instagram_followers
+            bio, profile_pic_url, facebook_handle, tiktok_handle, twitter_handle, instagram_handle
         `)
         .eq('id', userId)
         .single();
@@ -229,11 +228,6 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
         const tiktokHandle = req.body.tiktokHandle || req.body.tiktok_handle || null;
         const twitterHandle = req.body.twitterHandle || req.body.twitter_handle || null;
         const instagramHandle = req.body.instagramHandle || req.body.instagram_handle || null;
-
-        const facebookFollowers = req.body.facebookFollowers || req.body.facebook_followers || 0;
-        const tiktokFollowers = req.body.tiktokFollowers || req.body.tiktok_followers || 0;
-        const twitterFollowers = req.body.twitterFollowers || req.body.twitter_followers || 0;
-        const instagramFollowers = req.body.instagramFollowers || req.body.instagram_followers || 0;
 
         // Streamlined Validation: Only Legal Name and Phone are mandatory
         if (!legalName || !phone) {
@@ -284,11 +278,7 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
                 facebook_handle: facebookHandle,
                 tiktok_handle: tiktokHandle,
                 twitter_handle: twitterHandle,
-                instagram_handle: instagramHandle,
-                facebook_followers: parseInt(facebookFollowers) || 0,
-                tiktok_followers: parseInt(tiktokFollowers) || 0,
-                twitter_followers: parseInt(twitterFollowers) || 0,
-                instagram_followers: parseInt(instagramFollowers) || 0
+                instagram_handle: instagramHandle
             })
             .eq('id', userId);
 
@@ -314,8 +304,7 @@ app.get('/api/top-authors', async (req, res) => {
             .from('users')
             .select(`
                 id, username, legal_name, address, bio, profile_pic_url,
-                facebook_handle, tiktok_handle, twitter_handle, instagram_handle,
-                facebook_followers, tiktok_followers, twitter_followers, instagram_followers
+                facebook_handle, tiktok_handle, twitter_handle, instagram_handle
             `)
             .or('role.eq.author,role.eq.admin');
 
@@ -353,20 +342,14 @@ app.get('/api/top-authors', async (req, res) => {
             const totalSales = salesCountMap[author.id] || 0;
             const siteFollowers = followerCountMap[author.id] || 0;
 
-            const totalSocialFollowers = (author.facebook_followers || 0) + 
-                                         (author.tiktok_followers || 0) + 
-                                         (author.twitter_followers || 0) + 
-                                         (author.instagram_followers || 0);
-
             return {
                 id: author.id,
                 name: displayName,
-                bio: author.bio || (author.address ? `Author based in ${author.address}` : 'Page 24 Published Author.'),
+                bio: author.bio || null,
                 profile_picture_url: author.profile_pic_url || null,
                 total_books_sold: totalSales,
                 books_read: totalSales,
                 site_followers: siteFollowers,
-                social_followers: totalSocialFollowers,
                 social_links: {
                     facebook: author.facebook_handle ? `https://facebook.com/${author.facebook_handle}` : null,
                     tiktok: author.tiktok_handle ? `https://tiktok.com/@${author.tiktok_handle.replace('@', '')}` : null,
@@ -474,11 +457,7 @@ app.get('/api/books', async (req, res) => {
                     facebook_handle,
                     tiktok_handle,
                     twitter_handle,
-                    instagram_handle,
-                    facebook_followers,
-                    tiktok_followers,
-                    twitter_followers,
-                    instagram_followers
+                    instagram_handle
                 )
             `)
             .or('status.eq.active,status.is.null')
@@ -497,10 +476,6 @@ app.get('/api/books', async (req, res) => {
         const formattedBooks = (books || []).map(book => {
             const author = book.users || {};
             const siteFollowers = followerCountMap[author.id] || 0;
-            const socialFollowers = (author.facebook_followers || 0) + 
-                                    (author.tiktok_followers || 0) + 
-                                    (author.twitter_followers || 0) + 
-                                    (author.instagram_followers || 0);
 
             return {
                 ...book,
@@ -508,7 +483,6 @@ app.get('/api/books', async (req, res) => {
                 author_bio: author.bio || null,
                 author_picture: author.profile_pic_url || null,
                 site_followers: siteFollowers,
-                social_followers: socialFollowers,
                 facebook_url: author.facebook_handle ? `https://facebook.com/${author.facebook_handle}` : null,
                 tiktok_url: author.tiktok_handle ? `https://tiktok.com/@${author.tiktok_handle.replace('@', '')}` : null,
                 twitter_url: author.twitter_handle ? `https://x.com/${author.twitter_handle}` : null,
