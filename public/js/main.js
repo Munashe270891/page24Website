@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 }
 
-                // Fetch current user's followed authors to sync button states
+                // Fetch current user's followed authors from database to populate persistent Set
                 await fetchUserFollows();
 
             } else if (authContainer) {
@@ -111,20 +111,48 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Fetch followed authors array from server
+    // Fetch followed authors array from server and force-sync button views
     async function fetchUserFollows() {
         try {
             const res = await fetch('/api/user/follows');
             if (res.ok) {
                 const data = await res.json();
-                // Expecting data.followedAuthorIds or array of IDs
-                const ids = data.followedAuthorIds || data.follows || data || [];
-                if (Array.isArray(ids)) {
-                    userFollowedAuthorIds = new Set(ids.map(id => String(id)));
+                
+                // Flexible parsing to match whatever your DB/API returns
+                let rawList = data.followedAuthorIds || data.following || data.follows || data.data || data || [];
+                
+                if (Array.isArray(rawList)) {
+                    // Normalize all author IDs to Strings for consistent comparison
+                    userFollowedAuthorIds = new Set(rawList.map(item => {
+                        if (typeof item === 'object' && item !== null) {
+                            return String(item.author_id || item.id || item.followed_id);
+                        }
+                        return String(item);
+                    }));
+                }
+
+                // Force refresh UI states if modals are currently visible/rendered
+                updatePreviewModalFollowButton();
+                if (cachedAuthorsData.length > 0) {
+                    renderAuthorsList(rankingCriteriaSelect ? rankingCriteriaSelect.value : 'overall');
                 }
             }
         } catch (err) {
-            console.error('Error fetching user follows:', err);
+            console.error('Error fetching user follows from server:', err);
+        }
+    }
+
+    // Helper to update the Preview Modal Follow button based on current Set state
+    function updatePreviewModalFollowButton() {
+        if (!followAuthorBtn) return;
+        const currentAuthorId = followAuthorBtn.getAttribute('data-author-id');
+        
+        if (currentAuthorId && userFollowedAuthorIds.has(String(currentAuthorId))) {
+            followAuthorBtn.textContent = '✓ Following';
+            followAuthorBtn.style.background = '#6b6f6c';
+        } else if (currentAuthorId) {
+            followAuthorBtn.textContent = '+ Follow Author';
+            followAuthorBtn.style.background = 'var(--primary-green-light, #27ae60)';
         }
     }
 
@@ -268,12 +296,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!rawInput || String(rawInput).trim() === '') return null;
         let str = String(rawInput).trim();
 
-        // If author pasted a complete HTTP/HTTPS URL or share link, return as-is
         if (str.startsWith('http://') || str.startsWith('https://')) {
             return str;
         }
 
-        // Clean handle if author entered @username or leading slashes
         if (str.startsWith('@')) str = str.substring(1);
         if (str.startsWith('/')) str = str.substring(1);
 
@@ -337,18 +363,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (modalAuthorPic) modalAuthorPic.src = selectedBook.author_picture || selectedBook.profile_picture_url || '/images/default-avatar.png';
                     if (modalAuthorRank) modalAuthorRank.textContent = selectedBook.author_rank ? `Rank #${selectedBook.author_rank}` : 'Top Creator';
 
-                    // Synchronize Follow Button State from Global Set
+                    // Synchronize Follow Button State
                     if (followAuthorBtn) {
                         if (authorId) {
                             followAuthorBtn.setAttribute('data-author-id', authorId);
-                            
-                            if (userFollowedAuthorIds.has(authorId)) {
-                                followAuthorBtn.textContent = '✓ Following';
-                                followAuthorBtn.style.background = '#6b6f6c';
-                            } else {
-                                followAuthorBtn.textContent = '+ Follow Author';
-                                followAuthorBtn.style.background = 'var(--primary-green-light, #27ae60)';
-                            }
+                            updatePreviewModalFollowButton();
                         } else {
                             followAuthorBtn.removeAttribute('data-author-id');
                             followAuthorBtn.textContent = '+ Follow Author';
@@ -450,7 +469,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const safeBio = escapeHTML(author.bio || 'Page 24 Published Author.');
             const avatarSrc = author.profile_picture_url || author.profile_pic_url || '/images/default-avatar.png';
             const salesCount = Number(author.total_books_sold || author.books_read || 0);
-            const authorId = String(author.id || '');
+            const authorId = String(author.id || author.user_id || '');
 
             const socialLinksObj = author.social_links || {};
             const fbUrl = formatSocialUrl(socialLinksObj.facebook || author.facebook_handle || author.facebook_url, 'facebook');
@@ -512,10 +531,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok && result.success) {
                 userFollowedAuthorIds.add(String(authorId));
-                if (followBtn) {
-                    followBtn.textContent = '✓ Following';
-                    followBtn.style.background = '#6b6f6c';
-                }
+                updatePreviewModalFollowButton();
             } else {
                 alert(result.error || result.message || 'Please log in to follow authors.');
             }
@@ -534,7 +550,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok && result.success) {
                 userFollowedAuthorIds.add(String(authorId));
-                loadTopAuthors();
+                if (cachedAuthorsData.length > 0) {
+                    renderAuthorsList(rankingCriteriaSelect ? rankingCriteriaSelect.value : 'overall');
+                }
             } else {
                 alert(result.error || result.message || 'Please log in to follow authors.');
             }
