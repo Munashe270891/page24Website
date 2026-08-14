@@ -789,6 +789,55 @@ app.post('/api/books/chapters', requireLogin, async (req, res) => {
     if (!bookId || !title || !finalContent) {
         return res.status(400).json({ error: 'Missing required chapter parameters.' });
     }
+    // ==========================================
+//    UPDATE CHAPTER ENDPOINT
+// ==========================================
+app.put('/api/books/:bookId/chapters/:chapterId', requireLogin, async (req, res) => {
+    const { bookId, chapterId } = req.params;
+    const { title, content, body } = req.body;
+    const finalContent = content || body;
+
+    if (!title || !finalContent) {
+        return res.status(400).json({ error: 'Title and content are required.' });
+    }
+
+    try {
+        // 1. Verify the user owns the book they are trying to edit
+        const { data: book, error: bookErr } = await supabase
+            .from('books')
+            .select('id')
+            .eq('id', bookId)
+            .eq('user_id', req.session.user.id)
+            .single();
+
+        if (bookErr || !book) {
+            return res.status(403).json({ error: 'Unauthorized or book not found.' });
+        }
+
+        // 2. Update the chapter in the Supabase 'chapters' table
+        const { data: chapter, error: updateErr } = await supabase
+            .from('chapters')
+            .update({ 
+                title: title, 
+                body: finalContent 
+            })
+            .eq('id', chapterId)
+            .eq('book_id', bookId)
+            .select()
+            .single();
+
+        if (updateErr) {
+            console.error(">>> [CHAPTER UPDATE ERROR]:", updateErr);
+            return res.status(500).json({ error: 'Failed to save chapter updates.' });
+        }
+
+        res.json({ success: true, message: 'Chapter updated successfully!', chapter });
+    } catch (err) {
+        console.error(">>> [CHAPTER UPDATE EXCEPTION]:", err);
+        res.status(500).json({ error: 'Server error while updating chapter.' });
+    }
+});
+
 
     const { data: book, error: bookErr } = await supabase
         .from('books')
