@@ -1,4 +1,4 @@
-document.addEventListener('DOMContentLoaded', () => {
+Document.addEventListener('DOMContentLoaded', () => {
     // -------------------------------------------------------------
     // 1. NAVIGATION & VIEW SWITCHING LOGIC
     // -------------------------------------------------------------
@@ -37,6 +37,24 @@ document.addEventListener('DOMContentLoaded', () => {
     if (quickCreateTrigger) {
         quickCreateTrigger.addEventListener('click', (e) => switchTab('creator-view', e));
     }
+
+    // Helper to open Studio tab directly for a given HTML/Web book
+    window.openStudioForBook = function(bookId) {
+        switchTab('studio-view');
+        fetch('/api/books/my-web-books')
+            .then(res => res.json())
+            .then(books => {
+                if (books && books.length > 0) {
+                    const targetBook = books.find(b => (b.id || b._id) == bookId);
+                    if (targetBook) {
+                        selectStudioBook(targetBook);
+                    } else {
+                        console.warn("Target web book not found in studio list.");
+                    }
+                }
+            })
+            .catch(err => console.error("Failed to load studio book for ID:", bookId, err));
+    };
 
     // -------------------------------------------------------------
     // 2. PUBLISH FORMAT SWITCH & CATEGORY DEPENDENCIES
@@ -125,6 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     card.className = 'author-book-card';
                     const rawPrice = parseFloat(book.price) || 0;
                     const coverSrc = book.coverImage || book.cover_image || '/images/default-cover.png';
+                    const isHtmlMode = String(book.mode || '').toLowerCase() === 'html' || String(book.mode || '').toLowerCase() === 'web';
 
                     card.innerHTML = `
                         <img src="${coverSrc}" alt="${escapeHtml(book.title)}" class="cover-thumb" onerror="this.src='/images/default-cover.png'">
@@ -133,7 +152,8 @@ document.addEventListener('DOMContentLoaded', () => {
                             <p>${book.description ? escapeHtml(book.description.substring(0, 80)) + '...' : ''}</p>
                             <p><strong>Price:</strong> <span style="color: var(--primary-green-light, #27ae60);">$${rawPrice.toFixed(2)} USD</span></p>
                             <p><span class="badge ${book.status === 'Draft' ? 'status-draft' : 'status-pub'}">${book.mode ? book.mode.toUpperCase() : 'PDF'}</span></p>
-                            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                            <div style="display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;">
+                                ${isHtmlMode ? '<button class="btn-manage-chapters" style="background: var(--accent-gold, #f39c12); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">✍️ Manage Chapters</button>' : ''}
                                 <button class="btn-edit-book" style="background: var(--primary-green, #1b3d2b); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Edit</button>
                                 <button class="btn-delete-book" style="background: var(--danger-red, #dc3545); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Delete</button>
                             </div>
@@ -141,8 +161,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     `;
 
                     // Safe Event Listeners replacing inline onclicks
-                    card.querySelector('.btn-edit-book').addEventListener('click', () => openEditModal(book.id, book.description || '', rawPrice));
-                    card.querySelector('.btn-delete-book').addEventListener('click', () => deleteBook(book.id));
+                    if (isHtmlMode) {
+                        const manageBtn = card.querySelector('.btn-manage-chapters');
+                        if (manageBtn) {
+                            manageBtn.addEventListener('click', () => openStudioForBook(book.id || book._id));
+                        }
+                    }
+                    card.querySelector('.btn-edit-book').addEventListener('click', () => openEditModal(book.id || book._id, book.description || '', rawPrice));
+                    card.querySelector('.btn-delete-book').addEventListener('click', () => deleteBook(book.id || book._id));
 
                     booksContainer.appendChild(card);
                 });
@@ -362,7 +388,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function selectStudioBook(book) {
-        currentEditingBookId = book.id;
+        currentEditingBookId = book.id || book._id;
         if (studioEditorPlaceholder) studioEditorPlaceholder.classList.add('hidden');
         if (studioEditorPanel) studioEditorPanel.classList.remove('hidden');
 
@@ -370,9 +396,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const idInput = document.getElementById('editor-book-id');
 
         if (titleElem) titleElem.innerText = book.title;
-        if (idInput) idInput.value = book.id;
+        if (idInput) idInput.value = currentEditingBookId;
 
-        loadChapters(book.id);
+        loadChapters(currentEditingBookId);
     }
 
     function loadChapters(bookId) {
