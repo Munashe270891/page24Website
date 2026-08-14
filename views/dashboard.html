@@ -562,5 +562,42 @@
             }
         });
     </script>
+    <!-- VIEW CHAPTER PREVIEW MODAL -->
+<div id="view-chapter-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1100; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 25px; border-radius: 8px; width: 90%; max-width: 650px; max-height: 85vh; display: flex; flex-direction: column; box-sizing: border-box; border: 1px solid var(--border-tan, #ccc);">
+        <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 12px; margin-bottom: 15px;">
+            <h3 id="view-chapter-title" style="color: var(--primary-green, #1e4d2b); margin: 0;">Chapter Title</h3>
+            <button type="button" onclick="closeViewChapterModal()" style="background: none; border: none; font-size: 20px; cursor: pointer;">✕</button>
+        </div>
+        <div id="view-chapter-body" style="flex: 1; overflow-y: auto; font-size: 14px; line-height: 1.7; white-space: pre-wrap; color: #333; padding: 10px; background: #fdfdfd; border: 1px solid #eee; border-radius: 4px;">
+            Loading chapter text...
+        </div>
+        <div style="display: flex; justify-content: flex-end; margin-top: 15px;">
+            <button type="button" onclick="closeViewChapterModal()" style="background: #1e4d2b; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold;">Close Preview</button>
+        </div>
+    </div>
+</div>
+
+<!-- EDIT CHAPTER CONTENT MODAL -->
+<div id="edit-chapter-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1100; align-items: center; justify-content: center;">
+    <div style="background: white; padding: 25px; border-radius: 8px; width: 90%; max-width: 650px; box-sizing: border-box; border: 1px solid var(--border-tan, #ccc);">
+        <h2 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">✏️ Edit Chapter</h2>
+        <form id="edit-chapter-form">
+            <input type="hidden" id="edit-chapter-id">
+            <input type="hidden" id="edit-chapter-book-id">
+
+            <label class="input-label">CHAPTER TITLE</label>
+            <input type="text" id="edit-chapter-title-input" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
+
+            <label class="input-label">CHAPTER BODY CONTENT</label>
+            <textarea id="edit-chapter-body-input" rows="12" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 20px;" required></textarea>
+
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button type="button" onclick="closeEditChapterModal()" style="background: #ccc; color: black; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer;">Cancel</button>
+                <button type="submit" class="save-master-btn" style="margin: 0; padding: 10px 20px; background: #1e4d2b;">Save Chapter Updates</button>
+            </div>
+        </form>
+    </div>
+</div>
 </body>
 </html>
