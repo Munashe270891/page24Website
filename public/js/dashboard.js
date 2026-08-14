@@ -336,6 +336,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const chapterPreviewPane = document.getElementById('chapter-preview-pane');
 
     let currentEditingBookId = null;
+    let currentActiveBookChapters = [];
 
     function loadStudioWebBooks() {
         if (!studioBooksList) return;
@@ -380,6 +381,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .then(chapters => {
                 if (!studioChaptersList) return;
                 studioChaptersList.innerHTML = '';
+                currentActiveBookChapters = chapters || [];
 
                 if (!chapters || chapters.length === 0) {
                     studioChaptersList.innerHTML = '<p style="font-size: 12px; color: var(--text-muted, #777);">No chapters added yet.</p>';
@@ -393,6 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.style.cssText = "background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 4px; font-size: 13px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;";
 
                     const chapNum = chap.chapter_number || idx + 1;
+                    const chapId = chap.id || chap._id;
                     
                     item.innerHTML = `
                         <div style="cursor: pointer; flex-grow: 1;" class="chap-title-click">
@@ -401,6 +404,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         <div style="display: flex; gap: 6px; align-items: center;">
                             <button class="btn-chap-up" style="padding: 2px 6px; cursor: pointer;" ${idx === 0 ? 'disabled' : ''}>▲</button>
                             <button class="btn-chap-down" style="padding: 2px 6px; cursor: pointer;" ${idx === chapters.length - 1 ? 'disabled' : ''}>▼</button>
+                            <button class="btn-chap-view" style="background: #27ae60; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">View</button>
                             <button class="btn-chap-edit" style="background: #007bff; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Edit</button>
                             <button class="btn-chap-del" style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;">Delete</button>
                         </div>
@@ -408,8 +412,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // Actions
                     item.querySelector('.chap-title-click').onclick = () => renderChapterPreview(chap);
-                    item.querySelector('.btn-chap-edit').onclick = () => openEditChapterModal(chap);
-                    item.querySelector('.btn-chap-del').onclick = () => deleteChapter(bookId, chap.id);
+                    item.querySelector('.btn-chap-view').onclick = () => window.openViewChapterModal(chapId);
+                    item.querySelector('.btn-chap-edit').onclick = () => window.openEditChapterModal(chapId, bookId);
+                    item.querySelector('.btn-chap-del').onclick = () => deleteChapter(bookId, chapId);
                     
                     item.querySelector('.btn-chap-up').onclick = () => moveChapterOrder(bookId, chapters, idx, 'up');
                     item.querySelector('.btn-chap-down').onclick = () => moveChapterOrder(bookId, chapters, idx, 'down');
@@ -420,7 +425,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch(err => console.error("Error loading chapters:", err));
     }
 
-    // Render Chapter Body Preview
+    // Render Chapter Body Preview in side-pane
     function renderChapterPreview(chap) {
         if (!chapterPreviewPane) return;
         chapterPreviewPane.innerHTML = `
@@ -462,28 +467,87 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Edit Existing Chapter
-    function openEditChapterModal(chap) {
-        const newTitle = prompt("Edit Chapter Title:", chap.title);
-        if (newTitle === null) return; // Cancelled
+    // Modal View & Edit Functions Exposed Globally
+    window.openViewChapterModal = function(chapterId) {
+        const chapter = currentActiveBookChapters.find(c => (c.id || c._id) == chapterId);
+        if (!chapter) {
+            alert('Chapter content not found.');
+            return;
+        }
 
-        const newContent = prompt("Edit Chapter Content (HTML/Text):", chap.content || chap.body || '');
-        if (newContent === null) return;
+        const titleElem = document.getElementById('view-chapter-title');
+        const bodyElem = document.getElementById('view-chapter-body');
+        
+        if (titleElem) titleElem.innerText = chapter.title || 'Untitled Chapter';
+        if (bodyElem) bodyElem.innerText = chapter.content || chapter.body || 'No content written for this chapter yet.';
+        
+        const modal = document.getElementById('view-chapter-modal');
+        if (modal) modal.style.display = 'flex';
+    };
 
-        fetch(`/api/books/${chap.book_id || currentEditingBookId}/chapters/${chap.id}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ title: newTitle.trim(), content: newContent.trim(), body: newContent.trim() })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.error) alert(`❌ ${data.error}`);
-            else {
-                alert("✅ Chapter updated!");
-                loadChapters(currentEditingBookId);
+    window.closeViewChapterModal = function() {
+        const modal = document.getElementById('view-chapter-modal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    window.openEditChapterModal = function(chapterId, bookId) {
+        const chapter = currentActiveBookChapters.find(c => (c.id || c._id) == chapterId);
+        if (!chapter) {
+            alert('Unable to load chapter details for editing.');
+            return;
+        }
+
+        const idInput = document.getElementById('edit-chapter-id');
+        const bookIdInput = document.getElementById('edit-chapter-book-id');
+        const titleInput = document.getElementById('edit-chapter-title-input');
+        const bodyInput = document.getElementById('edit-chapter-body-input');
+
+        if (idInput) idInput.value = chapterId;
+        if (bookIdInput) bookIdInput.value = bookId || currentEditingBookId;
+        if (titleInput) titleInput.value = chapter.title || '';
+        if (bodyInput) bodyInput.value = chapter.content || chapter.body || '';
+
+        const modal = document.getElementById('edit-chapter-modal');
+        if (modal) modal.style.display = 'flex';
+    };
+
+    window.closeEditChapterModal = function() {
+        const modal = document.getElementById('edit-chapter-modal');
+        if (modal) modal.style.display = 'none';
+    };
+
+    // Save Chapter Updates Form Handler
+    const editChapterForm = document.getElementById('edit-chapter-form');
+    if (editChapterForm) {
+        editChapterForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const chapterId = document.getElementById('edit-chapter-id').value;
+            const bookId = document.getElementById('edit-chapter-book-id').value || currentEditingBookId;
+            const updatedTitle = document.getElementById('edit-chapter-title-input').value;
+            const updatedBody = document.getElementById('edit-chapter-body-input').value;
+
+            try {
+                const response = await fetch(`/api/books/${bookId}/chapters/${chapterId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ title: updatedTitle, content: updatedBody, body: updatedBody })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && !data.error) {
+                    alert('✅ Chapter updated successfully!');
+                    window.closeEditChapterModal();
+                    loadChapters(bookId);
+                } else {
+                    alert(`❌ ${data.error || 'Chapter could not be updated.'}`);
+                }
+            } catch (error) {
+                console.error('Update Chapter Error:', error);
+                alert('⚠️ Error connecting to the server while updating chapter.');
             }
-        })
-        .catch(() => alert("⚠️ Failed to update chapter."));
+        });
     }
 
     // Delete Chapter
@@ -509,7 +573,7 @@ document.addEventListener('DOMContentLoaded', () => {
         chapters[currentIndex] = chapters[targetIndex];
         chapters[targetIndex] = temp;
 
-        const reorderedIds = chapters.map(c => c.id);
+        const reorderedIds = chapters.map(c => c.id || c._id);
 
         fetch(`/api/books/${bookId}/chapters/reorder`, {
             method: 'POST',
