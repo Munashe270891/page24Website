@@ -250,6 +250,15 @@ document.addEventListener('DOMContentLoaded', () => {
     // -------------------------------------------------------------
     const profileForm = document.getElementById('author-profile-form');
 
+    function cleanHandle(val) {
+        if (!val) return '';
+        let cleaned = val.trim();
+        cleaned = cleaned.replace(/^https?:\/\/(www\.)?(facebook|twitter|x|instagram|tiktok)\.com\//i, '');
+        if (cleaned.startsWith('@')) cleaned = cleaned.substring(1);
+        if (cleaned.startsWith('/')) cleaned = cleaned.substring(1);
+        return cleaned;
+    }
+
     function loadAuthorProfile() {
         fetch('/api/author/profile')
             .then(res => res.json())
@@ -283,10 +292,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (twHandle) twHandle.value = data.twitter_handle || data.twitterHandle || '';
                 if (igHandle) igHandle.value = data.instagram_handle || data.instagramHandle || '';
 
-                if (showFb) showFb.checked = data.show_facebook !== undefined ? data.show_facebook : true;
-                if (showTt) showTt.checked = data.show_tiktok !== undefined ? data.show_tiktok : true;
-                if (showTw) showTw.checked = data.show_twitter !== undefined ? data.show_twitter : true;
-                if (showIg) showIg.checked = data.show_instagram !== undefined ? data.show_instagram : true;
+                if (showFb) showFb.checked = data.show_facebook ?? data.showFacebook ?? true;
+                if (showTt) showTt.checked = data.show_tiktok ?? data.showTiktok ?? true;
+                if (showTw) showTw.checked = data.show_twitter ?? data.showTwitter ?? true;
+                if (showIg) showIg.checked = data.show_instagram ?? data.showInstagram ?? true;
             })
             .catch(err => console.error("Failed to load author profile:", err));
     }
@@ -327,10 +336,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 formData.append('profilePic', profilePicInput.files[0]);
             }
             if (bioInput) formData.append('bio', bioInput.value.trim());
-            if (fbHandleInput) formData.append('facebookHandle', fbHandleInput.value.trim());
-            if (ttHandleInput) formData.append('tiktokHandle', ttHandleInput.value.trim());
-            if (twHandleInput) formData.append('twitterHandle', twHandleInput.value.trim());
-            if (igHandleInput) formData.append('instagramHandle', igHandleInput.value.trim());
+
+            if (fbHandleInput) formData.append('facebookHandle', cleanHandle(fbHandleInput.value));
+            if (ttHandleInput) formData.append('tiktokHandle', cleanHandle(ttHandleInput.value));
+            if (twHandleInput) formData.append('twitterHandle', cleanHandle(twHandleInput.value));
+            if (igHandleInput) formData.append('instagramHandle', cleanHandle(igHandleInput.value));
 
             formData.append('showFacebook', showFbCheck && showFbCheck.checked ? 'true' : 'false');
             formData.append('showTiktok', showTtCheck && showTtCheck.checked ? 'true' : 'false');
