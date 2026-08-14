@@ -789,7 +789,36 @@ app.post('/api/books/chapters', requireLogin, async (req, res) => {
     if (!bookId || !title || !finalContent) {
         return res.status(400).json({ error: 'Missing required chapter parameters.' });
     }
-    // ==========================================
+
+    const { data: book, error: bookErr } = await supabase
+        .from('books')
+        .select('id')
+        .eq('id', bookId)
+        .eq('user_id', req.session.user.id)
+        .single();
+
+    if (bookErr || !book) return res.status(403).json({ error: 'Unauthorized book pipeline action.' });
+
+    const { data: existingChapters } = await supabase
+        .from('chapters')
+        .select('chapter_number')
+        .eq('book_id', bookId)
+        .order('chapter_number', { ascending: false })
+        .limit(1);
+
+    const nextChapterNum = (existingChapters && existingChapters.length > 0) ? (existingChapters[0].chapter_number + 1) : 1;
+
+    const { data: chapter, error: insertErr } = await supabase
+        .from('chapters')
+        .insert([{ book_id: bookId, chapter_number: nextChapterNum, title, body: finalContent }])
+        .select()
+        .single();
+
+    if (insertErr) return res.status(500).json({ error: 'Failed to write chapter to database.' });
+    res.json({ success: true, chapterId: chapter.id });
+});
+
+// ==========================================
 //    UPDATE CHAPTER ENDPOINT
 // ==========================================
 app.put('/api/books/:bookId/chapters/:chapterId', requireLogin, async (req, res) => {
@@ -836,35 +865,6 @@ app.put('/api/books/:bookId/chapters/:chapterId', requireLogin, async (req, res)
         console.error(">>> [CHAPTER UPDATE EXCEPTION]:", err);
         res.status(500).json({ error: 'Server error while updating chapter.' });
     }
-});
-
-
-    const { data: book, error: bookErr } = await supabase
-        .from('books')
-        .select('id')
-        .eq('id', bookId)
-        .eq('user_id', req.session.user.id)
-        .single();
-
-    if (bookErr || !book) return res.status(403).json({ error: 'Unauthorized book pipeline action.' });
-
-    const { data: existingChapters } = await supabase
-        .from('chapters')
-        .select('chapter_number')
-        .eq('book_id', bookId)
-        .order('chapter_number', { ascending: false })
-        .limit(1);
-
-    const nextChapterNum = (existingChapters && existingChapters.length > 0) ? (existingChapters[0].chapter_number + 1) : 1;
-
-    const { data: chapter, error: insertErr } = await supabase
-        .from('chapters')
-        .insert([{ book_id: bookId, chapter_number: nextChapterNum, title, body: finalContent }])
-        .select()
-        .single();
-
-    if (insertErr) return res.status(500).json({ error: 'Failed to write chapter to database.' });
-    res.json({ success: true, chapterId: chapter.id });
 });
 
 // ==========================================
