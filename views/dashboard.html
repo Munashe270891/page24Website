@@ -18,7 +18,7 @@
                     <span class="logo-icon">🇿🇼</span>
                     <span class="logo-text">Page 24</span>
                 </div>
-                <div class="welcome-tag">Welcome 👤</div>
+                <div class="welcome-tag" id="sidebar-welcome-user">Welcome 👤</div>
             </div>
 
             <nav class="side-menu">
@@ -117,10 +117,10 @@
                         </div>
                         <div class="payout-row">
                             <span>📱 OneMoney</span>
-                            <strong>$0.00 USD</strong>
+                            <strong id="dashboard-onemoney-balance">$0.00 USD</strong>
                         </div>
 
-                        <button class="withdraw-btn">Withdraw</button>
+                        <button class="withdraw-btn" id="open-withdraw-modal-btn">Withdraw</button>
                     </div>
                 </div> 
             </div>
@@ -175,19 +175,19 @@
                         
                         <label class="input-label">PUBLISH FORMAT</label>
                         <div class="mode-select-row" style="margin-bottom: 15px;">
-                            <label class="radio-option" style="display: block; margin-bottom: 10px; font-weight: bold;">
+                            <label class="radio-option" style="display: block; margin-bottom: 10px; font-weight: bold; cursor: pointer;">
                                 <input type="radio" name="upload-mode" value="pdf" id="format-pdf" checked> 📁 Upload finished PDF manuscript
                             </label>
-                            <label class="radio-option" style="display: block; font-weight: bold;">
+                            <label class="radio-option" style="display: block; font-weight: bold; cursor: pointer;">
                                 <input type="radio" name="upload-mode" value="html" id="format-html"> ✍️ Compose / Paste chapters directly online (No PDF required!)
                             </label>
                         </div>
 
                         <!-- SECURITY & DISTRIBUTION RULES DROPDOWN -->
-                        <div class="security-rules-group">
+                        <div class="security-rules-group" style="margin-bottom: 15px;">
                             <label for="book-download-rule" class="input-label">SECURITY & DISTRIBUTION RULES</label>
                             <div class="select-wrapper">
-                                <select id="book-download-rule" name="downloadRule" class="styled-select" required>
+                                <select id="book-download-rule" name="downloadRule" class="styled-select" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box;" required>
                                     <option value="0" selected>🔒 Secure Anti-Piracy Streaming (Read in App Only)</option>
                                     <option value="1">📂 Open Distribution (Allow PDF Download to Reader Device)</option>
                                 </select>
@@ -195,37 +195,37 @@
                         </div>
 
                         <!-- Conditional Input field 1: For PDF Authors -->
-                        <div id="pdf-input-group" class="conditional-group">
+                        <div id="pdf-input-group" class="conditional-group" style="margin-bottom: 15px;">
                             <label class="input-label">UPLOAD PDF MANUSCRIPT</label>
                             <input type="file" id="pdf-upload" accept=".pdf">
                         </div>
 
                         <!-- Conditional Input field 2: For Web Book Authors -->
-                        <div id="html-input-group" class="conditional-group hidden">
+                        <div id="html-input-group" class="conditional-group hidden" style="margin-bottom: 15px;">
                             <div style="background-color: #fcf8e3; border-left: 4px solid #f0ad4e; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
                                 <strong>💡 Web Book Tip:</strong> You can write your first chapter right now! Once saved, you can add and manage more chapters inside the <strong>Write Online (Web Studio)</strong> menu. Web books are strictly protected for in-app reading only.
                             </div>
                             <label class="input-label">FIRST CHAPTER TITLE</label>
-                            <input type="text" id="initial-chapter-title" placeholder="e.g. Chapter 1: The Journey Begins">
+                            <input type="text" id="initial-chapter-title" placeholder="e.g. Chapter 1: The Journey Begins" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;">
                             
                             <label class="input-label">FIRST CHAPTER BODY CONTENT</label>
-                            <textarea id="initial-chapter-body" rows="10" placeholder="Paste or type your chapter text here..."></textarea>
+                            <textarea id="initial-chapter-body" rows="10" placeholder="Paste or type your chapter text here..." style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box;"></textarea>
                         </div>
 
                         <!-- COPYRIGHT & LEGAL COMPLIANCE AFFIRMATION -->
-                        <div class="legal-declaration-card">
+                        <div class="legal-declaration-card" style="background: #fafafa; border: 1px solid #e0e0e0; padding: 15px; border-radius: 6px; margin-bottom: 20px;">
                             <h4 style="color: var(--primary-green, #1e4d2b); margin-bottom: 8px;">⚖️ Legal & Copyright Declaration</h4>
                             <p class="legal-subtitle" style="font-size: 11px; color: #555; margin-bottom: 12px; line-height: 1.4;">
                                 Pursuant to the <strong>Zimbabwe Copyright and Neighbouring Rights Act [Chapter 26:05]</strong>, you must certify that you possess lawful distribution rights for this work.
                             </p>
 
                             <div class="checkbox-group">
-                                <label class="custom-checkbox-label">
+                                <label class="custom-checkbox-label" style="display: block; margin-bottom: 10px; font-size: 12px;">
                                     <input type="checkbox" id="copyright-ownership-check" required>
                                     <span class="checkbox-text">I certify that I am the original author or authorized copyright holder of this content, or that it is strictly in the public domain.</span>
                                 </label>
 
-                                <label class="custom-checkbox-label">
+                                <label class="custom-checkbox-label" style="display: block; font-size: 12px;">
                                     <input type="checkbox" id="copyright-terms-check" required>
                                     <span class="checkbox-text">I agree to Page 24 Terms of Service and understand that submitting pirated or fraudulent works will result in immediate termination, forfeiture of royalties, and full personal legal indemnity under Zimbabwean law.</span>
                                 </label>
@@ -452,6 +452,30 @@
         </div>
     </div>
 
+    <!-- WITHDRAWAL MODAL -->
+    <div id="withdraw-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
+        <div style="background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 450px; box-sizing: border-box; border: 1px solid var(--border-tan, #ccc);">
+            <h2 style="color: var(--primary-green, #1e4d2b); margin-bottom: 10px;">💸 Withdraw Royalties</h2>
+            <p style="font-size: 13px; color: #666; margin-bottom: 15px;">Payouts are processed directly to your registered mobile money account.</p>
+            
+            <form id="withdraw-form">
+                <label class="input-label">SELECT PAYMENT METHOD</label>
+                <select id="withdraw-method" class="styled-select" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
+                    <option value="ecocash">EcoCash</option>
+                    <option value="onemoney">OneMoney</option>
+                </select>
+
+                <label class="input-label">AMOUNT TO WITHDRAW (USD)</label>
+                <input type="number" id="withdraw-amount" step="0.01" min="1" placeholder="e.g. 20.00" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 20px;" required>
+
+                <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="button" onclick="closeWithdrawModal()" style="background: #ccc; color: black; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer;">Cancel</button>
+                    <button type="submit" class="save-master-btn" style="margin: 0; padding: 10px 20px; background: #27ae60;">Request Payout</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- External dashboard JS file -->
     <script src="/js/dashboard.js"></script>
 
@@ -468,7 +492,24 @@
             }
         }
 
+        // Helper functions for withdrawal modal display
+        function openWithdrawModal() {
+            const modal = document.getElementById('withdraw-modal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeWithdrawModal() {
+            const modal = document.getElementById('withdraw-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
+            // Bind withdraw button to modal
+            const withdrawBtn = document.querySelector('.withdraw-btn');
+            if (withdrawBtn) {
+                withdrawBtn.addEventListener('click', openWithdrawModal);
+            }
+
             // CATEGORY / SUB-THEME TOGGLE LOGIC
             const categorySelect = document.getElementById('book-category');
             const subThemeGroup = document.getElementById('sub-theme-group');
@@ -492,23 +533,29 @@
             const pdfRadio = document.getElementById('format-pdf');
             const htmlRadio = document.getElementById('format-html');
             const ruleSelect = document.getElementById('book-download-rule');
+            const pdfGroup = document.getElementById('pdf-input-group');
+            const htmlGroup = document.getElementById('html-input-group');
 
             function handleFormatChange() {
                 if (htmlRadio && htmlRadio.checked) {
                     // Web/HTML Books force App-Only streaming
-                    ruleSelect.value = "0";
-                    if (ruleSelect.options[1]) {
-                        ruleSelect.options[1].disabled = true;
+                    if (ruleSelect) {
+                        ruleSelect.value = "0";
+                        if (ruleSelect.options[1]) ruleSelect.options[1].disabled = true;
                     }
+                    if (pdfGroup) pdfGroup.classList.add('hidden');
+                    if (htmlGroup) htmlGroup.classList.remove('hidden');
                 } else if (pdfRadio && pdfRadio.checked) {
                     // PDF Books can toggle Open Distribution
-                    if (ruleSelect.options[1]) {
+                    if (ruleSelect && ruleSelect.options[1]) {
                         ruleSelect.options[1].disabled = false;
                     }
+                    if (pdfGroup) pdfGroup.classList.remove('hidden');
+                    if (htmlGroup) htmlGroup.classList.add('hidden');
                 }
             }
 
-            if (pdfRadio && htmlRadio && ruleSelect) {
+            if (pdfRadio && htmlRadio) {
                 pdfRadio.addEventListener('change', handleFormatChange);
                 htmlRadio.addEventListener('change', handleFormatChange);
                 handleFormatChange(); // Run once on page load
