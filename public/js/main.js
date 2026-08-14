@@ -1,4 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Page Elements & Pointers
     const bookGrid = document.querySelector('.book-grid');
     const searchInput = document.getElementById('store-search');
     const browseBtn = document.getElementById('browse-books-btn');
@@ -18,7 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Preview Modal - Author Card Pointers
     const modalAuthorPic = document.getElementById('modal-author-pic');
     const modalAuthorLegal = document.getElementById('modal-author-legal');
-    const modalAuthorBio = document.getElementById('modal-author-bio');
+    const modalAuthorBio = document.getElementById('modal-author Bio') || document.getElementById('modal-author-bio');
     const modalDescription = document.getElementById('modal-description');
 
     // Preview Modal - Social Links Pointers
@@ -51,6 +52,56 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/'/g, '&#039;');
     }
 
+    // ==========================================
+    // 0. READER AUTH & SESSION CHECK ENGINE
+    // ==========================================
+    async function checkUserAuthStatus() {
+        const authContainer = document.getElementById('auth-nav-container');
+        if (!authContainer) return;
+
+        try {
+            const response = await fetch('/api/user'); 
+            if (!response.ok) throw new Error('Not logged in');
+
+            const userData = await response.json();
+
+            if (userData && (userData.user || userData.id || userData.email)) {
+                const user = userData.user || userData;
+                const displayName = escapeHTML(user.name || user.username || user.email || 'Reader');
+
+                // Render signed-in reader state in header
+                authContainer.innerHTML = `
+                    <div style="display: inline-flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--primary-green, #1B4D3E);">
+                            👤 ${displayName}
+                        </span>
+                        <button id="logout-btn" class="nav-btn-secondary" style="padding: 5px 10px; font-size: 0.8rem; cursor: pointer; border-radius: 4px;">
+                            Sign Out
+                        </button>
+                    </div>
+                `;
+
+                const logoutBtn = document.getElementById('logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', async () => {
+                        try {
+                            await fetch('/api/logout', { method: 'POST' });
+                        } catch (err) {
+                            console.error('Logout error:', err);
+                        } finally {
+                            window.location.reload();
+                        }
+                    });
+                }
+            } else {
+                authContainer.innerHTML = `<a href="/login" id="auth-btn" class="nav-btn-primary">Sign In</a>`;
+            }
+        } catch (error) {
+            // Unauthenticated reader/guest
+            authContainer.innerHTML = `<a href="/login" id="auth-btn" class="nav-btn-primary">Sign In</a>`;
+        }
+    }
+
     // Smooth-scroll "Browse Books" in top header
     if (browseBtn) {
         browseBtn.addEventListener('click', (e) => {
@@ -62,7 +113,9 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ==========================================
     // 1. DYNAMIC CATALOGUE LOADER ENGINE
+    // ==========================================
     async function loadStoreBooks() {
         if (!bookGrid) return;
 
@@ -85,7 +138,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // ==========================================
     // 2. RENDERING ENGINE WITH ACTIVE FILTERS
+    // ==========================================
     function renderFilteredGrid() {
         if (!bookGrid) return;
         bookGrid.innerHTML = '';
@@ -158,16 +213,16 @@ document.addEventListener('DOMContentLoaded', () => {
         attachPreviewButtonListeners();
     }
 
-    // 3. CATEGORY & SUB-THEME EVENT HANDLERS (Global Scope)
+    // ==========================================
+    // 3. CATEGORY & SUB-THEME EVENT HANDLERS
+    // ==========================================
     window.filterByCategory = function(catName, btnElement) {
         selectedCategory = catName;
-        selectedSubTheme = 'All'; // Reset sub-theme when category changes
+        selectedSubTheme = 'All';
 
-        // Active state formatting for Category Pills
         document.querySelectorAll('.cat-pill').forEach(btn => btn.classList.remove('active'));
         if (btnElement) btnElement.classList.add('active');
 
-        // Toggle Sub-theme bar visibility
         if (subThemeRow) {
             if (catName === 'Shona Novels') {
                 subThemeRow.style.display = 'flex';
@@ -185,36 +240,25 @@ document.addEventListener('DOMContentLoaded', () => {
     window.filterBySubTheme = function(subName, btnElement) {
         selectedSubTheme = subName;
 
-        // Active state formatting for Sub-Theme Pills
         document.querySelectorAll('.sub-pill').forEach(btn => btn.classList.remove('active'));
         if (btnElement) btnElement.classList.add('active');
 
         renderFilteredGrid();
     };
 
-    // Helper function to handle social media links display (Handles handles or full URLs)
+    // Helper functions for social media links
     function setupSocialLink(element, value, platform) {
         if (!element) return false;
         
         if (value && String(value).trim() !== '') {
             let url = String(value).trim();
-            
-            // Format handle into full URL if user provided raw username
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
                 const cleanHandle = url.replace('@', '');
                 switch (platform) {
-                    case 'facebook':
-                        url = `https://facebook.com/${cleanHandle}`;
-                        break;
-                    case 'tiktok':
-                        url = `https://tiktok.com/@${cleanHandle}`;
-                        break;
-                    case 'twitter':
-                        url = `https://x.com/${cleanHandle}`;
-                        break;
-                    case 'instagram':
-                        url = `https://instagram.com/${cleanHandle}`;
-                        break;
+                    case 'facebook': url = `https://facebook.com/${cleanHandle}`; break;
+                    case 'tiktok': url = `https://tiktok.com/@${cleanHandle}`; break;
+                    case 'twitter': url = `https://x.com/${cleanHandle}`; break;
+                    case 'instagram': url = `https://instagram.com/${cleanHandle}`; break;
                 }
             }
             
@@ -229,7 +273,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Helper to format social links for dynamically generated cards
     function formatSocialUrl(value, platform) {
         if (!value || String(value).trim() === '') return null;
         let url = String(value).trim();
@@ -245,7 +288,9 @@ document.addEventListener('DOMContentLoaded', () => {
         return url;
     }
 
+    // ==========================================
     // 4. MODAL INTERACTION CONTROLLER INTERFACE
+    // ==========================================
     function attachPreviewButtonListeners() {
         const previewButtons = document.querySelectorAll('.buy-btn');
         
@@ -260,7 +305,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const authorNameText = selectedBook.author || selectedBook.author_name || 'Unknown Author';
                     const authorId = selectedBook.author_id || selectedBook.user_id || selectedBook.authorId;
                     
-                    // Book details
                     if (modalCover) {
                         modalCover.src = coverSrc;
                         modalCover.style.objectFit = 'contain';
@@ -272,13 +316,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         modalDescription.textContent = selectedBook.description || 'No overview summary details text has been drafted for this volume yet.';
                     }
 
-                    // Author details
                     if (modalAuthorLegal) modalAuthorLegal.textContent = authorNameText;
                     if (modalAuthorBio) modalAuthorBio.textContent = selectedBook.author_bio || selectedBook.bio || 'Page 24 Published Author.';
                     if (modalAuthorPic) modalAuthorPic.src = selectedBook.author_picture || selectedBook.profile_picture_url || '/images/default-avatar.png';
                     if (modalAuthorRank) modalAuthorRank.textContent = selectedBook.author_rank ? `Rank #${selectedBook.author_rank}` : 'Top Creator';
 
-                    // Set author ID on follow button
                     if (followAuthorBtn) {
                         if (authorId) {
                             followAuthorBtn.setAttribute('data-author-id', authorId);
@@ -289,7 +331,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         followAuthorBtn.style.background = 'var(--primary-green-light, #27ae60)';
                     }
 
-                    // Social Links (Facebook, TikTok, Twitter/X, Instagram)
                     const hasFb = setupSocialLink(linkFb, selectedBook.facebook_url || selectedBook.facebook_handle || selectedBook.facebook, 'facebook');
                     const hasTt = setupSocialLink(linkTt, selectedBook.tiktok_url || selectedBook.tiktok_handle || selectedBook.tiktok, 'tiktok');
                     const hasTw = setupSocialLink(linkTw, selectedBook.twitter_url || selectedBook.twitter_handle || selectedBook.twitter, 'twitter');
@@ -319,12 +360,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Modal Closing Operations
     if (closeModalBtn && previewModal) {
         closeModalBtn.addEventListener('click', () => { previewModal.style.display = 'none'; });
     }
 
+    // ==========================================
     // 5. TOP AUTHORS CONTROLLER MODULE
+    // ==========================================
     if (topAuthorsBtn && authorsModal) {
         topAuthorsBtn.addEventListener('click', (e) => {
             e.preventDefault();
@@ -372,13 +414,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderAuthorsList(criteria) {
         if (!topAuthorsListContainer || cachedAuthorsData.length === 0) return;
 
-        // Dynamic Sorting Logic
         const sortedAuthors = [...cachedAuthorsData].sort((a, b) => {
             const aSales = Number(a.total_books_sold || a.books_read || 0);
             const bSales = Number(b.total_books_sold || b.books_read || 0);
-
-            if (criteria === 'sales') return bSales - aSales;
-            return bSales - aSales; // Default ranking by book sales
+            return bSales - aSales;
         });
 
         topAuthorsListContainer.innerHTML = sortedAuthors.map((author, index) => {
@@ -387,14 +426,12 @@ document.addEventListener('DOMContentLoaded', () => {
             const avatarSrc = author.profile_picture_url || author.profile_pic_url || '/images/default-avatar.png';
             const salesCount = Number(author.total_books_sold || author.books_read || 0);
 
-            // Extract social URLs
             const socialLinksObj = author.social_links || {};
             const fbUrl = formatSocialUrl(socialLinksObj.facebook || author.facebook_handle || author.facebook_url, 'facebook');
             const ttUrl = formatSocialUrl(socialLinksObj.tiktok || author.tiktok_handle || author.tiktok_url, 'tiktok');
             const twUrl = formatSocialUrl(socialLinksObj.twitter || author.twitter_handle || author.twitter_url, 'twitter');
             const igUrl = formatSocialUrl(socialLinksObj.instagram || author.instagram_handle || author.instagram_url, 'instagram');
 
-            // Build Clickable Badges Array
             const badges = [];
             if (fbUrl) badges.push(`<a href="${escapeHTML(fbUrl)}" target="_blank" class="social-badge fb" title="Facebook"><i class="fab fa-facebook-f"></i></a>`);
             if (ttUrl) badges.push(`<a href="${escapeHTML(ttUrl)}" target="_blank" class="social-badge tt" title="TikTok"><i class="fab fa-tiktok"></i></a>`);
@@ -418,7 +455,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             📚 ${salesCount} Reads/Purchases
                         </div>
 
-                        <!-- CLICKABLE SOCIAL BADGES -->
                         ${badgesHTML}
                     </div>
 
@@ -430,7 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }).join('');
     }
 
-    // Global Follow Author Handler for Book Preview Modal
+    // Global Follow Author Handlers
     window.toggleFollowAuthor = async function() {
         const followBtn = document.getElementById('follow-author-btn');
         const authorId = followBtn ? followBtn.getAttribute('data-author-id') : null;
@@ -459,7 +495,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Global Follow Author Action Handler for Top Authors Modal
     window.followAuthor = async function(authorId) {
         try {
             const response = await fetch(`/api/authors/${authorId}/follow`, { method: 'POST' });
@@ -467,7 +502,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (response.ok && result.success) {
                 alert('Author followed successfully!');
-                loadTopAuthors(); // Refresh metrics list
+                loadTopAuthors();
             } else {
                 alert(result.error || result.message || 'Please log in to follow authors.');
             }
@@ -477,19 +512,20 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Close Modals when clicking outside
+    // Close Modals on backdrop click
     window.addEventListener('click', (e) => { 
         if (e.target === previewModal) previewModal.style.display = 'none'; 
         if (e.target === authorsModal) authorsModal.style.display = 'none';
     });
 
-    // Real-time search input trigger
+    // Real-time search trigger
     if (searchInput) {
         searchInput.addEventListener('input', () => {
             renderFilteredGrid();
         });
     }
 
-    // Load book data
+    // Run Initializations on Page Load
+    checkUserAuthStatus();
     loadStoreBooks();
 });
