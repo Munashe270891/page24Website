@@ -400,6 +400,29 @@ app.post('/api/authors/:id/follow', requireLogin, async (req, res) => {
 });
 
 // ==========================================
+//   GET CURRENT USER'S FOLLOWED AUTHOR IDS
+// ==========================================
+app.get('/api/user/follows', requireLogin, async (req, res) => {
+    try {
+        const currentUserId = req.session.user.id;
+
+        const { data: follows, error } = await supabase
+            .from('followers')
+            .select('author_id')
+            .eq('follower_id', currentUserId);
+
+        if (error) return res.status(500).json({ error: error.message });
+
+        // Extract just the author_ids into an array
+        const followedAuthorIds = (follows || []).map(f => String(f.author_id));
+
+        res.json({ success: true, followedAuthorIds });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ==========================================
 //          NOTIFICATIONS SYSTEM
 // ==========================================
 
