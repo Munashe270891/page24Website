@@ -24,7 +24,7 @@
             <nav class="side-menu">
                 <a href="#" class="menu-item active" id="menu-dash" onclick="switchTab('dashboard-view', event)">📊 My Books Dashboard</a>
                 <a href="#" class="menu-item" id="menu-create" onclick="switchTab('creator-view', event)">➕ Create New Book</a>
-                <a href="#" class="menu-item" id="menu-studio" onclick="switchTab('studio-view', event); if(typeof loadStudioWebBooks === 'function') loadStudioWebBooks();">✍️ Write Online (Web Studio)</a>
+                <a href="#" class="menu-item" id="menu-studio" onclick="switchTab('studio-view', event)">✍️ Write Online (Web Studio)</a>
                 <a href="#" class="menu-item" id="menu-sales" onclick="switchTab('sales-view', event)">💰 Sales & Royalties</a>
                 <a href="#" class="menu-item" id="menu-profile" onclick="switchTab('profile-view', event)">👤 My Author Profile</a>
                 <hr class="menu-divider">
@@ -120,7 +120,7 @@
                             <strong id="dashboard-onemoney-balance">$0.00 USD</strong>
                         </div>
 
-                        <button class="withdraw-btn" id="open-withdraw-modal-btn" onclick="openWithdrawModal()">Withdraw</button>
+                        <button class="withdraw-btn" id="open-withdraw-modal-btn">Withdraw</button>
                     </div>
                 </div> 
             </div>
@@ -261,11 +261,6 @@
                         <div style="margin-bottom: 20px;">
                             <h4 style="margin-bottom: 10px;">Current Chapters</h4>
                             <div id="studio-chapters-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
-                        </div>
-
-                        <!-- LIVE PREVIEW CONTAINER FOR SELECTED CHAPTER -->
-                        <div id="chapter-preview-pane" style="background: #fafafa; border: 1px solid #e0e0e0; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
-                            <em>Select a chapter from the list above to preview its content here.</em>
                         </div>
 
                         <form id="add-chapter-form">
@@ -522,8 +517,9 @@
     <!-- External dashboard JS file -->
     <script src="/js/dashboard.js"></script>
 
-    <!-- Basic Clipboard Helper -->
+    <!-- UI Interaction Scripts -->
     <script>
+        // Helper function to copy author public link to clipboard
         function copyAuthorLink() {
             const copyInput = document.getElementById('author-public-link-input');
             if (copyInput && copyInput.value) {
@@ -533,6 +529,76 @@
                 alert('Author page link copied to clipboard!');
             }
         }
+
+        // Helper functions for withdrawal modal display
+        function openWithdrawModal() {
+            const modal = document.getElementById('withdraw-modal');
+            if (modal) modal.style.display = 'flex';
+        }
+
+        function closeWithdrawModal() {
+            const modal = document.getElementById('withdraw-modal');
+            if (modal) modal.style.display = 'none';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Bind withdraw button to modal
+            const withdrawBtn = document.querySelector('.withdraw-btn');
+            if (withdrawBtn) {
+                withdrawBtn.addEventListener('click', openWithdrawModal);
+            }
+
+            // CATEGORY / SUB-THEME TOGGLE LOGIC
+            const categorySelect = document.getElementById('book-category');
+            const subThemeGroup = document.getElementById('sub-theme-group');
+
+            function handleCategoryChange() {
+                if (categorySelect && subThemeGroup) {
+                    if (categorySelect.value === 'Shona Novels') {
+                        subThemeGroup.style.display = 'block';
+                    } else {
+                        subThemeGroup.style.display = 'none';
+                    }
+                }
+            }
+
+            if (categorySelect) {
+                categorySelect.addEventListener('change', handleCategoryChange);
+                handleCategoryChange(); // Initial check on page load
+            }
+
+            // PUBLISH FORMAT & SECURITY RULE DISABLING LOGIC
+            const pdfRadio = document.getElementById('format-pdf');
+            const htmlRadio = document.getElementById('format-html');
+            const ruleSelect = document.getElementById('book-download-rule');
+            const pdfGroup = document.getElementById('pdf-input-group');
+            const htmlGroup = document.getElementById('html-input-group');
+
+            function handleFormatChange() {
+                if (htmlRadio && htmlRadio.checked) {
+                    // Web/HTML Books force App-Only streaming
+                    if (ruleSelect) {
+                        ruleSelect.value = "0";
+                        if (ruleSelect.options[1]) ruleSelect.options[1].disabled = true;
+                    }
+                    if (pdfGroup) pdfGroup.classList.add('hidden');
+                    if (htmlGroup) htmlGroup.classList.remove('hidden');
+                } else if (pdfRadio && pdfRadio.checked) {
+                    // PDF Books can toggle Open Distribution
+                    if (ruleSelect && ruleSelect.options[1]) {
+                        ruleSelect.options[1].disabled = false;
+                    }
+                    if (pdfGroup) pdfGroup.classList.remove('hidden');
+                    if (htmlGroup) htmlGroup.classList.add('hidden');
+                }
+            }
+
+            if (pdfRadio && htmlRadio) {
+                pdfRadio.addEventListener('change', handleFormatChange);
+                htmlRadio.addEventListener('change', handleFormatChange);
+                handleFormatChange(); // Run once on page load
+            }
+        });
     </script>
 </body>
 </html>
