@@ -40,9 +40,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let cachedAuthorsData = [];     // Master authors array for dynamic sorting
     let selectedCategory = 'All';
     let selectedSubTheme = 'All';
-    
-    // GLOBAL STATE: Stores IDs of authors followed by current user across site/reader
-    let userFollowedAuthorIds = new Set();
 
     // Helper to escape HTML characters safely
     function escapeHTML(str) {
@@ -56,10 +53,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // 0. READER AUTH & FOLLOW STATE SYNC ENGINE
+    // 0. READER AUTH & SESSION CHECK ENGINE
     // ==========================================
     async function checkUserAuthStatus() {
         const authContainer = document.getElementById('auth-nav-container');
+        if (!authContainer) return;
 
         try {
             const response = await fetch('/api/user'); 
@@ -72,59 +70,35 @@ document.addEventListener('DOMContentLoaded', () => {
                 const displayName = escapeHTML(user.name || user.username || user.email || 'Reader');
 
                 // Render signed-in reader state in header
-                if (authContainer) {
-                    authContainer.innerHTML = `
-                        <div style="display: inline-flex; align-items: center; gap: 8px;">
-                            <span style="font-size: 0.85rem; font-weight: 600; color: var(--primary-green, #1B4D3E);">
-                                👤 ${displayName}
-                            </span>
-                            <button id="logout-btn" class="nav-btn-secondary" style="padding: 5px 10px; font-size: 0.8rem; cursor: pointer; border-radius: 4px;">
-                                Sign Out
-                            </button>
-                        </div>
-                    `;
+                authContainer.innerHTML = `
+                    <div style="display: inline-flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.85rem; font-weight: 600; color: var(--primary-green, #1B4D3E);">
+                            👤 ${displayName}
+                        </span>
+                        <button id="logout-btn" class="nav-btn-secondary" style="padding: 5px 10px; font-size: 0.8rem; cursor: pointer; border-radius: 4px;">
+                            Sign Out
+                        </button>
+                    </div>
+                `;
 
-                    const logoutBtn = document.getElementById('logout-btn');
-                    if (logoutBtn) {
-                        logoutBtn.addEventListener('click', async () => {
-                            try {
-                                await fetch('/api/logout', { method: 'POST' });
-                            } catch (err) {
-                                console.error('Logout error:', err);
-                            } finally {
-                                window.location.reload();
-                            }
-                        });
-                    }
+                const logoutBtn = document.getElementById('logout-btn');
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', async () => {
+                        try {
+                            await fetch('/api/logout', { method: 'POST' });
+                        } catch (err) {
+                            console.error('Logout error:', err);
+                        } finally {
+                            window.location.reload();
+                        }
+                    });
                 }
-
-                // Fetch current user's followed authors to sync button states
-                await fetchUserFollows();
-
-            } else if (authContainer) {
+            } else {
                 authContainer.innerHTML = `<a href="/login" id="auth-btn" class="nav-btn-primary">Sign In</a>`;
             }
         } catch (error) {
-            if (authContainer) {
-                authContainer.innerHTML = `<a href="/login" id="auth-btn" class="nav-btn-primary">Sign In</a>`;
-            }
-        }
-    }
-
-    // Fetch followed authors array from server
-    async function fetchUserFollows() {
-        try {
-            const res = await fetch('/api/user/follows');
-            if (res.ok) {
-                const data = await res.json();
-                // Expecting data.followedAuthorIds or array of IDs
-                const ids = data.followedAuthorIds || data.follows || data || [];
-                if (Array.isArray(ids)) {
-                    userFollowedAuthorIds = new Set(ids.map(id => String(id)));
-                }
-            }
-        } catch (err) {
-            console.error('Error fetching user follows:', err);
+            // Unauthenticated reader/guest
+            authContainer.innerHTML = `<a href="/login" id="auth-btn" class="nav-btn-primary">Sign In</a>`;
         }
     }
 
@@ -173,21 +147,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const searchString = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
+        // Filter master cache by Category, Sub-theme, and Search String
         const filteredBooks = localStoreBooksCache.filter(book => {
             const bookCat = (book.category || 'Other').toLowerCase();
             const bookSub = (book.sub_theme || book.subTheme || '').toLowerCase();
             const titleText = (book.title || '').toLowerCase();
             const authorText = (book.author || book.author_name || '').toLowerCase();
 
+            // Match Category
             const matchesCat = (selectedCategory === 'All') || (bookCat === selectedCategory.toLowerCase());
+            
+            // Match Sub-theme (when Shona Novels is selected)
             const matchesSub = (selectedCategory !== 'Shona Novels') || 
                                (selectedSubTheme === 'All') || 
                                (bookSub === selectedSubTheme.toLowerCase());
+
+            // Match Search Bar Input
             const matchesSearch = !searchString || titleText.includes(searchString) || authorText.includes(searchString);
 
             return matchesCat && matchesSub && matchesSearch;
         });
 
+        // Dynamic Section Heading Update
         if (catalogHeading) {
             if (selectedCategory === 'All') {
                 catalogHeading.textContent = 'Featured Zimbabwean Stories';
@@ -198,11 +179,13 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
+        // Empty state
         if (filteredBooks.length === 0) {
             bookGrid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; opacity: 0.7; padding: 40px 0;">No books found matching your selected filters.</p>`;
             return;
         }
 
+        // Render matching cards
         filteredBooks.forEach(book => {
             const card = document.createElement('div');
             card.className = 'book-card';
@@ -263,37 +246,23 @@ document.addEventListener('DOMContentLoaded', () => {
         renderFilteredGrid();
     };
 
-    // Smart Universal Social Link Parser Fix
-    function formatSocialUrl(rawInput, platform) {
-        if (!rawInput || String(rawInput).trim() === '') return null;
-        let str = String(rawInput).trim();
-
-        // If author pasted a complete HTTP/HTTPS URL or share link, return as-is
-        if (str.startsWith('http://') || str.startsWith('https://')) {
-            return str;
-        }
-
-        // Clean handle if author entered @username or leading slashes
-        if (str.startsWith('@')) str = str.substring(1);
-        if (str.startsWith('/')) str = str.substring(1);
-
-        switch (platform) {
-            case 'facebook': return `https://www.facebook.com/${str}`;
-            case 'tiktok': return `https://www.tiktok.com/@${str}`;
-            case 'twitter': return `https://x.com/${str}`;
-            case 'instagram': return `https://www.instagram.com/${str}`;
-            default: return `https://${str}`;
-        }
-    }
-
+    // Helper functions for social media links
     function setupSocialLink(element, value, platform) {
         if (!element) return false;
         
-        const validUrl = formatSocialUrl(value, platform);
-        if (validUrl) {
-            element.href = validUrl;
-            element.target = '_blank';
-            element.rel = 'noopener noreferrer';
+        if (value && String(value).trim() !== '') {
+            let url = String(value).trim();
+            if (!url.startsWith('http://') && !url.startsWith('https://')) {
+                const cleanHandle = url.replace('@', '');
+                switch (platform) {
+                    case 'facebook': url = `https://facebook.com/${cleanHandle}`; break;
+                    case 'tiktok': url = `https://tiktok.com/@${cleanHandle}`; break;
+                    case 'twitter': url = `https://x.com/${cleanHandle}`; break;
+                    case 'instagram': url = `https://instagram.com/${cleanHandle}`; break;
+                }
+            }
+            
+            element.href = url;
             element.classList.remove('hidden');
             element.style.display = 'inline-flex';
             return true;
@@ -302,6 +271,21 @@ document.addEventListener('DOMContentLoaded', () => {
             element.style.display = 'none';
             return false;
         }
+    }
+
+    function formatSocialUrl(value, platform) {
+        if (!value || String(value).trim() === '') return null;
+        let url = String(value).trim();
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            const cleanHandle = url.replace('@', '');
+            switch (platform) {
+                case 'facebook': return `https://facebook.com/${cleanHandle}`;
+                case 'tiktok': return `https://tiktok.com/@${cleanHandle}`;
+                case 'twitter': return `https://x.com/${cleanHandle}`;
+                case 'instagram': return `https://instagram.com/${cleanHandle}`;
+            }
+        }
+        return url;
     }
 
     // ==========================================
@@ -319,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     const coverSrc = selectedBook.cover_image || selectedBook.coverImage || '/images/default-cover.png';
                     const numericPrice = Number(selectedBook.price || 0);
                     const authorNameText = selectedBook.author || selectedBook.author_name || 'Unknown Author';
-                    const authorId = String(selectedBook.author_id || selectedBook.user_id || selectedBook.authorId || '');
+                    const authorId = selectedBook.author_id || selectedBook.user_id || selectedBook.authorId;
                     
                     if (modalCover) {
                         modalCover.src = coverSrc;
@@ -337,23 +321,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (modalAuthorPic) modalAuthorPic.src = selectedBook.author_picture || selectedBook.profile_picture_url || '/images/default-avatar.png';
                     if (modalAuthorRank) modalAuthorRank.textContent = selectedBook.author_rank ? `Rank #${selectedBook.author_rank}` : 'Top Creator';
 
-                    // Synchronize Follow Button State from Global Set
                     if (followAuthorBtn) {
                         if (authorId) {
                             followAuthorBtn.setAttribute('data-author-id', authorId);
-                            
-                            if (userFollowedAuthorIds.has(authorId)) {
-                                followAuthorBtn.textContent = '✓ Following';
-                                followAuthorBtn.style.background = '#6b6f6c';
-                            } else {
-                                followAuthorBtn.textContent = '+ Follow Author';
-                                followAuthorBtn.style.background = 'var(--primary-green-light, #27ae60)';
-                            }
                         } else {
                             followAuthorBtn.removeAttribute('data-author-id');
-                            followAuthorBtn.textContent = '+ Follow Author';
-                            followAuthorBtn.style.background = 'var(--primary-green-light, #27ae60)';
                         }
+                        followAuthorBtn.textContent = '+ Follow Author';
+                        followAuthorBtn.style.background = 'var(--primary-green-light, #27ae60)';
                     }
 
                     const hasFb = setupSocialLink(linkFb, selectedBook.facebook_url || selectedBook.facebook_handle || selectedBook.facebook, 'facebook');
@@ -450,7 +425,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const safeBio = escapeHTML(author.bio || 'Page 24 Published Author.');
             const avatarSrc = author.profile_picture_url || author.profile_pic_url || '/images/default-avatar.png';
             const salesCount = Number(author.total_books_sold || author.books_read || 0);
-            const authorId = String(author.id || '');
 
             const socialLinksObj = author.social_links || {};
             const fbUrl = formatSocialUrl(socialLinksObj.facebook || author.facebook_handle || author.facebook_url, 'facebook');
@@ -459,18 +433,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const igUrl = formatSocialUrl(socialLinksObj.instagram || author.instagram_handle || author.instagram_url, 'instagram');
 
             const badges = [];
-            if (fbUrl) badges.push(`<a href="${escapeHTML(fbUrl)}" target="_blank" rel="noopener noreferrer" class="social-badge fb" title="Facebook"><i class="fab fa-facebook-f"></i></a>`);
-            if (ttUrl) badges.push(`<a href="${escapeHTML(ttUrl)}" target="_blank" rel="noopener noreferrer" class="social-badge tt" title="TikTok"><i class="fab fa-tiktok"></i></a>`);
-            if (twUrl) badges.push(`<a href="${escapeHTML(twUrl)}" target="_blank" rel="noopener noreferrer" class="social-badge tw" title="X / Twitter"><i class="fab fa-x-twitter"></i></a>`);
-            if (igUrl) badges.push(`<a href="${escapeHTML(igUrl)}" target="_blank" rel="noopener noreferrer" class="social-badge ig" title="Instagram"><i class="fab fa-instagram"></i></a>`);
+            if (fbUrl) badges.push(`<a href="${escapeHTML(fbUrl)}" target="_blank" class="social-badge fb" title="Facebook"><i class="fab fa-facebook-f"></i></a>`);
+            if (ttUrl) badges.push(`<a href="${escapeHTML(ttUrl)}" target="_blank" class="social-badge tt" title="TikTok"><i class="fab fa-tiktok"></i></a>`);
+            if (twUrl) badges.push(`<a href="${escapeHTML(twUrl)}" target="_blank" class="social-badge tw" title="X / Twitter"><i class="fab fa-x-twitter"></i></a>`);
+            if (igUrl) badges.push(`<a href="${escapeHTML(igUrl)}" target="_blank" class="social-badge ig" title="Instagram"><i class="fab fa-instagram"></i></a>`);
 
             const badgesHTML = badges.length > 0 
                 ? `<div class="author-social-badges" style="margin-top: 6px;">${badges.join('')}</div>` 
                 : `<span style="font-size: 11px; color: #888; font-style: italic; display: block; margin-top: 4px;">No social links</span>`;
-
-            const isFollowing = userFollowedAuthorIds.has(authorId);
-            const btnText = isFollowing ? '✓ Following' : '+ Follow';
-            const btnBg = isFollowing ? '#6b6f6c' : 'var(--primary-green, #1B4D3E)';
 
             return `
                 <div class="author-card" style="display: flex; gap: 15px; background: #fff; padding: 14px; border-radius: 8px; border: 1px solid var(--border-tan, #E2DACD); align-items: center; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
@@ -488,8 +458,8 @@ document.addEventListener('DOMContentLoaded', () => {
                         ${badgesHTML}
                     </div>
 
-                    <button onclick="followAuthor('${authorId}')" style="background: ${btnBg}; color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap;">
-                        ${btnText}
+                    <button onclick="followAuthor('${author.id}')" style="background: var(--primary-green, #1B4D3E); color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap;">
+                        + Follow
                     </button>
                 </div>
             `;
@@ -511,7 +481,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const result = await response.json();
 
             if (response.ok && result.success) {
-                userFollowedAuthorIds.add(String(authorId));
+                alert('Author followed successfully!');
                 if (followBtn) {
                     followBtn.textContent = '✓ Following';
                     followBtn.style.background = '#6b6f6c';
@@ -526,14 +496,12 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     window.followAuthor = async function(authorId) {
-        if (!authorId) return;
-
         try {
             const response = await fetch(`/api/authors/${authorId}/follow`, { method: 'POST' });
             const result = await response.json();
 
             if (response.ok && result.success) {
-                userFollowedAuthorIds.add(String(authorId));
+                alert('Author followed successfully!');
                 loadTopAuthors();
             } else {
                 alert(result.error || result.message || 'Please log in to follow authors.');
