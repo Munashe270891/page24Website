@@ -320,6 +320,17 @@
                 <h1 class="view-title">👤 Author Profile</h1>
                 <p style="margin-bottom: 20px; opacity: 0.8;">Manage your public author details, social links, and payout destination details below.</p>
 
+                <!-- LIVE AUTHOR PUBLIC PROFILE LINK BOX -->
+                <div style="background: #eef9f1; border: 1px solid #27ae60; border-left: 4px solid #27ae60; padding: 15px; margin-bottom: 20px; border-radius: 6px; max-width: 650px;">
+                    <strong style="color: #1e4d2b; display: block; margin-bottom: 4px;">🔗 Your Public Author Page Link:</strong>
+                    <p style="font-size: 12px; color: #555; margin-bottom: 8px;">Share this unique direct link with your audience across Facebook, TikTok, or WhatsApp so readers can access your author page directly.</p>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="text" id="author-public-link-input" readonly value="https://page24.co.zw/author/loading..." style="flex: 1; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; background: #fff; font-size: 13px; font-weight: 500; color: #2c3e50;">
+                        <button type="button" onclick="copyAuthorLink()" style="background: #1e4d2b; color: white; border: none; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold;">📋 Copy</button>
+                        <a id="visit-author-profile-btn" href="#" target="_blank" style="background: #27ae60; color: white; text-decoration: none; padding: 8px 14px; border-radius: 4px; font-size: 12px; font-weight: bold;">↗ Visit Page</a>
+                    </div>
+                </div>
+
                 <!-- PAYOUT NOTICE -->
                 <div style="background: #ebf5fb; border-left: 4px solid #2980b9; padding: 15px; margin-bottom: 20px; border-radius: 4px; max-width: 650px;">
                     <strong style="color: #2980b9;">⚠️ Financial Gateway & Legal Name Policy:</strong>
@@ -341,52 +352,52 @@
 
                         <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-tan, #ccc);">
 
-                        <!-- SOCIAL MEDIA HANDLES & AUDIENCE -->
-                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 5px;">📲 Social Media & Links</h3>
-                        <p style="font-size: 12px; color: gray; margin-bottom: 15px;">Add your profile links below and toggle visibility. Readers will be able to visit and follow your channels directly.</p>
+                        <!-- SOCIAL MEDIA HANDLES & AUDIENCE LINK INTEGRATION -->
+                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 5px;">📲 Social Media Links</h3>
+                        <p style="font-size: 12px; color: gray; margin-bottom: 15px;">Paste your full link or handle below. JavaScript will sanitize and link directly to your accounts on your public profile page.</p>
 
                         <!-- FACEBOOK -->
                         <div style="margin-bottom: 15px; border: 1px solid var(--border-tan, #ccc); padding: 12px; border-radius: 6px; background-color: var(--bg-cream-light, #fafafa);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <label class="input-label" style="margin: 0;">FACEBOOK HANDLE / LINK</label>
+                                <label class="input-label" style="margin: 0;"><i class="fab fa-facebook" style="color: #1877f2;"></i> FACEBOOK PROFILE OR PAGE</label>
                                 <label style="font-size: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
                                     <input type="checkbox" id="show-fb" name="showFacebook" checked> Show on Profile
                                 </label>
                             </div>
-                            <input type="text" id="author-fb-handle" name="facebookHandle" placeholder="https://www.facebook.com/yourname" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: white; border-radius: 4px; padding: 10px; box-sizing: border-box;">
+                            <input type="text" id="author-fb-handle" name="facebookHandle" placeholder="https://www.facebook.com/yourname or @username" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: white; border-radius: 4px; padding: 10px; box-sizing: border-box;">
                         </div>
 
                         <!-- TIKTOK -->
                         <div style="margin-bottom: 15px; border: 1px solid var(--border-tan, #ccc); padding: 12px; border-radius: 6px; background-color: var(--bg-cream-light, #fafafa);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <label class="input-label" style="margin: 0;">TIKTOK HANDLE / LINK</label>
+                                <label class="input-label" style="margin: 0;"><i class="fab fa-tiktok" style="color: #000;"></i> TIKTOK HANDLE / PROFILE</label>
                                 <label style="font-size: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
                                     <input type="checkbox" id="show-tt" name="showTiktok" checked> Show on Profile
                                 </label>
                             </div>
-                            <input type="text" id="author-tt-handle" name="tiktokHandle" placeholder="https://www.tiktok.com/@username" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: white; border-radius: 4px; padding: 10px; box-sizing: border-box;">
+                            <input type="text" id="author-tt-handle" name="tiktokHandle" placeholder="https://www.tiktok.com/@username or @username" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: white; border-radius: 4px; padding: 10px; box-sizing: border-box;">
                         </div>
 
                         <!-- X / TWITTER -->
                         <div style="margin-bottom: 15px; border: 1px solid var(--border-tan, #ccc); padding: 12px; border-radius: 6px; background-color: var(--bg-cream-light, #fafafa);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <label class="input-label" style="margin: 0;">X / TWITTER HANDLE</label>
+                                <label class="input-label" style="margin: 0;"><i class="fab fa-x-twitter"></i> X / TWITTER HANDLE</label>
                                 <label style="font-size: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
                                     <input type="checkbox" id="show-tw" name="showTwitter" checked> Show on Profile
                                 </label>
                             </div>
-                            <input type="text" id="author-tw-handle" name="twitterHandle" placeholder="username" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: white; border-radius: 4px; padding: 10px; box-sizing: border-box;">
+                            <input type="text" id="author-tw-handle" name="twitterHandle" placeholder="username or https://x.com/username" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: white; border-radius: 4px; padding: 10px; box-sizing: border-box;">
                         </div>
 
                         <!-- INSTAGRAM -->
                         <div style="margin-bottom: 20px; border: 1px solid var(--border-tan, #ccc); padding: 12px; border-radius: 6px; background-color: var(--bg-cream-light, #fafafa);">
                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <label class="input-label" style="margin: 0;">INSTAGRAM HANDLE</label>
+                                <label class="input-label" style="margin: 0;"><i class="fab fa-instagram" style="color: #e1306c;"></i> INSTAGRAM HANDLE</label>
                                 <label style="font-size: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
                                     <input type="checkbox" id="show-ig" name="showInstagram" checked> Show on Profile
                                 </label>
                             </div>
-                            <input type="text" id="author-ig-handle" name="instagramHandle" placeholder="username" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: white; border-radius: 4px; padding: 10px; box-sizing: border-box;">
+                            <input type="text" id="author-ig-handle" name="instagramHandle" placeholder="username or https://instagram.com/username" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: white; border-radius: 4px; padding: 10px; box-sizing: border-box;">
                         </div>
 
                         <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-tan, #ccc);">
@@ -446,6 +457,17 @@
 
     <!-- UI Interaction Scripts -->
     <script>
+        // Helper function to copy author public link to clipboard
+        function copyAuthorLink() {
+            const copyInput = document.getElementById('author-public-link-input');
+            if (copyInput && copyInput.value) {
+                copyInput.select();
+                copyInput.setSelectionRange(0, 99999);
+                navigator.clipboard.writeText(copyInput.value);
+                alert('Author page link copied to clipboard!');
+            }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             // CATEGORY / SUB-THEME TOGGLE LOGIC
             const categorySelect = document.getElementById('book-category');
