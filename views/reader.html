@@ -9,15 +9,21 @@
     
     <!-- PDF.js Engine -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
     <style>
         :root {
             --primary-green: #1b3d2b;
+            --primary-green-light: #27ae60;
             --accent-orange: #d97736;
             --bg-cream: #f4f3ef;
+            --bg-cream-light: #fdfcf7;
             --text-dark: #2a2d2b;
+            --text-muted: #6b6f6c;
             --white: #ffffff;
             --border-light: #e3e1d5;
+            --border-tan: #e3e1d5;
         }
         * { box-sizing: border-box; -webkit-user-select: none; user-select: none; }
         
@@ -33,7 +39,7 @@
         header {
             background-color: var(--primary-green);
             color: var(--white);
-            padding: 10px 16px;
+            padding: 10px 14px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -42,7 +48,7 @@
             z-index: 100;
             box-shadow: 0 2px 8px rgba(0,0,0,0.15);
         }
-        .header-title { font-weight: bold; font-size: 15px; }
+        .header-title { font-weight: bold; font-size: 15px; display: flex; align-items: center; gap: 6px; }
         .header-actions { display: flex; gap: 6px; align-items: center; }
 
         .btn-header {
@@ -50,13 +56,46 @@
             color: white; border: 1px solid rgba(255,255,255,0.3);
             padding: 5px 10px; border-radius: 4px;
             font-size: 12px; font-weight: bold; cursor: pointer;
-            text-decoration: none;
+            text-decoration: none; display: inline-flex; align-items: center; gap: 4px;
         }
+        .btn-website { background-color: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.5); }
         .btn-logout { background-color: #c93b2b; border: none; }
         .btn-install { background-color: var(--accent-orange); border: none; }
 
+        /* House Promo Banner */
+        .ad-container { margin-bottom: 12px; }
+        .house-ad {
+            background: white;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: center;
+            border-top: 3px solid var(--accent-orange);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+        .ad-badge {
+            background: var(--accent-orange);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 3px;
+            display: inline-block;
+            margin-bottom: 4px;
+        }
+        .house-ad p { font-size: 12px; margin: 4px 0 8px 0; color: var(--text-dark); }
+        .ad-cta-btn {
+            background: var(--primary-green);
+            color: white;
+            text-decoration: none;
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            display: inline-block;
+        }
+
         /* Search Bar */
-        .search-container { margin-bottom: 15px; }
+        .search-container { margin-bottom: 12px; }
         .search-input {
             width: 100%;
             padding: 10px 14px;
@@ -65,6 +104,41 @@
             font-size: 14px;
             outline: none;
             box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+
+        /* Category Filter Section */
+        .category-filter-container { margin-bottom: 15px; }
+        .category-pills-row, .subthemes-pills-row {
+            display: flex; gap: 6px; overflow-x: auto;
+            padding-bottom: 8px; align-items: center;
+            -webkit-overflow-scrolling: touch;
+        }
+        .category-pills-row::-webkit-scrollbar, .subthemes-pills-row::-webkit-scrollbar { display: none; }
+        
+        .filter-label, .sub-label {
+            font-size: 12px; font-weight: bold;
+            color: var(--primary-green); white-space: nowrap;
+        }
+        .cat-pill, .sub-pill {
+            background: white; border: 1px solid var(--border-light);
+            padding: 5px 12px; border-radius: 16px; font-size: 11px;
+            font-weight: 600; white-space: nowrap; cursor: pointer; color: var(--text-dark);
+        }
+        .cat-pill.active, .sub-pill.active {
+            background: var(--primary-green); color: white; border-color: var(--primary-green);
+        }
+
+        /* Top Authors Action Bar */
+        .top-authors-bar {
+            display: flex; justify-content: space-between; align-items: center;
+            background: white; padding: 10px 12px; border-radius: 6px;
+            margin-bottom: 15px; border: 1px solid var(--border-light);
+        }
+        .top-authors-title { font-size: 12px; font-weight: bold; color: var(--primary-green); }
+        .btn-top-authors {
+            background: var(--primary-green-light); color: white; border: none;
+            padding: 4px 10px; border-radius: 12px; font-size: 11px;
+            font-weight: bold; cursor: pointer;
         }
 
         /* Tab Content Screens */
@@ -87,6 +161,7 @@
         .chapter-body {
             background: white; padding: 25px; border-radius: 8px;
             line-height: 1.8; font-size: 18px; box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+            margin-bottom: 15px; user-select: text; -webkit-user-select: text;
         }
 
         /* TAB 2 & 3: STORE & LIBRARY GRID */
@@ -101,43 +176,40 @@
             flex-direction: column; text-align: center;
         }
         .book-cover-container {
-            width: 100%;
-            aspect-ratio: 2 / 3;
-            background: rgba(0, 0, 0, 0.04);
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            width: 100%; aspect-ratio: 2 / 3;
+            background: rgba(0, 0, 0, 0.04); overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
         }
-        .book-card img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; 
-            display: block;
-        }
+        .book-card img { width: 100%; height: 100%; object-fit: contain; display: block; }
         .book-info { padding: 10px; flex-grow: 1; display: flex; flex-direction: column; justify-content: space-between; }
         .book-title { font-size: 14px; font-weight: bold; margin-bottom: 2px; color: var(--primary-green); }
         .book-author { font-size: 12px; color: #666; margin-bottom: 6px; }
-        .price-badge { font-weight: bold; font-size: 13px; color: var(--accent-orange); margin-bottom: 8px; }
-        .price-badge.free { color: #2e7d32; }
 
         .action-btn {
             background: var(--primary-green); color: white; border: none;
             padding: 8px 10px; border-radius: 4px; font-size: 12px;
             font-weight: bold; cursor: pointer; width: 100%; text-decoration: none;
-            display: inline-block; text-align: center;
+            display: inline-block; text-align: center; margin-top: 4px;
         }
         .action-btn.btn-free { background: #2e7d32; }
-        .action-btn.btn-buy { background: var(--accent-orange); }
+
+        /* Social Media Clickable Badges */
+        .modal-social-badges { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+        .social-badge {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 28px; height: 28px; border-radius: 50%; color: #ffffff !important;
+            font-size: 13px; text-decoration: none;
+        }
+        .social-badge.fb { background-color: #1877f2; }
+        .social-badge.tt { background-color: #000000; }
+        .social-badge.tw { background-color: #000000; }
+        .social-badge.ig { background-color: #e1306c; }
 
         /* Guest Empty State Box */
         .guest-box {
-            grid-column: 1/-1;
-            text-align: center;
-            background: white;
-            padding: 30px 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            grid-column: 1/-1; text-align: center;
+            background: white; padding: 30px 20px;
+            border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
             margin-top: 10px;
         }
 
@@ -155,6 +227,8 @@
         }
         .tab-btn span.icon { font-size: 20px; margin-bottom: 2px; }
         .tab-btn.active { color: var(--primary-green); font-weight: bold; }
+
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -162,6 +236,7 @@
     <header>
         <span class="header-title" id="top-header-title">📚 My Books</span>
         <div class="header-actions">
+            <a href="/" class="btn-header btn-website">🌐 Website</a>
             <a href="/login?returnTo=/read" class="btn-header" id="auth-btn">👤 Sign In</a>
             <button class="btn-header btn-logout" id="logout-btn" style="display:none;" onclick="handleLogout()">Logout</button>
             <button class="btn-header btn-install" id="pwa-install-btn">📲 Install</button>
@@ -184,19 +259,61 @@
             </div>
         </div>
 
-        <!-- HTML Viewport -->
+        <!-- HTML / Web Book Viewport -->
         <div id="html-wrapper" style="display:none;">
-            <h1 id="chapter-title" style="margin-top: 0;"></h1>
+            <h1 id="chapter-title" style="margin-top: 0; color: var(--primary-green);"></h1>
             <div id="chapter-content" class="chapter-body"></div>
+            
+            <div class="controls" id="chapter-controls" style="display: none;">
+                <button id="prev-chapter" onclick="navigateChapter(-1)">◀ Previous Chapter</button>
+                <span id="chapter-index-label" style="font-size: 13px; font-weight: bold;">Chapter 1</span>
+                <button id="next-chapter" onclick="navigateChapter(1)">Next Chapter ▶</button>
+            </div>
         </div>
     </div>
 
     <!-- TAB 2: BOOK STORE SCREEN -->
     <div id="screen-store" class="tab-screen">
+        <aside class="ad-container">
+            <div class="house-ad">
+                <span class="ad-badge">PROMO</span>
+                <p>Are you a writer? <strong>Publish your books on Page 24 today</strong> and earn directly via EcoCash &amp; OneMoney!</p>
+                <a href="/dashboard" class="ad-cta-btn">Start Publishing</a>
+            </div>
+        </aside>
+
         <div class="search-container">
-            <input type="text" id="store-search-input" class="search-input" placeholder="🔍 Search titles or authors in Store..." onkeyup="filterStoreBooks()">
+            <input type="text" id="store-search" class="search-input" placeholder="🔍 Search books by title or author..." onkeyup="filterStoreBooks()">
         </div>
-        <div class="book-grid" id="store-books-grid">Loading store catalog...</div>
+
+        <section id="category-filter-section" class="category-filter-container">
+            <div class="category-pills-row">
+                <span class="filter-label">Categories:</span>
+                <button class="cat-pill active" onclick="filterByCategory('All', this)">All Books</button>
+                <button class="cat-pill" onclick="filterByCategory('Shona Novels', this)">Shona Novels</button>
+                <button class="cat-pill" onclick="filterByCategory('Motivational', this)">Motivational</button>
+                <button class="cat-pill" onclick="filterByCategory('Dating &amp; Relationships', this)">Dating &amp; Relationships</button>
+                <button class="cat-pill" onclick="filterByCategory('Christian Devotional', this)">Christian Devotional</button>
+                <button class="cat-pill" onclick="filterByCategory('Business', this)">Business</button>
+                <button class="cat-pill" onclick="filterByCategory('Other', this)">Other</button>
+            </div>
+
+            <div id="shona-subthemes-row" class="subthemes-pills-row" style="display: none;">
+                <span class="sub-label">Shona Theme:</span>
+                <button class="sub-pill active" onclick="filterBySubTheme('All', this)">All Themes</button>
+                <button class="sub-pill" onclick="filterBySubTheme('Love / Rudo', this)">Love / Rudo</button>
+                <button class="sub-pill" onclick="filterBySubTheme('Christian / Chitendero', this)">Christian / Chitendero</button>
+                <button class="sub-pill" onclick="filterBySubTheme('Culture / Tsika neMagariro', this)">Culture / Tsika neMagariro</button>
+                <button class="sub-pill" onclick="filterBySubTheme('Drama / Mutambo', this)">Drama / Mutambo</button>
+            </div>
+        </section>
+
+        <div class="top-authors-bar">
+            <span class="top-authors-title">🏆 Top Zimbabwean Authors</span>
+            <button class="btn-top-authors" onclick="openAuthorsModal()">View Rankings</button>
+        </div>
+
+        <div class="book-grid" id="public-books-grid">Loading store catalog...</div>
     </div>
 
     <!-- TAB 3: MY BOOKS / LIBRARY SCREEN -->
@@ -205,6 +322,73 @@
             <input type="text" id="library-search-input" class="search-input" placeholder="🔍 Search my library..." onkeyup="filterLibraryBooks()">
         </div>
         <div class="book-grid" id="library-books-grid">Loading your personal library...</div>
+    </div>
+
+    <!-- BOOK DETAIL & AUTHOR PREVIEW MODAL -->
+    <div id="preview-modal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: var(--bg-cream-light, #fdfcf7); padding: 20px; border-radius: 8px; max-width: 500px; width: 92%; position: relative; border: 1px solid var(--border-tan, #e3e1d5); box-shadow: 0 5px 15px rgba(0,0,0,0.2); max-height: 85vh; overflow-y: auto;">
+            <span id="close-modal-btn" style="position: absolute; top: 12px; right: 16px; font-size: 24px; cursor: pointer; color: var(--text-dark); font-weight: bold;">&times;</span>
+            
+            <div style="display: flex; gap: 15px; margin-top: 10px;">
+                <img id="modal-cover" src="" alt="Book Cover" style="width: 100px; height: 145px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-tan);">
+                <div style="flex: 1;">
+                    <h2 id="modal-title" style="margin: 0 0 5px 0; font-size: 18px; color: var(--primary-green);">Book Title</h2>
+                    <p style="margin: 0 0 5px 0; font-style: italic; font-size: 13px;">
+                        By <span id="modal-author-name" style="font-weight: bold;">Author Name</span>
+                    </p>
+                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px; flex-wrap: wrap;">
+                        <span id="modal-author-rank" class="badge" style="background: var(--accent-orange); color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px;">Rank #--</span>
+                    </div>
+                    <button id="follow-author-btn" onclick="toggleFollowAuthor()" style="background: var(--primary-green-light); color: white; border: none; padding: 4px 10px; border-radius: 12px; font-size: 11px; cursor: pointer; font-weight: bold; margin-bottom: 8px;">+ Follow Author</button>
+                    <p id="modal-price" style="margin: 0; font-weight: bold; color: var(--accent-orange); font-size: 16px;">$0.00 USD</p>
+                </div>
+            </div>
+
+            <div style="margin-top: 15px; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid var(--border-tan);">
+                <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                    <img id="modal-author-pic" src="/images/default-avatar.png" alt="Author" style="width: 36px; height: 36px; border-radius: 50%; object-fit: cover;">
+                    <div>
+                        <strong id="modal-author-legal" style="font-size: 12px; display: block; color: var(--text-dark);">Author Profile</strong>
+                    </div>
+                </div>
+                <p id="modal-author-bio" style="font-size: 12px; color: var(--text-dark); margin: 0 0 8px 0; line-height: 1.4;">Author bio will load here...</p>
+                
+                <div style="margin-top: 8px; border-top: 1px dashed var(--border-tan); padding-top: 8px;">
+                    <span style="font-size: 11px; font-weight: bold; color: var(--text-muted); display: block; margin-bottom: 6px;">Connect with Author:</span>
+                    <div id="modal-social-links" class="modal-social-badges">
+                        <a id="link-fb" href="#" target="_blank" class="social-badge fb hidden" title="Facebook"><i class="fab fa-facebook-f"></i></a>
+                        <a id="link-tt" href="#" target="_blank" class="social-badge tt hidden" title="TikTok"><i class="fab fa-tiktok"></i></a>
+                        <a id="link-tw" href="#" target="_blank" class="social-badge tw hidden" title="X / Twitter"><i class="fab fa-x-twitter"></i></a>
+                        <a id="link-ig" href="#" target="_blank" class="social-badge ig hidden" title="Instagram"><i class="fab fa-instagram"></i></a>
+                        <span id="no-social-msg" class="no-social-text hidden">No social channels linked</span>
+                    </div>
+                </div>
+            </div>
+            
+            <h4 style="margin: 12px 0 6px 0; border-bottom: 1px solid var(--border-tan); padding-bottom: 4px; font-size: 12px;">BOOK SUMMARY</h4>
+            <p id="modal-description" style="margin: 0 0 15px 0; font-size: 12px; line-height: 1.5; max-height: 120px; overflow-y: auto; color: var(--text-dark);">Book description text will load here...</p>
+            
+            <button id="modal-buy-btn" style="background: var(--primary-green); color: white; border: none; width: 100%; padding: 10px; font-weight: bold; border-radius: 4px; cursor: pointer; font-size: 14px;">Unlock Full Book</button>
+        </div>
+    </div>
+
+    <!-- TOP AUTHORS MODAL OVERLAY -->
+    <div id="authors-modal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; justify-content: center; align-items: center;">
+        <div class="modal-content" style="background: var(--bg-cream-light, #fdfcf7); padding: 20px; border-radius: 10px; max-width: 550px; width: 92%; max-height: 85vh; overflow-y: auto; position: relative; border: 1px solid var(--border-tan); box-shadow: 0 5px 20px rgba(0,0,0,0.25);">
+            <span id="close-authors-modal" style="position: absolute; top: 12px; right: 16px; font-size: 24px; cursor: pointer; color: var(--text-dark); font-weight: bold;">&times;</span>
+            
+            <h2 style="margin-top: 0; color: var(--primary-green); font-size: 18px;">🏆 Top Zimbabwean Authors</h2>
+            
+            <div style="margin-bottom: 15px; background: #fff; padding: 10px; border-radius: 6px; border: 1px solid var(--border-tan); display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <label for="ranking-criteria" style="font-size: 12px; font-weight: bold; color: var(--text-dark);">Rank By:</label>
+                <select id="ranking-criteria" style="padding: 6px 10px; border-radius: 4px; border: 1px solid var(--border-tan); font-size: 12px; font-weight: 600; background: #fafafa; flex: 1;">
+                    <option value="overall" selected>⭐ Overall Combined Ranking</option>
+                    <option value="sales">📚 Books Purchased / Read</option>
+                </select>
+            </div>
+
+            <div id="top-authors-list" style="display: flex; flex-direction: column; gap: 10px;"></div>
+        </div>
     </div>
 
     <!-- BOTTOM TAB NAVIGATION -->
@@ -220,12 +404,20 @@
         </button>
     </nav>
 
+    <!-- LOAD MAIN.JS -->
+    <script src="/js/main.js?v=2.2"></script>
+
+    <!-- READER SPECIFIC SCRIPT -->
     <script>
         let currentUser = null;
-        let allStoreBooks = [];
         let allLibraryBooks = [];
+        let activeCategory = 'All';
+        let activeSubTheme = 'All';
 
-        // Helper to escape strings safely
+        // Multi-chapter state tracking
+        let currentChapters = [];
+        let currentChapterIdx = 0;
+
         function escapeHTML(str) {
             if (!str) return '';
             return String(str)
@@ -236,7 +428,6 @@
                 .replace(/'/g, '&#039;');
         }
 
-        // Resolve cover URL dynamically from Supabase database columns
         function getCoverUrl(book) {
             let raw = book.cover_image || book.coverImage || book.cover_url || '';
             if (raw && !raw.startsWith('http') && !raw.startsWith('/')) {
@@ -245,7 +436,7 @@
             return raw || '/images/default-cover.png';
         }
 
-        // 1. Check Auth & Manage Sign-In/Out UI
+        // 1. Check Auth & Synchronize Navigation State
         async function checkAuth() {
             try {
                 const res = await fetch('/api/auth/me');
@@ -274,12 +465,11 @@
             window.location.reload();
         }
 
-        // 2. Service Worker Registration
+        // 2. Service Worker & PWA Install
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.register('/sw.js').catch(err => console.error(err));
         }
 
-        // 3. Install App Trigger
         let deferredPrompt;
         const installBtn = document.getElementById('pwa-install-btn');
 
@@ -297,7 +487,7 @@
             }
         });
 
-        // 4. Tab Switching Logic
+        // 3. Tab Navigation
         function switchTab(tabName) {
             document.querySelectorAll('.tab-screen').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -310,7 +500,7 @@
                 document.getElementById('screen-store').classList.add('active');
                 document.querySelectorAll('.tab-btn')[2].classList.add('active');
                 document.getElementById('top-header-title').textContent = "🛒 Page 24 Store";
-                loadStoreCatalog();
+                if (typeof loadPublicCatalog === 'function') loadPublicCatalog();
             } else if (tabName === 'library') {
                 document.getElementById('screen-library').classList.add('active');
                 document.querySelectorAll('.tab-btn')[0].classList.add('active');
@@ -319,7 +509,7 @@
             }
         }
 
-        // 5. Reader Engine
+        // 4. Reader Engine
         let pdfDoc = null, pageNum = 1, currentBookTitle = "";
         pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
@@ -332,6 +522,7 @@
             document.getElementById('status-text').textContent = 'Opening secure reader...';
             document.getElementById('pdf-wrapper').style.display = 'none';
             document.getElementById('html-wrapper').style.display = 'none';
+            document.getElementById('chapter-controls').style.display = 'none';
 
             try {
                 const res = await fetch(`/api/books/secure-source?bookId=${bookId}`);
@@ -347,11 +538,53 @@
                     renderPdfView(`/api/books/${bookId}/pdf-stream`);
                 } else {
                     document.getElementById('html-wrapper').style.display = 'block';
+                    
+                    // Attempt multi-chapter retrieval
+                    try {
+                        const chapRes = await fetch(`/api/books/${bookId}/chapters`);
+                        if (chapRes.ok) {
+                            const chapters = await chapRes.json();
+                            if (chapters && chapters.length > 0) {
+                                currentChapters = chapters;
+                                currentChapterIdx = 0;
+                                renderCurrentChapter();
+                                return;
+                            }
+                        }
+                    } catch(e) { console.warn("Single chapter mode fallback active"); }
+
+                    // Single chapter fallback from secure-source
                     document.getElementById('chapter-title').textContent = book.chapterTitle || book.title;
                     document.getElementById('chapter-content').innerHTML = book.chapterBody || "No text body available.";
                 }
             } catch (err) {
-                document.getElementById('status-text').textContent = "Unable to load book file. Please make sure you are logged in.";
+                document.getElementById('status-text').textContent = "Unable to load book content. Please log in or confirm purchase.";
+            }
+        }
+
+        function renderCurrentChapter() {
+            if (!currentChapters || currentChapters.length === 0) return;
+            const chap = currentChapters[currentChapterIdx];
+            document.getElementById('chapter-title').textContent = chap.title || `Chapter ${chap.chapter_number || (currentChapterIdx + 1)}`;
+            document.getElementById('chapter-content').innerHTML = chap.body || chap.content || "";
+            
+            const controls = document.getElementById('chapter-controls');
+            if (currentChapters.length > 1) {
+                controls.style.display = 'flex';
+                document.getElementById('chapter-index-label').textContent = `Chapter ${currentChapterIdx + 1} of ${currentChapters.length}`;
+                document.getElementById('prev-chapter').disabled = currentChapterIdx === 0;
+                document.getElementById('next-chapter').disabled = currentChapterIdx === currentChapters.length - 1;
+            } else {
+                controls.style.display = 'none';
+            }
+        }
+
+        function navigateChapter(direction) {
+            const nextIdx = currentChapterIdx + direction;
+            if (nextIdx >= 0 && nextIdx < currentChapters.length) {
+                currentChapterIdx = nextIdx;
+                renderCurrentChapter();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 
@@ -389,92 +622,50 @@
             if (pdfDoc && pageNum < pdfDoc.numPages) { pageNum++; renderPage(pageNum); }
         });
 
-        // 6. Store Catalog & Dynamic Free / Paid Actions
-        async function loadStoreCatalog() {
-            try {
-                const res = await fetch('/api/books');
-                allStoreBooks = await res.json();
-                renderStoreGrid(allStoreBooks);
-            } catch (err) {
-                document.getElementById('store-books-grid').innerHTML = "<p style='grid-column:1/-1; text-align:center;'>Failed to load store catalog.</p>";
+        // 5. Category & Filter Controls
+        function filterByCategory(category, btn) {
+            activeCategory = category;
+            document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+            if (btn) btn.classList.add('active');
+
+            const subRow = document.getElementById('shona-subthemes-row');
+            if (category === 'Shona Novels') {
+                subRow.style.display = 'flex';
+            } else {
+                subRow.style.display = 'none';
+                activeSubTheme = 'All';
+            }
+
+            if (typeof renderPublicGrid === 'function' && window.allBooksData) {
+                renderPublicGrid();
             }
         }
 
-        function renderStoreGrid(books) {
-            const grid = document.getElementById('store-books-grid');
-            if (!books || books.length === 0) {
-                grid.innerHTML = `<p style="grid-column: 1/-1; text-align: center; color: #777;">No matching books found.</p>`;
-                return;
-            }
-            grid.innerHTML = books.map(b => {
-                const numericPrice = parseFloat(b.price || 0);
-                const isFree = numericPrice === 0;
-                let priceText = isFree ? "FREE" : `$${numericPrice.toFixed(2)}`;
-                let actionButtonHtml = "";
+        function filterBySubTheme(subTheme, btn) {
+            activeSubTheme = subTheme;
+            document.querySelectorAll('.sub-pill').forEach(p => p.classList.remove('active'));
+            if (btn) btn.classList.add('active');
 
-                if (isFree) {
-                    if (b.mode === 'pdf') {
-                        actionButtonHtml = `<a href="/api/books/${b.id}/download-free" class="action-btn btn-free">📥 Download PDF</a>`;
-                    } else {
-                        actionButtonHtml = `<button class="action-btn btn-free" onclick="openBook(${b.id})">📖 Read for Free</button>`;
-                    }
-                } else {
-                    actionButtonHtml = `<button class="action-btn btn-buy" onclick="buyBook(${b.id})">🛒 Buy Now</button>`;
-                }
-
-                const coverSrc = getCoverUrl(b);
-                const safeTitle = escapeHTML(b.title);
-                const safeAuthor = escapeHTML(b.author || 'Unknown');
-
-                return `
-                    <div class="book-card">
-                        <div class="book-cover-container">
-                            <img src="${coverSrc}" alt="${safeTitle} cover" onerror="this.onerror=null; this.src='/images/default-cover.png';">
-                        </div>
-                        <div class="book-info">
-                            <div>
-                                <div class="book-title">${safeTitle}</div>
-                                <div class="book-author">by ${safeAuthor}</div>
-                                <div class="price-badge ${isFree ? 'free' : ''}">${priceText}</div>
-                            </div>
-                            ${actionButtonHtml}
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        async function buyBook(bookId) {
-            if (!currentUser) {
-                window.location.href = `/login?returnTo=/read`;
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/books/${bookId}/buy`, { method: 'POST' });
-                const result = await response.json();
-
-                if (response.ok) {
-                    alert('🎉 Book unlocked! Redirecting to your personal library...');
-                    switchTab('library');
-                } else {
-                    alert(result.error || 'Could not complete purchase.');
-                }
-            } catch (err) {
-                alert('Network error while processing purchase.');
+            if (typeof renderPublicGrid === 'function' && window.allBooksData) {
+                renderPublicGrid();
             }
         }
 
-        function filterStoreBooks() {
-            const query = document.getElementById('store-search-input').value.toLowerCase();
-            const filtered = allStoreBooks.filter(b => 
-                (b.title && b.title.toLowerCase().includes(query)) || 
-                (b.author && b.author.toLowerCase().includes(query))
-            );
-            renderStoreGrid(filtered);
+        function openAuthorsModal() {
+            const modal = document.getElementById('authors-modal');
+            if (modal) modal.style.display = 'flex';
+            if (typeof loadTopAuthors === 'function') loadTopAuthors();
         }
 
-        // 7. Personal Library & Guest State Handling
+        // Close Modals
+        document.getElementById('close-modal-btn').addEventListener('click', () => {
+            document.getElementById('preview-modal').style.display = 'none';
+        });
+        document.getElementById('close-authors-modal').addEventListener('click', () => {
+            document.getElementById('authors-modal').style.display = 'none';
+        });
+
+        // 6. User Personal Library Pipeline
         async function loadUserLibrary() {
             const grid = document.getElementById('library-books-grid');
 
@@ -520,8 +711,11 @@
                 const isFree = numericPrice === 0;
                 let actionBtn = `<button class="action-btn" onclick="openBook(${b.id})">📖 Open Book</button>`;
                 
-                if (isFree && b.mode === 'pdf') {
-                    actionBtn = `<a href="/api/books/${b.id}/download-free" class="action-btn btn-free">📥 Download PDF</a>`;
+                if (isFree && b.mode === 'pdf' && parseInt(b.allow_download) === 1) {
+                    actionBtn = `
+                        <button class="action-btn" onclick="openBook(${b.id})">📖 Read</button>
+                        <a href="/api/books/${b.id}/download-free" class="action-btn btn-free">📥 Download</a>
+                    `;
                 }
 
                 const coverSrc = getCoverUrl(b);
@@ -538,7 +732,7 @@
                                 <div class="book-title">${safeTitle}</div>
                                 <div class="book-author">by ${safeAuthor}</div>
                             </div>
-                            ${actionBtn}
+                            <div>${actionBtn}</div>
                         </div>
                     </div>
                 `;
@@ -554,7 +748,7 @@
             renderLibraryGrid(filtered);
         }
 
-        // Initialize App: Default directly to user's library when no book ID parameter is passed
+        // Initialize Reader Application
         checkAuth().then(() => {
             if (initialBookId) {
                 openBook(initialBookId);
