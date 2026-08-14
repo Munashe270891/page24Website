@@ -120,7 +120,7 @@
                             <strong id="dashboard-onemoney-balance">$0.00 USD</strong>
                         </div>
 
-                        <button class="withdraw-btn" id="open-withdraw-modal-btn">Withdraw</button>
+                        <button class="withdraw-btn" id="open-withdraw-modal-btn" onclick="openWithdrawModal()">Withdraw</button>
                     </div>
                 </div> 
             </div>
@@ -261,6 +261,11 @@
                         <div style="margin-bottom: 20px;">
                             <h4 style="margin-bottom: 10px;">Current Chapters</h4>
                             <div id="studio-chapters-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
+                        </div>
+
+                        <!-- LIVE PREVIEW CONTAINER FOR SELECTED CHAPTER -->
+                        <div id="chapter-preview-pane" style="background: #fafafa; border: 1px solid #e0e0e0; border-radius: 6px; padding: 15px; margin-bottom: 20px;">
+                            <em>Select a chapter from the list above to preview its content here.</em>
                         </div>
 
                         <form id="add-chapter-form">
@@ -476,106 +481,6 @@
         </div>
     </div>
 
-    <!-- External dashboard JS file -->
-    <script src="/js/dashboard.js"></script>
-
-    <!-- UI Interaction Scripts -->
-    <script>
-        // Helper function to copy author public link to clipboard
-        function copyAuthorLink() {
-            const copyInput = document.getElementById('author-public-link-input');
-            if (copyInput && copyInput.value) {
-                copyInput.select();
-                copyInput.setSelectionRange(0, 99999);
-                navigator.clipboard.writeText(copyInput.value);
-                alert('Author page link copied to clipboard!');
-            }
-        }
-
-        // Helper functions for withdrawal modal display
-        function openWithdrawModal() {
-            const modal = document.getElementById('withdraw-modal');
-            if (modal) modal.style.display = 'flex';
-        }
-
-        function closeWithdrawModal() {
-            const modal = document.getElementById('withdraw-modal');
-            if (modal) modal.style.display = 'none';
-        }
-
-        // Helper to bridge Active Books dashboard directly to Web Studio
-        function openStudioForBook(bookId) {
-            // 1. Switch to Web Studio view
-            switchTab('studio-view');
-
-            // 2. Load and select the specific book inside the studio
-            if (typeof selectStudioBook === 'function') {
-                selectStudioBook(bookId);
-            } else if (typeof loadStudioWebBooks === 'function') {
-                loadStudioWebBooks(bookId);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', () => {
-            // Bind withdraw button to modal
-            const withdrawBtn = document.querySelector('.withdraw-btn');
-            if (withdrawBtn) {
-                withdrawBtn.addEventListener('click', openWithdrawModal);
-            }
-
-            // CATEGORY / SUB-THEME TOGGLE LOGIC
-            const categorySelect = document.getElementById('book-category');
-            const subThemeGroup = document.getElementById('sub-theme-group');
-
-            function handleCategoryChange() {
-                if (categorySelect && subThemeGroup) {
-                    if (categorySelect.value === 'Shona Novels') {
-                        subThemeGroup.style.display = 'block';
-                    } else {
-                        subThemeGroup.style.display = 'none';
-                    }
-                }
-            }
-
-            if (categorySelect) {
-                categorySelect.addEventListener('change', handleCategoryChange);
-                handleCategoryChange(); // Initial check on page load
-            }
-
-            // PUBLISH FORMAT & SECURITY RULE DISABLING LOGIC
-            const pdfRadio = document.getElementById('format-pdf');
-            const htmlRadio = document.getElementById('format-html');
-            const ruleSelect = document.getElementById('book-download-rule');
-            const pdfGroup = document.getElementById('pdf-input-group');
-            const htmlGroup = document.getElementById('html-input-group');
-
-            function handleFormatChange() {
-                if (htmlRadio && htmlRadio.checked) {
-                    // Web/HTML Books force App-Only streaming
-                    if (ruleSelect) {
-                        ruleSelect.value = "0";
-                        if (ruleSelect.options[1]) ruleSelect.options[1].disabled = true;
-                    }
-                    if (pdfGroup) pdfGroup.classList.add('hidden');
-                    if (htmlGroup) htmlGroup.classList.remove('hidden');
-                } else if (pdfRadio && pdfRadio.checked) {
-                    // PDF Books can toggle Open Distribution
-                    if (ruleSelect && ruleSelect.options[1]) {
-                        ruleSelect.options[1].disabled = false;
-                    }
-                    if (pdfGroup) pdfGroup.classList.remove('hidden');
-                    if (htmlGroup) htmlGroup.classList.add('hidden');
-                }
-            }
-
-            if (pdfRadio && htmlRadio) {
-                pdfRadio.addEventListener('change', handleFormatChange);
-                htmlRadio.addEventListener('change', handleFormatChange);
-                handleFormatChange(); // Run once on page load
-            }
-        });
-    </script>
-
     <!-- VIEW CHAPTER PREVIEW MODAL -->
     <div id="view-chapter-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1100; align-items: center; justify-content: center;">
         <div style="background: white; padding: 25px; border-radius: 8px; width: 90%; max-width: 650px; max-height: 85vh; display: flex; flex-direction: column; box-sizing: border-box; border: 1px solid var(--border-tan, #ccc);">
@@ -613,5 +518,21 @@
             </form>
         </div>
     </div>
+
+    <!-- External dashboard JS file -->
+    <script src="/js/dashboard.js"></script>
+
+    <!-- Basic Clipboard Helper -->
+    <script>
+        function copyAuthorLink() {
+            const copyInput = document.getElementById('author-public-link-input');
+            if (copyInput && copyInput.value) {
+                copyInput.select();
+                copyInput.setSelectionRange(0, 99999);
+                navigator.clipboard.writeText(copyInput.value);
+                alert('Author page link copied to clipboard!');
+            }
+        }
+    </script>
 </body>
 </html>
