@@ -429,3 +429,63 @@
     </div>
   </section>
 </main>
+<!-- 1. WITHDRAW MODAL -->
+<div id="withdraw-modal" class="modal" role="dialog" aria-modal="true" aria-labelledby="withdraw-title">
+  <div class="modal-content card" style="max-width: 400px; margin: 100px auto; padding: 20px;">
+    <h3 id="withdraw-title" style="color: var(--primary-green); margin-top: 0;">Request Payout</h3>
+    <p class="text-muted" style="font-size: 13px;">Withdrawals are processed via EcoCash or OneMoney within 24 hours.</p>
+    <div style="margin: 15px 0;">
+      <label class="input-label">Select Destination</label>
+      <select class="styled-select" id="withdraw-method">
+        <option value="ecocash">EcoCash</option>
+        <option value="onemoney">OneMoney</option>
+      </select>
+    </div>
+    <div style="margin: 15px 0;">
+      <label class="input-label">Amount (USD)</label>
+      <input type="number" class="form-input" id="withdraw-amount" placeholder="0.00" step="0.01" />
+    </div>
+    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+      <button type="button" class="btn-secondary" onclick="closeWithdrawModal()">Cancel</button>
+      <button type="button" class="save-master-btn" style="width: auto; padding: 8px 16px;" onclick="alert('Withdrawal request submitted!')">Submit Request</button>
+    </div>
+  </div>
+</div>
+
+<!-- 2. VIEW CHAPTER MODAL -->
+<div id="view-chapter-modal" class="modal" role="dialog" aria-modal="true">
+  <div class="modal-content card" style="max-width: 600px; margin: 50px auto; padding: 20px; max-height: 80vh; overflow-y: auto;">
+    <h3 id="view-chapter-title" style="color: var(--primary-green); margin-top: 0;">Chapter Title</h3>
+    <hr style="border: 0; border-top: 1px solid #eee; margin: 10px 0;" />
+    <div id="view-chapter-body" style="font-size: 14px; line-height: 1.6; white-space: pre-wrap;"></div>
+    <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+      <button type="button" class="save-master-btn" style="width: auto; padding: 6px 14px;" onclick="closeViewChapterModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- 3. EDIT CHAPTER MODAL -->
+<div id="edit-chapter-modal" class="modal" role="dialog" aria-modal="true">
+  <div class="modal-content card" style="max-width: 600px; margin: 50px auto; padding: 20px;">
+    <h3 style="color: var(--primary-green); margin-top: 0;">Edit Chapter</h3>
+    <form id="edit-chapter-form">
+      <input type="hidden" id="edit-chapter-id" />
+      <input type="hidden" id="edit-chapter-book-id" />
+      
+      <div style="margin-bottom: 12px;">
+        <label class="input-label" for="edit-chapter-title-input">Chapter Title</label>
+        <input type="text" id="edit-chapter-title-input" class="form-input" required />
+      </div>
+
+      <div style="margin-bottom: 12px;">
+        <label class="input-label" for="edit-chapter-body-input">Chapter Content</label>
+        <textarea id="edit-chapter-body-input" class="form-textarea" rows="10" required></textarea>
+      </div>
+
+      <div style="display: flex; gap: 10px; justify-content: flex-end;">
+        <button type="button" class="btn-secondary" onclick="closeEditChapterModal()">Cancel</button>
+        <button type="submit" class="save-master-btn" style="width: auto; padding: 8px 16px;">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
