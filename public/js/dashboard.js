@@ -866,10 +866,75 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const ecocashBal = $('#dashboard-ecocash-balance');
             if (ecocashBal) ecocashBal.textContent = `$${earnedAmount} USD`;
-
             const breakdownList = $('#sales-breakdown-list');
             if (breakdownList) {
                 breakdownList.innerHTML = '';
                 if (!data.bookBreakdown || Object.keys(data.bookBreakdown).length === 0) {
                     const p = document.createElement('p');
-                    p.style.fontSize =
+                    p.style.fontSize = '13px';
+                    p.style.color = 'var(--text-muted, #777)';
+                    p.textContent = 'No sales breakdown available yet.';
+                    breakdownList.appendChild(p);
+                } else {
+                    for (const [title, stats] of Object.entries(data.bookBreakdown)) {
+                        const item = document.createElement('div');
+                        item.className = 'sales-item-row';
+                        item.style.cssText = 'display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 13px;';
+                        
+                        const titleSpan = document.createElement('span');
+                        titleSpan.textContent = title;
+                        
+                        const statsSpan = document.createElement('span');
+                        const qty = stats.count || stats.sales || 0;
+                        const rev = parseFloat(stats.revenue || stats.earnings || 0).toFixed(2);
+                        statsSpan.textContent = `${qty} sales ($${rev})`;
+                        
+                        item.appendChild(titleSpan);
+                        item.appendChild(statsSpan);
+                        breakdownList.appendChild(item);
+                    }
+                }
+            }
+        } catch (err) {
+            console.error("Failed to load sales analytics:", err);
+            const breakdownList = $('#sales-breakdown-list');
+            if (breakdownList) {
+                breakdownList.innerHTML = '';
+                const p = document.createElement('p');
+                p.style.fontSize = '13px';
+                p.style.color = 'var(--text-danger, #dc3545)';
+                p.textContent = 'Unable to load sales breakdown.';
+                breakdownList.appendChild(p);
+            }
+        }
+    }
+    window.loadSalesAnalytics = loadSalesAnalytics; // keep exported name
+
+    // -------------------------------------------------------------
+    // 9. NOTIFICATIONS LOADER
+    // -------------------------------------------------------------
+    async function loadNotifications() {
+        const container = $('#notif-list-container');
+        if (!container) return;
+        try {
+            const notifs = await fetchJson('/api/notifications');
+            container.innerHTML = '';
+            if (!notifs || notifs.length === 0) {
+                container.innerHTML = '<div style="padding: 10px; font-size: 12px; color: #777;">No new notifications</div>';
+                return;
+            }
+            notifs.forEach(n => {
+                const div = document.createElement('div');
+                div.style.cssText = 'padding: 8px 12px; border-bottom: 1px solid #eee; font-size: 12px;';
+                div.textContent = n.message || n.text || '';
+                container.appendChild(div);
+            });
+        } catch (err) {
+            console.error('Failed to load notifications', err);
+        }
+    }
+    window.loadNotifications = loadNotifications;
+
+}); // End of DOMContentLoaded event listener
+
+            
