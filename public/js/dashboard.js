@@ -1,122 +1,28 @@
-// SECURITY FIX: global helpers and safe escaping moved to top-level so all functions can use them
-const $ = (selector) => document.querySelector(selector);
-const $$ = (selector) => Array.from(document.querySelectorAll(selector));
-
-// SECURITY FIX: safe HTML escape available globally (used by loadNotifications and others)
-function escapeHtml(text) {
-    if (text === undefined || text === null) return '';
-    return String(text)
-       .replace(/&/g, '&amp;')
-       .replace(/</g, '&lt;')
-       .replace(/>/g, '&gt;')
-       .replace(/"/g, '&quot;')
-       .replace(/'/g, '&#039;');
-}
-
-// SECURITY FIX: helper to check fetch responses and parse JSON with error handling
-async function fetchJson(url, options = {}) {
-    const res = await fetch(url, options);
-    const contentType = res.headers.get('content-type') || '';
-    let body = null;
-    if (contentType.includes('application/json')) {
-        body = await res.json();
-    } else {
-        body = await res.text();
-    }
-    if (!res.ok) {
-        const errMsg = (body && body.error)? body.error : (typeof body === 'string'? body : res.statusText);
-        const e = new Error(errMsg || `HTTP ${res.status}`);
-        e.response = body;
-        throw e;
-    }
-    return body;
-}
-
-// SECURITY FIX: modal utilities - single set used by JS and safe for inline HTML onclicks
-function openModal(el) {
-    if (!el) return;
-    el.classList.add('is-open');
-    document.body.classList.add('modal-open');
-}
-function closeModal(el) {
-    if (!el) return;
-    el.classList.remove('is-open');
-    // remove modal-open if no more modals open
-    if (!document.querySelector('.modal.is-open')) {
-        document.body.classList.remove('modal-open');
-    }
-}
-function closeAllModals() {
-    $$('.modal.is-open').forEach(m => closeModal(m));
-}
-// Close modals on ESC
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape') {
-        closeAllModals();
-        // also close notif dropdowns
-        const nd = $('#notif-dropdown');
-        if (nd && nd.classList.contains('is-open')) nd.classList.remove('is-open');
-    }
-});
-// Close modals / dropdowns on outside click
-document.addEventListener('click', (e) => {
-    // notif dropdown
-    const dropdown = $('#notif-dropdown');
-    const bellBtn = $('#notif-bell-btn');
-    if (dropdown && dropdown.classList.contains('is-open') &&!dropdown.contains(e.target) &&!(bellBtn && bellBtn.contains(e.target))) {
-        dropdown.classList.remove('is-open'); // SECURITY FIX: use class is-open
-    }
-
-    // modals - if click is outside.modal-content close the modal
-    $$('.modal.is-open').forEach(modal => {
-        const content = modal.querySelector('.modal-content');
-        if (content &&!content.contains(e.target) &&!e.target.closest('.modal-trigger')) {
-            closeModal(modal);
-        }
-    });
-});
-
-// Expose a single dropdown toggle that uses is-open
-window.toggleNotifDropdown = function() {
-    const dd = $('#notif-dropdown');
-    if (dd) dd.classList.toggle('is-open'); // SECURITY FIX: use class is-open
-};
-
-// Expose withdraw modal opener for any inline HTML calls (single implementation)
-window.openWithdrawModal = function() {
-    const modal = $('#withdraw-modal');
-    if (modal) openModal(modal);
-};
-window.closeWithdrawModal = function() {
-    const modal = $('#withdraw-modal');
-    if (modal) closeModal(modal);
-};
-
-// Main app logic
 document.addEventListener('DOMContentLoaded', () => {
     // -------------------------------------------------------------
     // 1. NAVIGATION & VIEW SWITCHING LOGIC
     // -------------------------------------------------------------
     const navItems = {
-        'dashboard-view': $('#menu-dash'),
-        'creator-view': $('#menu-create'),
-        'studio-view': $('#menu-studio'),
-        'sales-view': $('#menu-sales'),
-        'profile-view': $('#menu-profile')
+        'dashboard-view': document.getElementById('menu-dash'),
+        'creator-view': document.getElementById('menu-create'),
+        'studio-view': document.getElementById('menu-studio'),
+        'sales-view': document.getElementById('menu-sales'),
+        'profile-view': document.getElementById('menu-profile')
     };
 
     window.switchTab = function(targetTabId, evt) {
         if (evt) evt.preventDefault();
 
-        // Hide all views & deactivate menu items
-        $$('.view-section').forEach(view => view.classList.add('hidden'));
-        $$('.side-menu.menu-item').forEach(item => item.classList.remove('active'));
+        // Hide all views
+        document.querySelectorAll('.view-section').forEach(view => view.classList.add('hidden'));
+        // Deactivate all side-menu items
+        document.querySelectorAll('.side-menu .menu-item').forEach(item => item.classList.remove('active'));
 
         // Show target view
         const targetView = document.getElementById(targetTabId);
         if (targetView) targetView.classList.remove('hidden');
 
-        // Activate menu button
+        // Activate corresponding menu button
         if (navItems[targetTabId]) {
             navItems[targetTabId].classList.add('active');
         }
@@ -128,7 +34,8 @@ document.addEventListener('DOMContentLoaded', () => {
         if (targetTabId === 'profile-view') loadAuthorProfile();
     };
 
-    const quickCreateTrigger = $('#quick-create-trigger');
+    // Quick create shortcut from dashboard view
+    const quickCreateTrigger = document.getElementById('quick-create-trigger');
     if (quickCreateTrigger) {
         quickCreateTrigger.addEventListener('click', (e) => switchTab('creator-view', e));
     }
@@ -136,25 +43,25 @@ document.addEventListener('DOMContentLoaded', () => {
     // -------------------------------------------------------------
     // 2. PUBLISH FORMAT SWITCH & CATEGORY DEPENDENCIES
     // -------------------------------------------------------------
-    const modeRadios = $$('input[name="upload-mode"]');
-    const pdfGroup = $('#pdf-input-group');
-    const htmlGroup = $('#html-input-group');
-    const ruleSelect = $('#book-download-rule');
+    const modeRadios = document.querySelectorAll('input[name="upload-mode"]');
+    const pdfGroup = document.getElementById('pdf-input-group');
+    const htmlGroup = document.getElementById('html-input-group');
+    const ruleSelect = document.getElementById('book-download-rule');
 
     function handleFormatChange(selectedMode) {
         if (selectedMode === 'pdf') {
             if (pdfGroup) pdfGroup.classList.remove('hidden');
             if (htmlGroup) htmlGroup.classList.add('hidden');
             if (ruleSelect && ruleSelect.options[1]) {
-                ruleSelect.options[1].disabled = false;
+                ruleSelect.options[1].disabled = false; // Enable PDF download option
             }
-        } else {
+        } else { // HTML / Web Book selected
             if (pdfGroup) pdfGroup.classList.add('hidden');
             if (htmlGroup) htmlGroup.classList.remove('hidden');
             if (ruleSelect) {
-                ruleSelect.value = "0";
+                ruleSelect.value = "0"; // Auto-lock to Read in App Only
                 if (ruleSelect.options[1]) {
-                    ruleSelect.options[1].disabled = true;
+                    ruleSelect.options[1].disabled = true; // Disable download option
                 }
             }
         }
@@ -164,38 +71,43 @@ document.addEventListener('DOMContentLoaded', () => {
         radio.addEventListener('change', (e) => handleFormatChange(e.target.value));
     });
 
+    // Run once on load to set initial format state
     const checkedRadio = document.querySelector('input[name="upload-mode"]:checked');
     if (checkedRadio) handleFormatChange(checkedRadio.value);
 
-    const categorySelect = $('#book-category');
-    const subThemeGroup = $('#sub-theme-group');
-
+    // Dynamic Category Handler matching `#sub-theme-group` in dashboard.html
+    const categorySelect = document.getElementById('book-category');
+    const subThemeGroup = document.getElementById('sub-theme-group');
+    
     if (categorySelect && subThemeGroup) {
         categorySelect.addEventListener('change', (e) => {
-            subThemeGroup.style.display = (e.target.value === 'Shona Novels')? 'block' : 'none';
+            if (e.target.value === 'Shona Novels') {
+                subThemeGroup.style.display = 'block';
+            } else {
+                subThemeGroup.style.display = 'none';
+            }
         });
     }
 
     // -------------------------------------------------------------
     // 3. FETCH CURRENT USER & INITIALIZE DASHBOARD
     // -------------------------------------------------------------
-    (async () => {
-        try {
-            const data = await fetchJson('/api/auth/me');
+    fetch('/api/auth/me')
+        .then(res => res.json())
+        .then(data => {
             if (data.loggedIn && data.user) {
                 const displayName = data.user.name || data.user.username || '';
                 const welcomeTag = document.querySelector('.welcome-tag');
-                if (welcomeTag) welcomeTag.textContent = `Welcome 👤 ${displayName}`;
+                if (welcomeTag) welcomeTag.innerText = `Welcome 👤 ${displayName}`;
 
-                const authorNameInput = $('#book-author-name');
-                if (authorNameInput &&!authorNameInput.value) {
+                // Pre-fill Author Name input in creation form
+                const authorNameInput = document.getElementById('book-author-name');
+                if (authorNameInput && !authorNameInput.value) {
                     authorNameInput.value = displayName;
                 }
             }
-        } catch (err) {
-            console.error("Failed to load user info:", err);
-        }
-    })();
+        })
+        .catch(err => console.error("Failed to load user info:", err));
 
     loadDashboardBooks();
     loadNotifications();
@@ -203,738 +115,539 @@ document.addEventListener('DOMContentLoaded', () => {
     // -------------------------------------------------------------
     // 4. LOAD AUTHOR'S BOOKS (MY BOOKS DASHBOARD)
     // -------------------------------------------------------------
-    async function loadDashboardBooks() {
-        const booksContainer = $('#author-books-container');
+    function loadDashboardBooks() {
+        const booksContainer = document.getElementById('author-books-container');
         if (!booksContainer) return;
 
-        booksContainer.innerHTML = ''; // clear immediately
-        try {
-            const books = await fetchJson('/api/books/my-books');
+        fetch('/api/books/my-books')
+            .then(res => res.json())
+            .then(books => {
+                booksContainer.innerHTML = '';
 
-            if (!books || books.length === 0) {
-                const p = document.createElement('p');
-                p.style.color = 'var(--text-dark, #222)';
-                p.style.opacity = '0.6';
-                p.style.width = '100%';
-                p.textContent = 'You have not published any books yet.';
-                booksContainer.appendChild(p);
-                return;
-            }
-
-            books.forEach(book => {
-                // Create safe DOM nodes instead of innerHTML (SECURITY FIX)
-                const card = document.createElement('div');
-                card.className = 'author-book-card';
-
-                const rawPrice = parseFloat(book.price) || 0;
-                const coverSrc = book.coverImage || book.cover_image || '/images/default-cover.png';
-
-                const img = document.createElement('img');
-                img.className = 'cover-thumb';
-                img.src = coverSrc;
-                img.alt = (book.title? String(book.title) : 'book cover');
-                img.onerror = function () { this.src = '/images/default-cover.png'; };
-
-                const meta = document.createElement('div');
-                meta.className = 'book-meta';
-
-                const h3 = document.createElement('h3');
-                h3.textContent = book.title? String(book.title) : 'Untitled';
-
-                const descP = document.createElement('p');
-                if (book.description) {
-                    const short = String(book.description).substring(0, 80);
-                    descP.textContent = short + (String(book.description).length > 80? '...' : '');
-                } else {
-                    descP.textContent = '';
-                }
-
-                const priceP = document.createElement('p');
-                priceP.innerHTML = `<strong>Price:</strong> `;
-                const priceSpan = document.createElement('span');
-                priceSpan.style.color = 'var(--primary-green-light, #27ae60)';
-                priceSpan.textContent = `$${rawPrice.toFixed(2)} USD`;
-                priceP.appendChild(priceSpan);
-
-                const statusP = document.createElement('p');
-                const badge = document.createElement('span');
-                badge.className = 'badge ' + (book.status === 'Draft'? 'status-draft' : 'status-pub');
-                badge.textContent = (book.mode? String(book.mode).toUpperCase() : 'PDF');
-                statusP.appendChild(badge);
-
-                const actionsDiv = document.createElement('div');
-                actionsDiv.style.display = 'flex';
-                actionsDiv.style.gap = '8px';
-                actionsDiv.style.marginTop = '10px';
-
-                const editBtn = document.createElement('button');
-                editBtn.className = 'btn-edit-book';
-                editBtn.style.cssText = 'background: var(--primary-green, #1b3d2b); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;';
-                editBtn.textContent = 'Edit';
-                editBtn.addEventListener('click', () => openEditModal(book.id, book.description || '', rawPrice));
-
-                const deleteBtn = document.createElement('button');
-                deleteBtn.className = 'btn-delete-book';
-                deleteBtn.style.cssText = 'background: var(--danger-red, #dc3545); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;';
-                deleteBtn.textContent = 'Delete';
-                deleteBtn.addEventListener('click', () => deleteBook(book.id));
-
-                actionsDiv.appendChild(editBtn);
-                actionsDiv.appendChild(deleteBtn);
-
-                meta.appendChild(h3);
-                meta.appendChild(descP);
-                meta.appendChild(priceP);
-                meta.appendChild(statusP);
-                meta.appendChild(actionsDiv);
-
-                card.appendChild(img);
-                card.appendChild(meta);
-
-                booksContainer.appendChild(card);
-            });
-        } catch (err) {
-            console.error("Failed to fetch author books:", err);
-            const p = document.createElement('p');
-            p.style.color = 'var(--text-danger, #dc3545)';
-            p.textContent = 'Unable to load your books right now.';
-            booksContainer.appendChild(p);
-        }
-    }
-    window.loadDashboardBooks = loadDashboardBooks; // keep name exported
-
-    // -------------------------------------------------------------
-    // 5. CREATE / PUBLISH BOOK FORM SUBMISSION with validation
-    // -------------------------------------------------------------
-    const publishForm = $('#publish-master-form');
-    if (publishForm) {
-        publishForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            // Gather inputs safely
-            const authorNameInput = $('#book-author-name');
-            const categorySelectEl = $('#book-category');
-            const subThemeSelect = $('#book-sub-theme');
-            const titleInput = $('#book-title');
-            const priceInput = $('#book-price');
-            const descInput = $('#book-description');
-
-            const selectedRadio = document.querySelector('input[name="upload-mode"]:checked');
-            const mode = selectedRadio? selectedRadio.value : 'pdf';
-
-            const downloadRuleEl = $('#book-download-rule');
-
-            // SECURITY FIX: Validation rules
-            const title = titleInput? titleInput.value.trim() : '';
-            if (!title || title.length < 3) {
-                alert('⚠️ Title must be at least 3 characters long.');
-                return;
-            }
-
-            const downloadRuleVal = downloadRuleEl? downloadRuleEl.value : '0';
-            if (mode === 'html' && downloadRuleVal!== '0') {
-                alert('⚠️ HTML/web books cannot be set to downloadable. Change download rule to 0 or switch to PDF.');
-                return;
-            }
-
-            const copyrightCheck = $('#copyright-ownership-check');
-            const termsCheck = $('#copyright-terms-check');
-            if (!(copyrightCheck && copyrightCheck.checked) ||!(termsCheck && termsCheck.checked)) {
-                alert('⚠️ You must confirm copyright ownership and agree to the terms to publish.');
-                return;
-            }
-
-            const coverFileInput = $('#cover-upload');
-            if (coverFileInput && coverFileInput.files[0]) {
-                const coverFile = coverFileInput.files[0];
-                // 5 MB limit
-                if (coverFile.size > 5 * 1024 * 1024) {
-                    alert('⚠️ Cover image must be 5MB or smaller.');
+                if (!books || books.length === 0) {
+                    booksContainer.innerHTML = '<p style="color: var(--text-dark, #222); opacity: 0.6; width: 100%;">You have not published any books yet.</p>';
                     return;
                 }
-            }
 
-            if (mode === 'pdf') {
-                const pdfFileInput = $('#pdf-upload');
-                if (pdfFileInput && pdfFileInput.files[0]) {
-                    const pdfFile = pdfFileInput.files[0];
-                    // 50 MB limit
-                    if (pdfFile.size > 50 * 1024 * 1024) {
-                        alert('⚠️ PDF file must be 50MB or smaller.');
-                        return;
-                    }
-                }
-            }
+                books.forEach(book => {
+                    const card = document.createElement('div');
+                    card.className = 'author-book-card';
 
-            // Build FormData
+                    const rawPrice = parseFloat(book.price) || 0;
+                    const coverSrc = book.coverImage || book.cover_image || '/images/default-cover.png';
+
+                    card.innerHTML = `
+                        <img src="${coverSrc}" alt="${book.title}" class="cover-thumb" onerror="this.src='/images/default-cover.png'">
+                        <div class="book-meta">
+                            <h3>${book.title}</h3>
+                            <p>${book.description ? book.description.substring(0, 80) + '...' : ''}</p>
+                            <p><strong>Price:</strong> <span style="color: var(--primary-green-light, #27ae60);">$${rawPrice.toFixed(2)} USD</span></p>
+                            <p><span class="badge ${book.status === 'Draft' ? 'status-draft' : 'status-pub'}">${book.mode ? book.mode.toUpperCase() : 'PDF'}</span></p>
+                            <div style="display: flex; gap: 8px; margin-top: 10px;">
+                                <button onclick="openEditModal(${book.id}, '${escapeHtml(book.description || '')}', ${rawPrice})" style="background: var(--primary-green, #1b3d2b); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Edit</button>
+                                <button onclick="deleteBook(${book.id})" style="background: var(--danger-red, #dc3545); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Delete</button>
+                            </div>
+                        </div>
+                    `;
+                    booksContainer.appendChild(card);
+                });
+            })
+            .catch(err => console.error("Failed to fetch author books:", err));
+    }
+
+    // Safe string escaping helper for inline onclick handlers
+    window.escapeHtml = function(text) {
+        return text ? text.replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
+    };
+
+    // -------------------------------------------------------------
+    // 5. CREATE / PUBLISH BOOK FORM SUBMISSION
+    // -------------------------------------------------------------
+    const publishForm = document.getElementById('publish-master-form');
+    if (publishForm) {
+        publishForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+
             const formData = new FormData();
-            formData.append('authorName', authorNameInput? authorNameInput.value.trim() : '');
+            const authorNameInput = document.getElementById('book-author-name');
+            const categorySelect = document.getElementById('book-category');
+            const subThemeSelect = document.getElementById('book-sub-theme');
+            const titleInput = document.getElementById('book-title');
+            const priceInput = document.getElementById('book-price');
+            const descInput = document.getElementById('book-description');
 
-            const categoryVal = categorySelectEl? categorySelectEl.value : 'Other';
+            formData.append('authorName', authorNameInput ? authorNameInput.value.trim() : '');
+            
+            const categoryVal = categorySelect ? categorySelect.value : 'Other';
             formData.append('category', categoryVal);
-            formData.append('subTheme', (categoryVal === 'Shona Novels' && subThemeSelect)? subThemeSelect.value : '');
 
-            formData.append('title', title);
-            formData.append('description', descInput? descInput.value.trim() : '');
-            formData.append('price', priceInput? priceInput.value : '0');
+            if (categoryVal === 'Shona Novels' && subThemeSelect) {
+                formData.append('subTheme', subThemeSelect.value);
+            } else {
+                formData.append('subTheme', '');
+            }
+
+            formData.append('title', titleInput ? titleInput.value.trim() : '');
+            formData.append('description', descInput ? descInput.value.trim() : '');
+            formData.append('price', priceInput ? priceInput.value : '0');
+
+            const selectedRadio = document.querySelector('input[name="upload-mode"]:checked');
+            const mode = selectedRadio ? selectedRadio.value : 'pdf';
             formData.append('mode', mode);
-            formData.append('allowDownload', downloadRuleEl? downloadRuleEl.value : '0');
 
+            const downloadRule = document.getElementById('book-download-rule');
+            formData.append('allowDownload', downloadRule ? downloadRule.value : '0');
+
+            const coverFileInput = document.getElementById('cover-upload');
             if (coverFileInput && coverFileInput.files[0]) {
                 formData.append('coverImage', coverFileInput.files[0]);
             }
 
             if (mode === 'pdf') {
-                const pdfFileInput = $('#pdf-upload');
+                const pdfFileInput = document.getElementById('pdf-upload');
                 if (pdfFileInput && pdfFileInput.files[0]) {
                     formData.append('pdfBook', pdfFileInput.files[0]);
                 }
             } else {
-                const chapterTitleInput = $('#initial-chapter-title');
-                const chapterBodyInput = $('#initial-chapter-body');
-                const initialBody = chapterBodyInput? chapterBodyInput.value.trim() : '';
-                formData.append('chapterTitle', chapterTitleInput? chapterTitleInput.value.trim() : '');
+                const chapterTitleInput = document.getElementById('initial-chapter-title');
+                const chapterBodyInput = document.getElementById('initial-chapter-body');
+                const initialBody = chapterBodyInput ? chapterBodyInput.value.trim() : '';
+                
+                formData.append('chapterTitle', chapterTitleInput ? chapterTitleInput.value.trim() : '');
                 formData.append('chapterBody', initialBody);
                 formData.append('content', initialBody);
             }
 
-            formData.append('agreeCopyright', copyrightCheck && copyrightCheck.checked? 'true' : 'false');
-            formData.append('agreeTerms', termsCheck && termsCheck.checked? 'true' : 'false');
+            const copyrightCheck = document.getElementById('copyright-ownership-check');
+            const termsCheck = document.getElementById('copyright-terms-check');
 
-            // Submit and handle response with error checking (SECURITY FIX)
-            try {
-                const res = await fetch('/api/books/publish', {
-                    method: 'POST',
-                    body: formData
-                });
-                const contentType = res.headers.get('content-type') || '';
-                const data = contentType.includes('application/json')? await res.json() : { message: await res.text() };
-                if (!res.ok) {
-                    alert(`❌ ${data.error || data.message || res.statusText}`);
-                    return;
+            formData.append('agreeCopyright', copyrightCheck && copyrightCheck.checked ? 'true' : 'false');
+            formData.append('agreeTerms', termsCheck && termsCheck.checked ? 'true' : 'false');
+
+            fetch('/api/books/publish', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    alert(`❌ ${data.error}`);
+                } else {
+                    alert("🎉 Success! Your book has been published.");
+                    publishForm.reset();
+                    switchTab('dashboard-view');
                 }
-                alert("🎉 Success! Your book has been published.");
-                publishForm.reset();
-                switchTab('dashboard-view');
-            } catch (err) {
-                console.error('Publish error', err);
-                alert("⚠️ Publishing failed. Please check your connection.");
-            }
+            })
+            .catch(err => {
+                console.error(err);
+                alert("⚠️ Publishing failed. Please check your network connection and try again.");
+            });
         });
     }
 
     // -------------------------------------------------------------
-    // 6. AUTHOR PROFILE & PAYOUT DETAILS
+    // 6. AUTHOR PROFILE & PAYOUT DETAILS SUBMISSION & LOAD
     // -------------------------------------------------------------
-    const profileForm = $('#author-profile-form');
+    const profileForm = document.getElementById('author-profile-form');
 
-    function cleanHandle(val) {
-        if (!val) return '';
-        let cleaned = val.trim().replace(/^https?:\/\/(www\.)?(facebook|twitter|x|instagram|tiktok)\.com\//i, '');
-        if (cleaned.startsWith('@')) cleaned = cleaned.substring(1);
-        if (cleaned.startsWith('/')) cleaned = cleaned.substring(1);
-        return cleaned;
+    function loadAuthorProfile() {
+        fetch('/api/author/profile')
+            .then(res => res.json())
+            .then(data => {
+                if (!data) return;
+
+                // Contact & Legal Identity
+                const legalName = document.getElementById('author-legal-name');
+                const phone = document.getElementById('author-phone');
+                const isbn = document.getElementById('author-isbn');
+
+                if (legalName) legalName.value = data.legal_name || data.legalName || '';
+                if (phone) phone.value = data.phone || '';
+                if (isbn) isbn.value = data.isbn || '';
+
+                // Social Media Handles, Bio & Checkboxes
+                const bio = document.getElementById('author-bio');
+                const fbHandle = document.getElementById('author-fb-handle');
+                const ttHandle = document.getElementById('author-tt-handle');
+                const twHandle = document.getElementById('author-tw-handle');
+                const igHandle = document.getElementById('author-ig-handle');
+
+                const showFb = document.getElementById('show-fb');
+                const showTt = document.getElementById('show-tt');
+                const showTw = document.getElementById('show-tw');
+                const showIg = document.getElementById('show-ig');
+
+                if (bio) bio.value = data.bio || '';
+                if (fbHandle) fbHandle.value = data.facebook_handle || data.facebookHandle || '';
+                if (ttHandle) ttHandle.value = data.tiktok_handle || data.tiktokHandle || '';
+                if (twHandle) twHandle.value = data.twitter_handle || data.twitterHandle || '';
+                if (igHandle) igHandle.value = data.instagram_handle || data.instagramHandle || '';
+
+                if (showFb) showFb.checked = data.show_facebook !== undefined ? data.show_facebook : true;
+                if (showTt) showTt.checked = data.show_tiktok !== undefined ? data.show_tiktok : true;
+                if (showTw) showTw.checked = data.show_twitter !== undefined ? data.show_twitter : true;
+                if (showIg) showIg.checked = data.show_instagram !== undefined ? data.show_instagram : true;
+            })
+            .catch(err => console.error("Failed to load author profile:", err));
     }
-
-    async function loadAuthorProfile() {
-        try {
-            const data = await fetchJson('/api/author/profile');
-            if (!data) return;
-
-            const setVal = (id, val) => { const el = $(`#${id}`); if (el) el.value = val || ''; };
-            const setCheck = (id, val) => { const el = $(`#${id}`); if (el) el.checked = val?? true; };
-
-            setVal('author-legal-name', data.legal_name || data.legalName);
-            setVal('author-phone', data.phone);
-            setVal('author-isbn', data.isbn);
-            setVal('author-bio', data.bio);
-
-            setVal('author-fb-handle', data.facebook_handle || data.facebookHandle);
-            setVal('author-tt-handle', data.tiktok_handle || data.tiktokHandle);
-            setVal('author-tw-handle', data.twitter_handle || data.twitterHandle);
-            setVal('author-ig-handle', data.instagram_handle || data.instagramHandle);
-
-            setCheck('show-fb', data.show_facebook?? data.showFacebook);
-            setCheck('show-tt', data.show_tiktok?? data.showTiktok);
-            setCheck('show-tw', data.show_twitter?? data.showTwitter);
-            setCheck('show-ig', data.show_instagram?? data.showInstagram);
-        } catch (err) {
-            console.error("Failed to load author profile:", err);
-        }
-    }
-    window.loadAuthorProfile = loadAuthorProfile; // keep exported name
 
     if (profileForm) {
-        profileForm.addEventListener('submit', async (e) => {
+        profileForm.addEventListener('submit', (e) => {
             e.preventDefault();
 
             const formData = new FormData();
-            const legalNameInput = $('#author-legal-name');
-            const phoneInput = $('#author-phone');
-            const isbnInput = $('#author-isbn');
-            const isbnDocInput = $('#author-isbn-proof');
+
+            // Legal & Identity
+            const legalNameInput = document.getElementById('author-legal-name');
+            const phoneInput = document.getElementById('author-phone');
+            const isbnInput = document.getElementById('author-isbn');
+            const isbnDocInput = document.getElementById('author-isbn-proof');
 
             if (legalNameInput) formData.append('legalName', legalNameInput.value.trim());
             if (phoneInput) formData.append('phone', phoneInput.value.trim());
             if (isbnInput && isbnInput.value.trim()) formData.append('isbn', isbnInput.value.trim());
-            if (isbnDocInput && isbnDocInput.files[0]) formData.append('isbnDoc', isbnDocInput.files[0]);
-
-            const profilePicInput = $('#author-profile-pic');
-            const bioInput = $('#author-bio');
-            const fbInput = $('#author-fb-handle');
-            const ttInput = $('#author-tt-handle');
-            const twInput = $('#author-tw-handle');
-            const igInput = $('#author-ig-handle');
-
-            if (profilePicInput && profilePicInput.files[0]) formData.append('profilePic', profilePicInput.files[0]);
-            if (bioInput) formData.append('bio', bioInput.value.trim());
-
-            if (fbInput) formData.append('facebookHandle', cleanHandle(fbInput.value));
-            if (ttInput) formData.append('tiktokHandle', cleanHandle(ttInput.value));
-            if (twInput) formData.append('twitterHandle', cleanHandle(twInput.value));
-            if (igInput) formData.append('instagramHandle', cleanHandle(igInput.value));
-
-            formData.append('showFacebook', $('#show-fb')?.checked? 'true' : 'false');
-            formData.append('showTiktok', $('#show-tt')?.checked? 'true' : 'false');
-            formData.append('showTwitter', $('#show-tw')?.checked? 'true' : 'false');
-            formData.append('showInstagram', $('#show-ig')?.checked? 'true' : 'false');
-
-            try {
-                const res = await fetch('/api/author/profile', { method: 'POST', body: formData });
-                const contentType = res.headers.get('content-type') || '';
-                const data = contentType.includes('application/json')? await res.json() : { message: await res.text() };
-                if (!res.ok) {
-                    alert(`❌ ${data.error || data.message || res.statusText}`);
-                    return;
-                }
-                alert("✅ Author profile details updated successfully!");
-                loadAuthorProfile();
-            } catch (err) {
-                console.error('Profile update failed', err);
-                alert("⚠️ Profile update failed.");
+            if (isbnDocInput && isbnDocInput.files[0]) {
+                formData.append('isbnDoc', isbnDocInput.files[0]);
             }
+
+            // Public Profile & Social Handles
+            const profilePicInput = document.getElementById('author-profile-pic');
+            const bioInput = document.getElementById('author-bio');
+            const fbHandleInput = document.getElementById('author-fb-handle');
+            const ttHandleInput = document.getElementById('author-tt-handle');
+            const twHandleInput = document.getElementById('author-tw-handle');
+            const igHandleInput = document.getElementById('author-ig-handle');
+
+            const showFbCheck = document.getElementById('show-fb');
+            const showTtCheck = document.getElementById('show-tt');
+            const showTwCheck = document.getElementById('show-tw');
+            const showIgCheck = document.getElementById('show-ig');
+
+            if (profilePicInput && profilePicInput.files[0]) {
+                formData.append('profilePic', profilePicInput.files[0]);
+            }
+            if (bioInput) formData.append('bio', bioInput.value.trim());
+            if (fbHandleInput) formData.append('facebookHandle', fbHandleInput.value.trim());
+            if (ttHandleInput) formData.append('tiktokHandle', ttHandleInput.value.trim());
+            if (twHandleInput) formData.append('twitterHandle', twHandleInput.value.trim());
+            if (igHandleInput) formData.append('instagramHandle', igHandleInput.value.trim());
+
+            formData.append('showFacebook', showFbCheck && showFbCheck.checked ? 'true' : 'false');
+            formData.append('showTiktok', showTtCheck && showTtCheck.checked ? 'true' : 'false');
+            formData.append('showTwitter', showTwCheck && showTwCheck.checked ? 'true' : 'false');
+            formData.append('showInstagram', showIgCheck && showIgCheck.checked ? 'true' : 'false');
+
+            fetch('/api/author/profile', {
+                method: 'POST',
+                body: formData
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    alert(`❌ ${data.error}`);
+                } else {
+                    alert("✅ Author profile details updated successfully!");
+                    loadAuthorProfile();
+                }
+            })
+            .catch(err => alert("⚠️ Profile update failed."));
         });
     }
 
     // -------------------------------------------------------------
-    // 7. ENHANCED WEB BOOK STUDIO LOGIC (FULL CHAPTER CRUD & REORDER)
+    // 7. WEB BOOK STUDIO LOGIC
     // -------------------------------------------------------------
-    const studioBooksList = $('#studio-books-list');
-    const studioEditorPanel = $('#studio-editor-panel');
-    const studioEditorPlaceholder = $('#studio-editor-placeholder');
-    const studioChaptersList = $('#studio-chapters-list');
-    const addChapterForm = $('#add-chapter-form');
-    const chapterPreviewPane = $('#chapter-preview-pane');
+    const studioBooksList = document.getElementById('studio-books-list');
+    const studioEditorPanel = document.getElementById('studio-editor-panel');
+    const studioEditorPlaceholder = document.getElementById('studio-editor-placeholder');
+    const studioChaptersList = document.getElementById('studio-chapters-list');
+    const addChapterForm = document.getElementById('add-chapter-form');
 
-    let currentEditingBookId = null;
-    let currentActiveBookChapters = [];
-
-    async function loadStudioWebBooks() {
+    function loadStudioWebBooks() {
         if (!studioBooksList) return;
-        studioBooksList.innerHTML = '';
-        try {
-            const books = await fetchJson('/api/books/my-web-books');
-            if (!books || books.length === 0) {
-                const p = document.createElement('p');
-                p.style.fontSize = '13px';
-                p.style.color = 'var(--text-muted, #777)';
-                p.textContent = 'No web books found. Create one under "Create New Book" with HTML/Web option!';
-                studioBooksList.appendChild(p);
-                return;
-            }
+        fetch('/api/books/my-web-books')
+            .then(res => res.json())
+            .then(books => {
+                studioBooksList.innerHTML = '';
+                if (!books || books.length === 0) {
+                    studioBooksList.innerHTML = '<p style="font-size: 13px; color: var(--text-muted, #777);">No web books found. Create one under "Create New Book" with HTML/Web option!</p>';
+                    return;
+                }
 
-            books.forEach(book => {
-                const btn = document.createElement('button');
-                btn.className = 'studio-book-select-btn';
-                btn.style.cssText = 'width: 100%; text-align: left; padding: 10px; margin-bottom: 8px; border: 1px solid var(--border-tan, #ccc); background: var(--bg-cream-light, #fafafa);';
-                const strong = document.createElement('strong');
-                strong.textContent = book.title? String(book.title) : 'Untitled';
-                btn.appendChild(strong);
-                btn.addEventListener('click', () => selectStudioBook(book));
-                studioBooksList.appendChild(btn);
-            });
-        } catch (err) {
-            console.error("Error loading web books:", err);
-            const p = document.createElement('p');
-            p.style.fontSize = '13px';
-            p.style.color = 'var(--text-danger, #dc3545)';
-            p.textContent = 'Unable to load web books.';
-            studioBooksList.appendChild(p);
-        }
+                books.forEach(book => {
+                    const btn = document.createElement('button');
+                    btn.className = 'studio-book-select-btn';
+                    btn.style.cssText = "width: 100%; text-align: left; padding: 10px; margin-bottom: 8px; border: 1px solid var(--border-tan, #ccc); background: var(--bg-cream-light, #fafafa); border-radius: 4px; cursor: pointer;";
+                    btn.innerHTML = `<strong>${book.title}</strong>`;
+                    btn.onclick = () => selectStudioBook(book);
+                    studioBooksList.appendChild(btn);
+                });
+            })
+            .catch(err => console.error("Error loading web books:", err));
     }
-    window.loadStudioWebBooks = loadStudioWebBooks; // keep name
 
     function selectStudioBook(book) {
-        currentEditingBookId = book.id;
         if (studioEditorPlaceholder) studioEditorPlaceholder.classList.add('hidden');
         if (studioEditorPanel) studioEditorPanel.classList.remove('hidden');
 
-        const titleElem = $('#current-editing-book-title');
-        const idInput = $('#editor-book-id');
+        const titleElem = document.getElementById('current-editing-book-title');
+        const idInput = document.getElementById('editor-book-id');
 
-        if (titleElem) titleElem.textContent = book.title || 'Untitled';
+        if (titleElem) titleElem.innerText = book.title;
         if (idInput) idInput.value = book.id;
 
         loadChapters(book.id);
     }
 
-    async function loadChapters(bookId) {
-        try {
-            const chapters = await fetchJson(`/api/books/${bookId}/chapters`);
-            if (!studioChaptersList) return;
-            studioChaptersList.innerHTML = '';
-            currentActiveBookChapters = chapters || [];
-
-            if (!chapters || chapters.length === 0) {
-                const p = document.createElement('p');
-                p.style.fontSize = '12px';
-                p.style.color = 'var(--text-muted, #777)';
-                p.textContent = 'No chapters added yet.';
-                studioChaptersList.appendChild(p);
-                if (chapterPreviewPane) chapterPreviewPane.textContent = 'Select a chapter to preview its content.';
-                return;
-            }
-
-            chapters.forEach((chap, idx) => {
-                const item = document.createElement('div');
-                item.className = 'studio-chapter-item';
-                item.style.cssText = 'background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 4px; font-size: 13px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;';
-
-                const left = document.createElement('div');
-                left.style.cursor = 'pointer';
-                left.style.flexGrow = '1';
-                left.className = 'chap-title-click';
-                left.innerHTML = `<strong>Chapter ${chap.chapter_number || idx + 1}:</strong> `;
-                const titleSpan = document.createElement('span');
-                titleSpan.textContent = chap.title || 'Untitled Chapter';
-                left.appendChild(titleSpan);
-
-                left.addEventListener('click', () => renderChapterPreview(chap));
-
-                const right = document.createElement('div');
-                right.style.display = 'flex';
-                right.style.gap = '6px';
-                right.style.alignItems = 'center';
-
-                const upBtn = document.createElement('button');
-                upBtn.className = 'btn-chap-up';
-                upBtn.style.padding = '2px 6px';
-                upBtn.style.cursor = 'pointer';
-                upBtn.textContent = '▲';
-                if (idx === 0) upBtn.disabled = true;
-                upBtn.addEventListener('click', () => moveChapterOrder(bookId, chapters, idx, 'up'));
-
-                const downBtn = document.createElement('button');
-                downBtn.className = 'btn-chap-down';
-                downBtn.style.padding = '2px 6px';
-                downBtn.style.cursor = 'pointer';
-                downBtn.textContent = '▼';
-                if (idx === chapters.length - 1) downBtn.disabled = true;
-                downBtn.addEventListener('click', () => moveChapterOrder(bookId, chapters, idx, 'down'));
-
-                const viewBtn = document.createElement('button');
-                viewBtn.className = 'btn-chap-view';
-                viewBtn.style.cssText = 'background: #27ae60; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;';
-                viewBtn.textContent = 'View';
-                viewBtn.addEventListener('click', () => window.openViewChapterModal(chap.id || chap._id));
-
-                const editBtn = document.createElement('button');
-                editBtn.className = 'btn-chap-edit';
-                editBtn.style.cssText = 'background: #007bff; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;';
-                editBtn.textContent = 'Edit';
-                editBtn.addEventListener('click', () => window.openEditChapterModal(chap.id || chap._id, bookId));
-
-                const delBtn = document.createElement('button');
-                delBtn.className = 'btn-chap-del';
-                delBtn.style.cssText = 'background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 11px;';
-                delBtn.textContent = 'Delete';
-                delBtn.addEventListener('click', () => deleteChapter(bookId, chap.id || chap._id));
-
-                right.appendChild(upBtn);
-                right.appendChild(downBtn);
-                right.appendChild(viewBtn);
-                right.appendChild(editBtn);
-                right.appendChild(delBtn);
-
-                item.appendChild(left);
-                item.appendChild(right);
-
-                studioChaptersList.appendChild(item);
-            });
-        } catch (err) {
-            console.error("Error loading chapters:", err);
-            if (studioChaptersList) {
+    function loadChapters(bookId) {
+        fetch(`/api/books/${bookId}/chapters`)
+            .then(res => res.json())
+            .then(chapters => {
+                if (!studioChaptersList) return;
                 studioChaptersList.innerHTML = '';
-                const p = document.createElement('p');
-                p.style.fontSize = '13px';
-                p.style.color = 'var(--text-danger, #dc3545)';
-                p.textContent = 'Unable to load chapters.';
-                studioChaptersList.appendChild(p);
-            }
-        }
+                if (!chapters || chapters.length === 0) {
+                    studioChaptersList.innerHTML = '<p style="font-size: 12px; color: var(--text-muted, #777);">No chapters added yet.</p>';
+                    return;
+                }
+
+                chapters.forEach((chap, idx) => {
+                    const item = document.createElement('div');
+                    item.style.cssText = "background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 4px; font-size: 13px; margin-bottom: 6px;";
+                    item.innerHTML = `<strong>Chapter ${chap.chapter_number || idx + 1}:</strong> ${chap.title}`;
+                    studioChaptersList.appendChild(item);
+                });
+            })
+            .catch(err => console.error("Error loading chapters:", err));
     }
 
-    // Render Chapter Body Preview in side-pane (SECURITY FIX: use textContent not innerHTML)
-    function renderChapterPreview(chap) {
-        if (!chapterPreviewPane) return;
-        chapterPreviewPane.innerHTML = ''; // clear first
-
-        const title = document.createElement('h3');
-        title.textContent = chap.title || 'Untitled';
-        const hr = document.createElement('hr');
-        hr.style.border = '0';
-        hr.style.borderTop = '1px solid #eee';
-        hr.style.margin = '10px 0';
-
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'chapter-rendered-content';
-        contentDiv.style.lineHeight = '1.6';
-        // SECURITY FIX: treat content as text to avoid XSS (no HTML rendering)
-        contentDiv.textContent = chap.content || chap.body || 'No content available.';
-
-        chapterPreviewPane.appendChild(title);
-        chapterPreviewPane.appendChild(hr);
-        chapterPreviewPane.appendChild(contentDiv);
-    }
-
-    // Add New Chapter
     if (addChapterForm) {
-        addChapterForm.addEventListener('submit', async (e) => {
+        addChapterForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const bookId = $('#editor-book-id')? $('#editor-book-id').value : currentEditingBookId;
-            const titleInput = $('#new-chapter-title');
-            const bodyInput = $('#new-chapter-body');
+            const bookId = document.getElementById('editor-book-id').value;
+            const titleInput = document.getElementById('new-chapter-title');
+            const bodyInput = document.getElementById('new-chapter-body');
 
-            const title = titleInput? titleInput.value.trim() : '';
-            const bodyContent = bodyInput? bodyInput.value.trim() : '';
+            const title = titleInput ? titleInput.value : '';
+            const bodyContent = bodyInput ? bodyInput.value : '';
 
-            try {
-                const data = await fetchJson(`/api/books/${bookId}/chapters`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ bookId, title, content: bodyContent, body: bodyContent })
-                });
-                alert("📖 Chapter added and published successfully!");
-                if (titleInput) titleInput.value = '';
-                if (bodyInput) bodyInput.value = '';
-                loadChapters(bookId);
-            } catch (err) {
-                console.error(err);
-                alert("⚠️ Failed to post new chapter.");
-            }
-        });
-    }
-
-    // Modal View & Edit Functions Exposed Globally (use single modal utilities)
-    window.openViewChapterModal = function(chapterId) {
-        const chapter = currentActiveBookChapters.find(c => (c.id || c._id) == chapterId);
-        if (!chapter) {
-            alert('Chapter content not found.');
-            return;
-        }
-
-        const titleElem = $('#view-chapter-title');
-        const bodyElem = $('#view-chapter-body');
-
-        if (titleElem) titleElem.textContent = chapter.title || 'Untitled Chapter';
-        if (bodyElem) bodyElem.textContent = chapter.content || chapter.body || 'No content written for this chapter yet.';
-
-        const modal = $('#view-chapter-modal');
-        if (modal) openModal(modal);
-    };
-
-    window.closeViewChapterModal = function() {
-        const modal = $('#view-chapter-modal');
-        if (modal) closeModal(modal);
-    };
-
-    window.openEditChapterModal = function(chapterId, bookId) {
-        const chapter = currentActiveBookChapters.find(c => (c.id || c._id) == chapterId);
-        if (!chapter) {
-            alert('Unable to load chapter details for editing.');
-            return;
-        }
-
-        const idInput = $('#edit-chapter-id');
-        const bookIdInput = $('#edit-chapter-book-id');
-        const titleInput = $('#edit-chapter-title-input');
-        const bodyInput = $('#edit-chapter-body-input');
-
-        if (idInput) idInput.value = chapterId;
-        if (bookIdInput) bookIdInput.value = bookId || currentEditingBookId;
-        if (titleInput) titleInput.value = chapter.title || '';
-        if (bodyInput) bodyInput.value = chapter.content || chapter.body || '';
-
-        const modal = $('#edit-chapter-modal');
-        if (modal) openModal(modal);
-    };
-
-    window.closeEditChapterModal = function() {
-        const modal = $('#edit-chapter-modal');
-        if (modal) closeModal(modal);
-    };
-
-    // Save Chapter Updates Form Handler
-    const editChapterForm = $('#edit-chapter-form');
-    if (editChapterForm) {
-        editChapterForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-
-            const chapterId = $('#edit-chapter-id')? $('#edit-chapter-id').value : '';
-            const bookId = $('#edit-chapter-book-id')? $('#edit-chapter-book-id').value : currentEditingBookId;
-            const updatedTitle = $('#edit-chapter-title-input')? $('#edit-chapter-title-input').value : '';
-            const updatedBody = $('#edit-chapter-body-input')? $('#edit-chapter-body-input').value : '';
-
-            try {
-                const data = await fetchJson(`/api/books/${bookId}/chapters/${chapterId}`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ title: updatedTitle, content: updatedBody, body: updatedBody })
-                });
-
-                alert('✅ Chapter updated successfully!');
-                window.closeEditChapterModal();
-                loadChapters(bookId);
-            } catch (error) {
-                console.error('Update Chapter Error:', error);
-                alert(`❌ ${error.message || 'Chapter could not be updated.'}`);
-            }
-        });
-    }
-
-    // Delete Chapter
-    function deleteChapter(bookId, chapterId) {
-        if (confirm("⚠️ Delete this chapter permanently?")) {
-            fetch(`/api/books/${bookId}/chapters/${chapterId}`, { method: 'DELETE' })
-               .then(async res => {
-                    if (!res.ok) {
-                        const txt = await res.text();
-                        throw new Error(txt || res.statusText);
-                    }
-                    return res.json();
+            fetch(`/api/books/${bookId}/chapters`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    bookId, 
+                    title, 
+                    content: bodyContent,
+                    body: bodyContent 
                 })
-               .then(data => {
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    alert(`❌ ${data.error}`);
+                } else {
+                    alert("📖 Chapter added and published successfully!");
+                    if (titleInput) titleInput.value = '';
+                    if (bodyInput) bodyInput.value = '';
                     loadChapters(bookId);
-                })
-               .catch(() => alert("⚠️ Failed to delete chapter."));
-        }
-    }
-
-    // Reorder Chapters
-    function moveChapterOrder(bookId, chapters, currentIndex, direction) {
-        const targetIndex = direction === 'up'? currentIndex - 1 : currentIndex + 1;
-        if (targetIndex < 0 || targetIndex >= chapters.length) return;
-
-        // Swap locally
-        const temp = chapters[currentIndex];
-        chapters[currentIndex] = chapters[targetIndex];
-        chapters[targetIndex] = temp;
-
-        const reorderedIds = chapters.map(c => c.id || c._id);
-
-        fetch(`/api/books/${bookId}/chapters/reorder`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ chapterOrder: reorderedIds })
-        })
-       .then(async res => {
-            if (!res.ok) {
-                const txt = await res.text();
-                throw new Error(txt || res.statusText);
-            }
-            return res.json();
-        })
-       .then(data => {
-            loadChapters(bookId);
-        })
-       .catch(() => alert("⚠️ Failed to update order."));
+                }
+            })
+            .catch(err => alert("⚠️ Failed to post new chapter."));
+        });
     }
 
     // -------------------------------------------------------------
     // 8. SALES & ROYALTIES ANALYTICS
     // -------------------------------------------------------------
-    async function loadSalesAnalytics() {
-        try {
-            const data = await fetchJson('/api/analytics/sales');
+    function loadSalesAnalytics() {
+        fetch('/api/analytics/sales')
+            .then(res => res.json())
+            .then(data => {
+                const totalEarnings = document.getElementById('stats-total-earnings');
+                const totalSales = document.getElementById('stats-total-sales');
+                const earnedAmount = parseFloat(data.totalEarnings || 0).toFixed(2);
 
-            const totalEarnings = $('#stats-total-earnings');
-            const totalSales = $('#stats-total-sales');
-            const earnedAmount = parseFloat(data.totalEarnings || 0).toFixed(2);
+                if (totalEarnings) totalEarnings.innerText = `$${earnedAmount}`;
+                if (totalSales) totalSales.innerText = data.totalSalesCount || 0;
 
-            if (totalEarnings) totalEarnings.textContent = `$${earnedAmount}`;
-            if (totalSales) totalSales.textContent = data.totalSalesCount || 0;
+                const ecocashBal = document.getElementById('dashboard-ecocash-balance');
+                if (ecocashBal) ecocashBal.innerText = `$${earnedAmount} USD`;
 
-            const ecocashBal = $('#dashboard-ecocash-balance');
-            if (ecocashBal) ecocashBal.textContent = `$${earnedAmount} USD`;
-            const breakdownList = $('#sales-breakdown-list');
-            if (breakdownList) {
-                breakdownList.innerHTML = '';
-                if (!data.bookBreakdown || Object.keys(data.bookBreakdown).length === 0) {
-                    const p = document.createElement('p');
-                    p.style.fontSize = '13px';
-                    p.style.color = 'var(--text-muted, #777)';
-                    p.textContent = 'No sales breakdown available yet.';
-                    breakdownList.appendChild(p);
-                } else {
-                    for (const [title, stats] of Object.entries(data.bookBreakdown)) {
-                        const item = document.createElement('div');
-                        item.className = 'sales-item-row';
-                        item.style.cssText = 'display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #eee; font-size: 13px;';
-                        
-                        const titleSpan = document.createElement('span');
-                        titleSpan.textContent = title;
-                        
-                        const statsSpan = document.createElement('span');
-                        const qty = stats.count || stats.sales || 0;
-                        const rev = parseFloat(stats.revenue || stats.earnings || 0).toFixed(2);
-                        statsSpan.textContent = `${qty} sales ($${rev})`;
-                        
-                        item.appendChild(titleSpan);
-                        item.appendChild(statsSpan);
-                        breakdownList.appendChild(item);
+                const breakdownList = document.getElementById('sales-breakdown-list');
+                if (breakdownList) {
+                    breakdownList.innerHTML = '';
+                    if (!data.bookBreakdown || Object.keys(data.bookBreakdown).length === 0) {
+                        breakdownList.innerHTML = '<p style="font-size: 13px; color: var(--text-muted, #777);">No sales recorded yet.</p>';
+                    } else {
+                        for (const [title, stats] of Object.entries(data.bookBreakdown)) {
+                            const row = document.createElement('div');
+                            row.style.cssText = "display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding: 8px 0; font-size: 13px;";
+                            row.innerHTML = `<span><strong>${title}</strong> (${stats.sales} sold)</span><strong style="color: var(--primary-green, #1b3d2b);">$${parseFloat(stats.earnings || 0).toFixed(2)}</strong>`;
+                            breakdownList.appendChild(row);
+                        }
                     }
                 }
-            }
-        } catch (err) {
-            console.error("Failed to load sales analytics:", err);
-            const breakdownList = $('#sales-breakdown-list');
-            if (breakdownList) {
-                breakdownList.innerHTML = '';
-                const p = document.createElement('p');
-                p.style.fontSize = '13px';
-                p.style.color = 'var(--text-danger, #dc3545)';
-                p.textContent = 'Unable to load sales breakdown.';
-                breakdownList.appendChild(p);
-            }
-        }
+
+                const txList = document.getElementById('recent-transactions-list');
+                if (txList) {
+                    txList.innerHTML = '';
+                    if (!data.recentTransactions || data.recentTransactions.length === 0) {
+                        txList.innerHTML = '<p style="font-size: 13px; color: var(--text-muted, #777);">No transactions available.</p>';
+                    } else {
+                        data.recentTransactions.forEach(tx => {
+                            const row = document.createElement('div');
+                            row.className = 'log-item';
+                            row.innerHTML = `
+                                <span><strong>${tx.buyer_name || 'Anonymous'}</strong> purchased <em>${tx.book_title}</em></span>
+                                <span style="color: var(--primary-green-light, #27ae60); font-weight: bold;">+$${parseFloat(tx.sale_price || 0).toFixed(2)}</span>
+                            `;
+                            txList.appendChild(row);
+                        });
+                    }
+                }
+            })
+            .catch(err => console.error("Error loading sales data:", err));
     }
-    window.loadSalesAnalytics = loadSalesAnalytics; // keep exported name
+
+    // Payout withdrawal handler
+    const withdrawBtn = document.querySelector('.withdraw-btn');
+    if (withdrawBtn) {
+        withdrawBtn.addEventListener('click', () => {
+            const phoneInput = document.getElementById('author-phone');
+            const phone = phoneInput ? phoneInput.value.trim() : '';
+
+            fetch('/api/payouts/request', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) alert(`❌ ${data.error}`);
+                else alert("✅ Withdrawal request submitted successfully!");
+            })
+            .catch(err => alert("⚠️ Withdrawal request failed."));
+        });
+    }
 
     // -------------------------------------------------------------
-    // 9. NOTIFICATIONS LOADER
+    // 9. BOOK EDIT & DELETE MODAL HANDLERS
     // -------------------------------------------------------------
-    async function loadNotifications() {
-        const container = $('#notif-list-container');
-        if (!container) return;
-        try {
-            const notifs = await fetchJson('/api/notifications');
-            container.innerHTML = '';
-            if (!notifs || notifs.length === 0) {
-                container.innerHTML = '<div style="padding: 10px; font-size: 12px; color: #777;">No new notifications</div>';
+    const editModal = document.getElementById('edit-book-modal');
+    const editForm = document.getElementById('edit-book-form');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+
+    window.openEditModal = function(id, description, price) {
+        if (!editModal) return;
+        const idInput = document.getElementById('edit-book-id');
+        const descInput = document.getElementById('edit-book-description');
+        const priceInput = document.getElementById('edit-book-price');
+
+        if (idInput) idInput.value = id;
+        if (descInput) descInput.value = description;
+        if (priceInput) priceInput.value = price;
+
+        editModal.style.display = 'flex';
+    };
+
+    if (closeModalBtn && editModal) {
+        closeModalBtn.addEventListener('click', () => { editModal.style.display = 'none'; });
+    }
+
+    if (editForm) {
+        editForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('edit-book-id').value;
+            const description = document.getElementById('edit-book-description').value;
+            const price = document.getElementById('edit-book-price').value;
+
+            fetch(`/api/books/${id}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ description, price })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.error) {
+                    alert(`❌ ${data.error}`);
+                } else {
+                    alert("✅ Book details updated!");
+                    if (editModal) editModal.style.display = 'none';
+                    loadDashboardBooks();
+                }
+            });
+        });
+    }
+
+    window.deleteBook = function(id) {
+        if (confirm("⚠️ Are you sure you want to permanently delete this book? This action cannot be undone.")) {
+            fetch(`/api/books/${id}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.error) {
+                        alert(`❌ ${data.error}`);
+                    } else {
+                        alert("🗑️ Book permanently removed.");
+                        loadDashboardBooks();
+                    }
+                });
+        }
+    };
+});
+
+// ==========================================
+//          NOTIFICATION CENTER LOGIC
+// ==========================================
+
+function loadNotifications() {
+    fetch('/api/notifications')
+        .then(res => res.json())
+        .then(notifications => {
+            const listContainer = document.getElementById('notif-list-container');
+            const badge = document.getElementById('notif-badge');
+            if (!listContainer || !Array.isArray(notifications)) return;
+
+            const unreadCount = notifications.filter(n => !n.is_read).length;
+
+            if (unreadCount > 0 && badge) {
+                badge.textContent = unreadCount;
+                badge.classList.remove('hidden');
+            } else if (badge) {
+                badge.classList.add('hidden');
+            }
+
+            if (notifications.length === 0) {
+                listContainer.innerHTML = `<p style="text-align: center; color: var(--text-muted, #777); font-size: 13px; padding: 15px 0;">No new notifications</p>`;
                 return;
             }
-            notifs.forEach(n => {
-                const div = document.createElement('div');
-                div.style.cssText = 'padding: 8px 12px; border-bottom: 1px solid #eee; font-size: 12px;';
-                div.textContent = n.message || n.text || '';
-                container.appendChild(div);
-            });
-        } catch (err) {
-            console.error('Failed to load notifications', err);
-        }
+
+            listContainer.innerHTML = notifications.map(notif => `
+                <div class="notif-card ${notif.is_read ? '' : 'unread'}" onclick="markNotificationRead(${notif.id})">
+                    <span class="notif-card-title" style="font-weight: bold; font-size: 13px; display: block;">📢 ${notif.title}</span>
+                    <p class="notif-card-body" style="margin: 4px 0; font-size: 12px; color: var(--text-dark, #222);">${notif.message}</p>
+                    <small class="notif-card-date" style="font-size: 10px; color: var(--text-muted, #777);">${new Date(notif.createdAt || notif.created_at).toLocaleDateString()}</small>
+                </div>
+            `).join('');
+        })
+        .catch(err => console.error("Notification load error:", err));
+}
+
+window.toggleNotifDropdown = function() {
+    const dropdown = document.getElementById('notif-dropdown');
+    if (dropdown) dropdown.classList.toggle('hidden');
+};
+
+window.markNotificationRead = function(id) {
+    fetch(`/api/notifications/${id}/read`, { method: 'POST' })
+        .then(() => loadNotifications())
+        .catch(err => console.error("Failed to mark notification as read:", err));
+};
+
+// Global click listener to dismiss notification dropdown when clicking outside
+document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('notif-dropdown');
+    const bellBtn = document.getElementById('notif-bell-btn');
+    
+    if (dropdown && !dropdown.classList.contains('hidden') && bellBtn && !bellBtn.contains(e.target) && !dropdown.contains(e.target)) {
+        dropdown.classList.add('hidden');
     }
-    window.loadNotifications = loadNotifications;
-
-}); // End of DOMContentLoaded event listener
-
-            
+});
