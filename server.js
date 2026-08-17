@@ -197,7 +197,8 @@ app.get('/api/author/profile', requireLogin, async (req, res) => {
         .select(`
             legal_name, id_number, id_doc_path, phone, address, kin_name, 
             kin_relation, kin_phone, isbn, isbn_doc_path, profile_complete,
-            bio, profile_pic_url, facebook_handle, tiktok_handle, twitter_handle, instagram_handle
+            bio, profile_pic_url, facebook_handle, tiktok_handle, twitter_handle, instagram_handle,
+            facebook_followers, tiktok_followers, twitter_followers, instagram_followers
         `)
         .eq('id', userId)
         .single();
@@ -228,6 +229,11 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
         const tiktokHandle = req.body.tiktokHandle || req.body.tiktok_handle || null;
         const twitterHandle = req.body.twitterHandle || req.body.twitter_handle || null;
         const instagramHandle = req.body.instagramHandle || req.body.instagram_handle || null;
+
+        const facebookFollowers = req.body.facebookFollowers || req.body.facebook_followers || 0;
+        const tiktokFollowers = req.body.tiktokFollowers || req.body.tiktok_followers || 0;
+        const twitterFollowers = req.body.twitterFollowers || req.body.twitter_followers || 0;
+        const instagramFollowers = req.body.instagramFollowers || req.body.instagram_followers || 0;
 
         // Streamlined Validation: Only Legal Name and Phone are mandatory
         if (!legalName || !phone) {
@@ -278,7 +284,11 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
                 facebook_handle: facebookHandle,
                 tiktok_handle: tiktokHandle,
                 twitter_handle: twitterHandle,
-                instagram_handle: instagramHandle
+                instagram_handle: instagramHandle,
+                facebook_followers: parseInt(facebookFollowers) || 0,
+                tiktok_followers: parseInt(tiktokFollowers) || 0,
+                twitter_followers: parseInt(twitterFollowers) || 0,
+                instagram_followers: parseInt(instagramFollowers) || 0
             })
             .eq('id', userId);
 
@@ -304,7 +314,8 @@ app.get('/api/top-authors', async (req, res) => {
             .from('users')
             .select(`
                 id, username, legal_name, address, bio, profile_pic_url,
-                facebook_handle, tiktok_handle, twitter_handle, instagram_handle
+                facebook_handle, tiktok_handle, twitter_handle, instagram_handle,
+                facebook_followers, tiktok_followers, twitter_followers, instagram_followers
             `)
             .or('role.eq.author,role.eq.admin');
 
@@ -342,14 +353,20 @@ app.get('/api/top-authors', async (req, res) => {
             const totalSales = salesCountMap[author.id] || 0;
             const siteFollowers = followerCountMap[author.id] || 0;
 
+            const totalSocialFollowers = (author.facebook_followers || 0) + 
+                                         (author.tiktok_followers || 0) + 
+                                         (author.twitter_followers || 0) + 
+                                         (author.instagram_followers || 0);
+
             return {
                 id: author.id,
                 name: displayName,
-                bio: author.bio || null,
+                bio: author.bio || (author.address ? `Author based in ${author.address}` : 'Page 24 Published Author.'),
                 profile_picture_url: author.profile_pic_url || null,
                 total_books_sold: totalSales,
                 books_read: totalSales,
                 site_followers: siteFollowers,
+                social_followers: totalSocialFollowers,
                 social_links: {
                     facebook: author.facebook_handle ? `https://facebook.com/${author.facebook_handle}` : null,
                     tiktok: author.tiktok_handle ? `https://tiktok.com/@${author.tiktok_handle.replace('@', '')}` : null,
@@ -396,29 +413,6 @@ app.post('/api/authors/:id/follow', requireLogin, async (req, res) => {
         res.json({ success: true, action: 'followed', message: "Author followed successfully!" });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
-    }
-});
-
-// ==========================================
-//   GET CURRENT USER'S FOLLOWED AUTHOR IDS
-// ==========================================
-app.get('/api/user/follows', requireLogin, async (req, res) => {
-    try {
-        const currentUserId = req.session.user.id;
-
-        const { data: follows, error } = await supabase
-            .from('followers')
-            .select('author_id')
-            .eq('follower_id', currentUserId);
-
-        if (error) return res.status(500).json({ error: error.message });
-
-        // Extract just the author_ids into an array
-        const followedAuthorIds = (follows || []).map(f => String(f.author_id));
-
-        res.json({ success: true, followedAuthorIds });
-    } catch (err) {
-        res.status(500).json({ error: err.message });
     }
 });
 
@@ -480,7 +474,11 @@ app.get('/api/books', async (req, res) => {
                     facebook_handle,
                     tiktok_handle,
                     twitter_handle,
-                    instagram_handle
+                    instagram_handle,
+                    facebook_followers,
+                    tiktok_followers,
+                    twitter_followers,
+                    instagram_followers
                 )
             `)
             .or('status.eq.active,status.is.null')
@@ -499,6 +497,10 @@ app.get('/api/books', async (req, res) => {
         const formattedBooks = (books || []).map(book => {
             const author = book.users || {};
             const siteFollowers = followerCountMap[author.id] || 0;
+            const socialFollowers = (author.facebook_followers || 0) + 
+                                    (author.tiktok_followers || 0) + 
+                                    (author.twitter_followers || 0) + 
+                                    (author.instagram_followers || 0);
 
             return {
                 ...book,
@@ -506,6 +508,7 @@ app.get('/api/books', async (req, res) => {
                 author_bio: author.bio || null,
                 author_picture: author.profile_pic_url || null,
                 site_followers: siteFollowers,
+                social_followers: socialFollowers,
                 facebook_url: author.facebook_handle ? `https://facebook.com/${author.facebook_handle}` : null,
                 tiktok_url: author.tiktok_handle ? `https://tiktok.com/@${author.tiktok_handle.replace('@', '')}` : null,
                 twitter_url: author.twitter_handle ? `https://x.com/${author.twitter_handle}` : null,
@@ -816,55 +819,6 @@ app.post('/api/books/chapters', requireLogin, async (req, res) => {
 
     if (insertErr) return res.status(500).json({ error: 'Failed to write chapter to database.' });
     res.json({ success: true, chapterId: chapter.id });
-});
-
-// ==========================================
-//    UPDATE CHAPTER ENDPOINT
-// ==========================================
-app.put('/api/books/:bookId/chapters/:chapterId', requireLogin, async (req, res) => {
-    const { bookId, chapterId } = req.params;
-    const { title, content, body } = req.body;
-    const finalContent = content || body;
-
-    if (!title || !finalContent) {
-        return res.status(400).json({ error: 'Title and content are required.' });
-    }
-
-    try {
-        // 1. Verify the user owns the book they are trying to edit
-        const { data: book, error: bookErr } = await supabase
-            .from('books')
-            .select('id')
-            .eq('id', bookId)
-            .eq('user_id', req.session.user.id)
-            .single();
-
-        if (bookErr || !book) {
-            return res.status(403).json({ error: 'Unauthorized or book not found.' });
-        }
-
-        // 2. Update the chapter in the Supabase 'chapters' table
-        const { data: chapter, error: updateErr } = await supabase
-            .from('chapters')
-            .update({ 
-                title: title, 
-                body: finalContent 
-            })
-            .eq('id', chapterId)
-            .eq('book_id', bookId)
-            .select()
-            .single();
-
-        if (updateErr) {
-            console.error(">>> [CHAPTER UPDATE ERROR]:", updateErr);
-            return res.status(500).json({ error: 'Failed to save chapter updates.' });
-        }
-
-        res.json({ success: true, message: 'Chapter updated successfully!', chapter });
-    } catch (err) {
-        console.error(">>> [CHAPTER UPDATE EXCEPTION]:", err);
-        res.status(500).json({ error: 'Server error while updating chapter.' });
-    }
 });
 
 // ==========================================
