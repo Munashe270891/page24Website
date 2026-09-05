@@ -13,8 +13,9 @@
         <div class="logo">PAGE 24</div>
         <nav class="nav-button-group">
             <a href="#category-filter-section" id="browse-books-btn" class="nav-btn-secondary">Browse Books</a>
-            <a href="/read" class="nav-btn-secondary">📚 My Library</a>
+            <a href="/read" class="nav-btn-secondary" title="Open Page 24 Reader PWA">📱 Open Reader App</a>
             <a href="#top-authors" id="top-authors-nav-btn" class="nav-btn-secondary">Top Authors</a>
+            <a href="/login" id="auth-nav-btn" class="nav-btn-secondary">Sign In</a>
             <a href="/dashboard" class="nav-btn-primary">Author Portal</a>
         </nav>
     </header>
@@ -40,6 +41,16 @@
         <!-- SEARCH BAR CONTAINER COMPONENT -->
         <div class="search-container" style="margin-top: 25px;">
             <input type="text" id="store-search" placeholder="🔍 Search books by title or author..." style="width: 100%; max-width: 500px; padding: 14px 20px; border: none; border-radius: 25px; font-size: 15px; outline: none; box-shadow: 0 4px 10px rgba(0,0,0,0.15);">
+        </div>
+
+        <!-- PWA READER APP CALLOUT BANNER -->
+        <div class="pwa-hero-callout" style="margin-top: 20px; background: rgba(27, 61, 43, 0.85); border: 1px solid #ffffff; border-radius: 8px; padding: 12px 20px; display: inline-flex; align-items: center; gap: 15px; max-width: 520px; text-align: left;">
+            <div style="font-size: 28px;">📖</div>
+            <div style="flex: 1;">
+                <strong style="color: #ffffff; font-size: 14px; display: block;">Page 24 Reader App (PWA)</strong>
+                <span style="font-size: 12px; color: #ffffff;">Read offline, save bookmarks, and access your personal book collection anytime.</span>
+            </div>
+            <a href="/read" class="nav-btn-primary" style="text-decoration: none; font-size: 13px; padding: 8px 14px; white-space: nowrap; display: inline-block;">Launch App</a>
         </div>
     </section>
 
@@ -179,5 +190,35 @@
     </footer>
 
     <script src="/js/main.js?v=2.2"></script>
+    
+    <!-- DYNAMIC AUTH BUTTON CHECK SCRIPT -->
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const authNavBtn = document.getElementById('auth-nav-btn');
+            if (!authNavBtn) return;
+
+            try {
+                const res = await fetch('/api/auth/me');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data && (data.user || data.email || data.username)) {
+                        authNavBtn.textContent = 'Sign Out';
+                        authNavBtn.href = '#';
+                        authNavBtn.addEventListener('click', async (e) => {
+                            e.preventDefault();
+                            try {
+                                await fetch('/api/auth/logout', { method: 'POST' });
+                            } catch (err) {
+                                console.error('Logout failed', err);
+                            }
+                            window.location.href = '/';
+                        });
+                    }
+                }
+            } catch (err) {
+                // User is unauthenticated, leave button as "Sign In"
+            }
+        });
+    </script>
 </body>
 </html>
