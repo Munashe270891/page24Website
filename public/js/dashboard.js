@@ -1,4 +1,8 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // Track current editing state globally within script scope
+    let currentEditingBookId = null;
+    let currentEditingChapterId = null;
+
     // -------------------------------------------------------------
     // 1. NAVIGATION & VIEW SWITCHING LOGIC
     // -------------------------------------------------------------
@@ -136,6 +140,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const rawPrice = parseFloat(book.price) || 0;
                     const coverSrc = book.coverImage || book.cover_image || '/images/default-cover.png';
+                    const bookMode = (book.mode || 'pdf').toLowerCase();
 
                     card.innerHTML = `
                         <img src="${coverSrc}" alt="${book.title}" class="cover-thumb" onerror="this.src='/images/default-cover.png'">
@@ -143,9 +148,9 @@ document.addEventListener('DOMContentLoaded', () => {
                             <h3>${book.title}</h3>
                             <p>${book.description ? book.description.substring(0, 80) + '...' : ''}</p>
                             <p><strong>Price:</strong> <span style="color: var(--primary-green-light, #27ae60);">$${rawPrice.toFixed(2)} USD</span></p>
-                            <p><span class="badge ${book.status === 'Draft' ? 'status-draft' : 'status-pub'}">${book.mode ? book.mode.toUpperCase() : 'PDF'}</span></p>
+                            <p><span class="badge ${book.status === 'Draft' ? 'status-draft' : 'status-pub'}">${bookMode.toUpperCase()}</span></p>
                             <div style="display: flex; gap: 8px; margin-top: 10px;">
-                                <button onclick="openEditModal(${book.id}, '${escapeHtml(book.description || '')}', ${rawPrice})" style="background: var(--primary-green, #1b3d2b); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Edit</button>
+                                <button onclick="openEditModal(${book.id}, '${escapeHtml(book.description || '')}', ${rawPrice}, '${bookMode}')" style="background: var(--primary-green, #1b3d2b); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Edit</button>
                                 <button onclick="deleteBook(${book.id})" style="background: var(--danger-red, #dc3545); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Delete</button>
                             </div>
                         </div>
@@ -544,14 +549,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -------------------------------------------------------------
-    // 9. BOOK EDIT & DELETE MODAL HANDLERS
+    // 9. BOOK EDIT & DELETE MODAL HANDLERS (ENHANCED FOR CHAPTERS)
     // -------------------------------------------------------------
     const editModal = document.getElementById('edit-book-modal');
     const editForm = document.getElementById('edit-book-form');
     const closeModalBtn = document.getElementById('close-modal-btn');
 
-    window.openEditModal = function(id, description, price) {
+    window.openEditModal = async function(id, description, price, mode) {
         if (!editModal) return;
+
+        currentEditingBookId = id;
+        currentEditingChapterId = null;
+
         const idInput = document.getElementById('edit-book-id');
         const descInput = document.getElementById('edit-book-description');
         const priceInput = document.getElementById('edit-book-price');
@@ -559,6 +568,73 @@ document.addEventListener('DOMContentLoaded', () => {
         if (idInput) idInput.value = id;
         if (descInput) descInput.value = description;
         if (priceInput) priceInput.value = price;
+
+        // Dynamic Web/HTML Book Chapter Selection and Content Population
+        let chapterGroup = document.getElementById('edit-chapter-group');
+        const contentTextArea = document.getElementById('edit-book-content') || document.getElementById('edit-chapter-body');
+
+        if (mode === 'html') {
+            // Ensure container for chapter dropdown exists dynamically inside modal form
+            if (!chapterGroup && editForm) {
+                chapterGroup = document.createElement('div');
+                chapterGroup.id = 'edit-chapter-group';
+                chapterGroup.className = 'form-group';
+                chapterGroup.style.marginBottom = '15px';
+                chapterGroup.innerHTML = `
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">SELECT CHAPTER TO EDIT</label>
+                    <select id="edit-chapter-select" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc;"></select>
+                `;
+
+                if (contentTextArea) {
+                    contentTextArea.parentNode.insertBefore(chapterGroup, contentTextArea);
+                } else {
+                    editForm.appendChild(chapterGroup);
+                }
+            } else if (chapterGroup) {
+                chapterGroup.style.display = 'block';
+            }
+
+            if (contentTextArea) contentTextArea.style.display = 'block';
+
+            // Fetch chapter content dynamically for Web Book
+            try {
+                const res = await fetch(`/api/books/${id}/chapters`);
+                const chapters = await res.json();
+                const selectElem = document.getElementById('edit-chapter-select');
+
+                if (selectElem) {
+                    selectElem.innerHTML = '';
+                    if (chapters && chapters.length > 0) {
+                        chapters.forEach(chap => {
+                            const opt = document.createElement('option');
+                            opt.value = chap.id;
+                            opt.textContent = `Chapter ${chap.chapter_number || ''}: ${chap.title}`;
+                            opt.dataset.body = chap.body || chap.content || '';
+                            selectElem.appendChild(opt);
+                        });
+
+                        // Set default selected chapter
+                        currentEditingChapterId = chapters[0].id;
+                        if (contentTextArea) contentTextArea.value = chapters[0].body || chapters[0].content || '';
+
+                        selectElem.onchange = () => {
+                            const selectedOpt = selectElem.options[selectElem.selectedIndex];
+                            currentEditingChapterId = selectedOpt.value;
+                            if (contentTextArea) contentTextArea.value = selectedOpt.dataset.body;
+                        };
+                    } else {
+                        selectElem.innerHTML = '<option value="">No chapters found</option>';
+                        if (contentTextArea) contentTextArea.value = '';
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load chapter content for editing:", err);
+            }
+        } else {
+            // PDF Mode: Hide chapter dropdown and chapter body textarea
+            if (chapterGroup) chapterGroup.style.display = 'none';
+            if (contentTextArea) contentTextArea.style.display = 'none';
+        }
 
         editModal.style.display = 'flex';
     };
@@ -568,27 +644,51 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (editForm) {
-        editForm.addEventListener('submit', (e) => {
+        editForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = document.getElementById('edit-book-id').value;
             const description = document.getElementById('edit-book-description').value;
             const price = document.getElementById('edit-book-price').value;
+            const contentTextArea = document.getElementById('edit-book-content') || document.getElementById('edit-chapter-body');
 
-            fetch(`/api/books/${id}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ description, price })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.error) {
-                    alert(`❌ ${data.error}`);
-                } else {
-                    alert("✅ Book details updated!");
-                    if (editModal) editModal.style.display = 'none';
-                    loadDashboardBooks();
+            try {
+                // 1. Save core book metadata
+                const bookRes = await fetch(`/api/books/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ description, price })
+                });
+                const bookData = await bookRes.json();
+
+                if (bookData.error) {
+                    alert(`❌ ${bookData.error}`);
+                    return;
                 }
-            });
+
+                // 2. Save active chapter body if editing an HTML/Web Book
+                if (currentEditingChapterId && contentTextArea) {
+                    const selectElem = document.getElementById('edit-chapter-select');
+                    const selectedOpt = selectElem ? selectElem.options[selectElem.selectedIndex] : null;
+                    const chapTitle = selectedOpt ? selectedOpt.text.split(': ')[1] || 'Chapter' : 'Chapter';
+
+                    await fetch(`/api/books/chapters/${currentEditingChapterId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            title: chapTitle,
+                            body: contentTextArea.value
+                        })
+                    });
+                }
+
+                alert("✅ Book details updated successfully!");
+                if (editModal) editModal.style.display = 'none';
+                loadDashboardBooks();
+
+            } catch (err) {
+                console.error("Error saving book edits:", err);
+                alert("⚠️ An error occurred while updating the book.");
+            }
         });
     }
 

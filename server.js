@@ -235,14 +235,12 @@ app.post('/api/author/profile', requireLogin, profileUploadFields, async (req, r
         const twitterFollowers = req.body.twitterFollowers || req.body.twitter_followers || 0;
         const instagramFollowers = req.body.instagramFollowers || req.body.instagram_followers || 0;
 
-        // Streamlined Validation: Only Legal Name and Phone are mandatory
         if (!legalName || !phone) {
             return res.status(400).json({ 
                 error: "Please complete your Full Legal Name and Phone Number." 
             });
         }
 
-        // Fetch existing user to preserve document paths if no new ones are provided
         const { data: existingUser } = await supabase
             .from('users')
             .select('id_doc_path, isbn_doc_path, profile_pic_url')
@@ -397,7 +395,6 @@ app.post('/api/authors/:id/follow', requireLogin, async (req, res) => {
             .insert([{ author_id: targetAuthorId, follower_id: currentUserId }]);
 
         if (error) {
-            // Unique violation: User already follows author -> treat request as Unfollow action
             if (error.code === '23505') {
                 await supabase
                     .from('followers')
@@ -748,6 +745,38 @@ app.get('/api/books/secure-source', async (req, res) => {
     });
 });
 
+// PUT /api/books/chapters/:chapterId - Edit existing chapter content
+app.put('/api/books/chapters/:chapterId', requireLogin, async (req, res) => {
+    const { chapterId } = req.params;
+    const { title, body, content } = req.body;
+    const updatedBody = body || content;
+
+    try {
+        // Verify user owns the book attached to this chapter
+        const { data: chapter, error: fetchErr } = await supabase
+            .from('chapters')
+            .select('id, book_id, books(user_id)')
+            .eq('id', chapterId)
+            .single();
+
+        if (fetchErr || !chapter || chapter.books.user_id !== req.session.user.id) {
+            return res.status(403).json({ error: "Unauthorized or chapter not found." });
+        }
+
+        const { data, error } = await supabase
+            .from('chapters')
+            .update({ title, body: updatedBody })
+            .eq('id', chapterId)
+            .select();
+
+        if (error) return res.status(500).json({ error: error.message });
+
+        res.json({ success: true, message: "Chapter updated successfully!", chapter: data[0] });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ==========================================
 //    WEB BOOK STUDIO CHAPTER MANAGEMENT
 // ==========================================
@@ -825,25 +854,78 @@ app.post('/api/books/chapters', requireLogin, async (req, res) => {
 //        BOOK MANAGEMENT (EDIT & DELETE)
 // ==========================================
 
-app.put('/api/books/:id', requireLogin, async (req, res) => {
+// FULLY SYNCED BOOK EDIT ENDPOINT
+app.put('/api/books/:id', requireLogin, dualUploadFields, async (req, res) => {
     const bookId = req.params.id;
-    const { description, price } = req.body;
+    
+    try {
+        // Retrieve current book record to preserve paths if files aren't updated
+        const { data: existingBook, error: fetchErr } = await supabase
+            .from('books')
+            .select('*')
+            .eq('id', bookId)
+            .eq('user_id', req.session.user.id)
+            .single();
 
-    if (!description || price === undefined) {
-        return res.status(400).json({ error: 'Missing updated parameters.' });
+        if (fetchErr || !existingBook) {
+            return res.status(404).json({ error: 'Book not found or unauthorized.' });
+        }
+
+        const {
+            title,
+            description,
+            price,
+            category,
+            subTheme,
+            sub_theme,
+            allowDownload,
+            allow_download
+        } = req.body;
+
+        let updatedCoverUrl = existingBook.cover_image;
+        let updatedPdfPath = existingBook.pdf_source;
+
+        // Process updated files if attached
+        if (req.files) {
+            if (req.files['coverImage']) {
+                updatedCoverUrl = await uploadToSupabase(req.files['coverImage'][0], 'covers');
+            }
+            if (req.files['pdfBook']) {
+                updatedPdfPath = await uploadToSupabase(req.files['pdfBook'][0], 'pdfs');
+            }
+        }
+
+        const updatePayload = {
+            title: title || existingBook.title,
+            description: description !== undefined ? description : existingBook.description,
+            price: price !== undefined ? parseFloat(price) : existingBook.price,
+            category: category || existingBook.category,
+            sub_theme: subTheme || sub_theme || existingBook.sub_theme,
+            allow_download: (allowDownload !== undefined || allow_download !== undefined) 
+                ? parseInt(allowDownload || allow_download) 
+                : existingBook.allow_download,
+            cover_image: updatedCoverUrl,
+            pdf_source: updatedPdfPath
+        };
+
+        const { data, error } = await supabase
+            .from('books')
+            .update(updatePayload)
+            .eq('id', bookId)
+            .eq('user_id', req.session.user.id)
+            .select();
+
+        if (error) {
+            console.error(">>> [BOOK UPDATE ERROR]:", error);
+            return res.status(500).json({ error: 'Failed to update book details.' });
+        }
+
+        res.json({ success: true, message: 'Book updated successfully!', book: data[0] });
+
+    } catch (err) {
+        console.error(">>> [EDIT BOOK PIPELINE EXCEPTION]:", err);
+        res.status(500).json({ error: err.message });
     }
-
-    const { data, error } = await supabase
-        .from('books')
-        .update({ description, price: parseFloat(price) })
-        .eq('id', bookId)
-        .eq('user_id', req.session.user.id)
-        .select();
-
-    if (error) return res.status(500).json({ error: 'Failed to update book profile.' });
-    if (!data || data.length === 0) return res.status(404).json({ error: 'Book not found or unauthorized.' });
-
-    res.json({ success: true, message: 'Book updated successfully!' });
 });
 
 app.delete('/api/books/:id', requireLogin, async (req, res) => {

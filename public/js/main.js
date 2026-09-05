@@ -52,6 +52,11 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/'/g, '&#039;');
     }
 
+    // Attach event listener for the follow button in the modal
+    if (followAuthorBtn) {
+        followAuthorBtn.addEventListener('click', () => window.toggleFollowAuthor());
+    }
+
     // Smooth-scroll "Browse Books" in top header
     if (browseBtn) {
         browseBtn.addEventListener('click', (e) => {
@@ -193,16 +198,17 @@ document.addEventListener('DOMContentLoaded', () => {
         renderFilteredGrid();
     };
 
-    // Helper function to handle social media links display (Handles handles or full URLs)
+    // Helper function to handle social media links display (Handles handles or full URLs safely)
     function setupSocialLink(element, value, platform) {
         if (!element) return;
         
-        if (value && value.trim() !== '') {
-            let url = value.trim();
+        const raw = value ? String(value).trim() : '';
+        if (raw !== '') {
+            let url = raw;
             
             // Format handle into full URL if user provided raw username
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                const cleanHandle = url.replace('@', '');
+                const cleanHandle = url.replace(/^@/, '');
                 switch (platform) {
                     case 'facebook':
                         url = `https://facebook.com/${cleanHandle}`;
@@ -373,6 +379,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         topAuthorsListContainer.innerHTML = sortedAuthors.map((author, index) => {
+            const authorId = author.id || author.author_id || author.user_id;
             const safeName = escapeHTML(author.name || 'Anonymous Author');
             const safeBio = escapeHTML(author.bio || 'Page 24 Published Author.');
             const avatarSrc = author.profile_picture_url || '/images/default-avatar.png';
@@ -412,7 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
                         </div>
                     </div>
 
-                    <button onclick="followAuthor('${author.id}')" style="background: var(--primary-green, #1B4D3E); color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap;">
+                    <button onclick="followAuthor('${authorId}')" style="background: var(--primary-green, #1B4D3E); color: white; border: none; padding: 8px 12px; border-radius: 4px; font-size: 11px; font-weight: bold; cursor: pointer; white-space: nowrap;">
                         + Follow
                     </button>
                 </div>
@@ -456,6 +463,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Global Follow Author Action Handler for Top Authors Modal
     window.followAuthor = async function(authorId) {
+        if (!authorId || authorId === 'undefined') {
+            alert('Author ID not found.');
+            return;
+        }
+
         try {
             const response = await fetch(`/api/authors/${authorId}/follow`, { method: 'POST' });
             const result = await response.json();
