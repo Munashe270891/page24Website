@@ -1,14 +1,15 @@
 :root {
-    --primary-green: #1b3d2b;
-    --primary-green-light: #27ae60;
-    --accent-orange: #d97736;
-    --bg-cream-light: #fdfcf7;
-    --bg-cream-dark: #f5f4ee;
-    --border-tan: #e3e1d5;
-    --text-dark: #2a2d2b;
-    --text-muted: #6b6f6c;
+    /* Upnode Corporate Identity */
+    --primary-green: #0a192f;         /* Main Dark Navy */
+    --primary-green-light: #0284c7;   /* Upnode Tech Cyan for primary action highlights */
+    --accent-orange: #d97736;         /* Gold/Amber Accent */
+    --bg-cream-light: #f8fafc;        /* Soft Slate Neutral Background */
+    --bg-cream-dark: #f1f5f9;         /* Workspace Slate Background */
+    --border-tan: #e2e8f0;            /* Modern Light Slate Border */
+    --text-dark: #0f172a;             /* Deep Slate Dark Text */
+    --text-muted: #64748b;            /* Muted Slate Text */
     --white: #ffffff;
-    --danger-red: #dc3545;
+    --danger-red: #ef4444;            /* Soft Modern Red */
 }
 
 body {
@@ -79,7 +80,7 @@ body {
 
 .menu-item:hover,
 .menu-item.active {
-    background-color: rgba(255, 255, 255, 0.15);
+    background-color: rgba(255, 255, 255, 0.1);
     color: var(--white);
     border-left: 4px solid var(--accent-orange);
 }
@@ -109,7 +110,7 @@ body {
 }
 
 .nav-library-btn:hover {
-    background-color: #219150;
+    background-color: #0369a1;
 }
 
 .nav-logout-btn {
@@ -182,7 +183,7 @@ body {
     width: 100px;
     height: 140px;
     object-fit: contain;
-    background-color: #e3e1d5;
+    background-color: #f1f5f9;
     border-radius: 4px;
     padding: 4px;
     box-sizing: border-box;
@@ -203,6 +204,7 @@ body {
 .book-meta h3 {
     margin: 0 0 8px 0;
     font-size: 16px;
+    color: var(--primary-green);
 }
 
 .book-meta p {
@@ -218,8 +220,8 @@ body {
     font-weight: bold;
 }
 
-.status-pub { background-color: #d4edda; color: #155724; }
-.status-draft { background-color: #fff3cd; color: #856404; }
+.status-pub { background-color: #e0f2fe; color: #0369a1; }
+.status-draft { background-color: #fef3c7; color: #92400e; }
 
 /* ========================================== */
 /* DASHBOARD ACTION & FINANCIALS              */
@@ -242,7 +244,7 @@ body {
 
 .plus-circle {
     display: inline-block;
-    background-color: var(--text-dark);
+    background-color: var(--primary-green);
     color: var(--white);
     width: 32px;
     height: 32px;
@@ -283,7 +285,7 @@ body {
     display: flex;
     justify-content: space-between;
     padding: 10px 0;
-    border-bottom: 1px solid #f9f9f6;
+    border-bottom: 1px solid #f1f5f9;
     font-size: 13px;
 }
 
@@ -310,7 +312,7 @@ body {
 
 .withdraw-btn:hover, 
 .save-master-btn:hover {
-    background-color: #122b1e;
+    background-color: #1e293b;
 }
 
 /* ========================================== */
@@ -350,7 +352,7 @@ select:focus,
 textarea:focus {
     outline: none;
     border-color: var(--primary-green);
-    box-shadow: 0 0 0 2px rgba(27, 61, 43, 0.15);
+    box-shadow: 0 0 0 2px rgba(10, 25, 47, 0.15);
 }
 
 .mode-select-row {
@@ -391,7 +393,7 @@ textarea:focus {
 /* ========================================== */
 
 .legal-declaration-card {
-    background-color: #fbfbfa;
+    background-color: #f8fafc;
     border: 1px solid var(--border-tan);
     border-radius: 6px;
     padding: 18px;
@@ -502,8 +504,8 @@ textarea:focus {
 }
 
 .notif-card.unread {
-    background: #f4f8f5;
-    border-left: 3px solid var(--primary-green);
+    background: #f0f9ff;
+    border-left: 3px solid var(--primary-green-light);
 }
 
 /* ========================================== */
@@ -522,7 +524,7 @@ textarea:focus {
     left: 0;
     width: 100vw;
     height: 100vh;
-    background: rgba(0, 0, 0, 0.5);
+    background: rgba(15, 23, 42, 0.6);
     z-index: 1000;
     display: flex;
     align-items: center;

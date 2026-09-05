@@ -1,11 +1,12 @@
 :root {
-    --primary-green: #1b3d2b;
-    --accent-orange: #d97736;
-    --bg-cream: #f4f3ef;
-    --dark-text: #1a1a1a;
-    --card-bg: #eae7df;
+    /* Upnode Navy Blue Palette */
+    --primary-green: #0a192f;    /* Replaced Green with Upnode Dark Navy */
+    --accent-orange: #d97736;    /* Gold/Amber accent (or use #00bcd4 for Tech Cyan) */
+    --bg-cream: #f4f6f9;         /* Modern soft slate background */
+    --dark-text: #0f172a;        /* Deep slate for crisp readability */
+    --card-bg: #ffffff;         /* Clean white card backgrounds */
     --white: #ffffff;
-    --border-tan: #e2dfd7;
+    --border-tan: #e2e8f0;       /* Modern light border color */
 }
 
 body {
@@ -582,4 +583,91 @@ nav a:not(.nav-btn-secondary):not(.nav-btn-primary) {
 
 .main-site-btn:active {
     transform: translateY(1px);
+}
+/* ========================================== */
+/* PWA READER APP CALLOUT BANNER (UPNODE UI)  */
+/* ========================================== */
+
+.pwa-hero-callout {
+    margin: 24px auto 0 auto;
+    background: #ffffff;
+    border: 1px solid var(--border-tan);
+    border-radius: 10px;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    max-width: 520px;
+    text-align: left;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+    box-sizing: border-box;
+}
+
+.pwa-callout-icon {
+    font-size: 28px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.pwa-callout-content {
+    flex: 1;
+}
+
+.pwa-callout-title {
+    color: var(--primary-green) !important;
+    font-size: 15px;
+    font-weight: 700;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.pwa-callout-desc {
+    font-size: 12.5px;
+    color: #475569 !important;
+    margin: 0;
+    line-height: 1.35;
+    display: block;
+}
+
+.pwa-callout-btn {
+    background-color: var(--primary-green) !important;
+    color: var(--white) !important;
+    border: 1px solid var(--primary-green) !important;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 16px;
+    border-radius: 6px;
+    text-decoration: none !important;
+    white-space: nowrap;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease-in-out;
+}
+
+.pwa-callout-btn:hover {
+    background-color: #1e293b !important;
+    border-color: #1e293b !important;
+}
+
+/* Mobile responsive alignment */
+@media (max-width: 650px) {
+    .pwa-hero-callout {
+        flex-direction: column;
+        text-align: center;
+        gap: 12px;
+        padding: 16px;
+        max-width: 100%;
+        margin-top: 20px;
+    }
+
+    .pwa-callout-content {
+        width: 100%;
+    }
+
+    .pwa-callout-btn {
+        width: 100%;
+        padding: 10px 0;
+        box-sizing: border-box;
+    }
 }
