@@ -459,55 +459,5 @@
 
     <!-- External dashboard JS file -->
     <script src="/js/dashboard.js"></script>
-
-    <!-- UI Interaction Scripts -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // CATEGORY / SUB-THEME TOGGLE LOGIC
-            const categorySelect = document.getElementById('book-category');
-            const subThemeGroup = document.getElementById('sub-theme-group');
-
-            function handleCategoryChange() {
-                if (categorySelect && subThemeGroup) {
-                    if (categorySelect.value === 'Shona Novels') {
-                        subThemeGroup.style.display = 'block';
-                    } else {
-                        subThemeGroup.style.display = 'none';
-                    }
-                }
-            }
-
-            if (categorySelect) {
-                categorySelect.addEventListener('change', handleCategoryChange);
-                handleCategoryChange(); // Initial check on page load
-            }
-
-            // PUBLISH FORMAT & SECURITY RULE DISABLING LOGIC
-            const pdfRadio = document.getElementById('format-pdf');
-            const htmlRadio = document.getElementById('format-html');
-            const ruleSelect = document.getElementById('book-download-rule');
-
-            function handleFormatChange() {
-                if (htmlRadio && htmlRadio.checked) {
-                    // Web/HTML Books force App-Only streaming
-                    ruleSelect.value = "0";
-                    if (ruleSelect.options[1]) {
-                        ruleSelect.options[1].disabled = true;
-                    }
-                } else if (pdfRadio && pdfRadio.checked) {
-                    // PDF Books can toggle Open Distribution
-                    if (ruleSelect.options[1]) {
-                        ruleSelect.options[1].disabled = false;
-                    }
-                }
-            }
-
-            if (pdfRadio && htmlRadio && ruleSelect) {
-                pdfRadio.addEventListener('change', handleFormatChange);
-                htmlRadio.addEventListener('change', handleFormatChange);
-                handleFormatChange(); // Run once on page load
-            }
-        });
-    </script>
 </body>
 </html>
