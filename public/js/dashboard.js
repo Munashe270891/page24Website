@@ -111,6 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     loadDashboardBooks();
     loadNotifications();
+    loadSalesAnalytics(); // Pre-load balances for Dashboard View
 
     // -------------------------------------------------------------
     // 4. LOAD AUTHOR'S BOOKS (MY BOOKS DASHBOARD)
@@ -456,21 +457,36 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // -------------------------------------------------------------
-    // 8. SALES & ROYALTIES ANALYTICS
+    // 8. SALES & ROYALTIES ANALYTICS (75% / 20% / 5% Revenue Breakdown)
     // -------------------------------------------------------------
     function loadSalesAnalytics() {
         fetch('/api/analytics/sales')
             .then(res => res.json())
             .then(data => {
                 const totalEarnings = document.getElementById('stats-total-earnings');
+                const netRoyalties = document.getElementById('stats-net-royalties');
                 const totalSales = document.getElementById('stats-total-sales');
-                const earnedAmount = parseFloat(data.totalEarnings || 0).toFixed(2);
 
-                if (totalEarnings) totalEarnings.innerText = `$${earnedAmount}`;
+                const grossTotal = parseFloat(data.totalEarnings || 0);
+                const authorNet75 = (grossTotal * 0.75).toFixed(2);
+                const platformFee20 = (grossTotal * 0.20).toFixed(2);
+                const opsFee5 = (grossTotal * 0.05).toFixed(2);
+
+                if (totalEarnings) totalEarnings.innerText = `$${grossTotal.toFixed(2)}`;
+                if (netRoyalties) netRoyalties.innerText = `$${authorNet75}`;
                 if (totalSales) totalSales.innerText = data.totalSalesCount || 0;
 
+                // Update Main Dashboard Breakdown Card
                 const ecocashBal = document.getElementById('dashboard-ecocash-balance');
-                if (ecocashBal) ecocashBal.innerText = `$${earnedAmount} USD`;
+                const platformFee = document.getElementById('dashboard-platform-fee');
+                const opsFee = document.getElementById('dashboard-ops-fee');
+
+                if (ecocashBal) ecocashBal.innerText = `$${authorNet75} USD`;
+                if (platformFee) platformFee.innerText = `$${platformFee20} USD`;
+                if (opsFee) opsFee.innerText = `$${opsFee5} USD`;
+
+                // Render Activity Log in Dashboard View
+                const dashActivityLog = document.getElementById('dashboard-activity-log');
 
                 const breakdownList = document.getElementById('sales-breakdown-list');
                 if (breakdownList) {
@@ -479,9 +495,11 @@ document.addEventListener('DOMContentLoaded', () => {
                         breakdownList.innerHTML = '<p style="font-size: 13px; color: var(--text-muted, #777);">No sales recorded yet.</p>';
                     } else {
                         for (const [title, stats] of Object.entries(data.bookBreakdown)) {
+                            const bookGross = parseFloat(stats.earnings || 0);
+                            const bookNet = (bookGross * 0.75).toFixed(2);
                             const row = document.createElement('div');
                             row.style.cssText = "display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding: 8px 0; font-size: 13px;";
-                            row.innerHTML = `<span><strong>${title}</strong> (${stats.sales} sold)</span><strong style="color: var(--primary-green, #1b3d2b);">$${parseFloat(stats.earnings || 0).toFixed(2)}</strong>`;
+                            row.innerHTML = `<span><strong>${title}</strong> (${stats.sales} sold)</span><strong style="color: var(--primary-green, #1b3d2b);">$${bookNet} Net</strong>`;
                             breakdownList.appendChild(row);
                         }
                     }
@@ -490,43 +508,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 const txList = document.getElementById('recent-transactions-list');
                 if (txList) {
                     txList.innerHTML = '';
+                    if (dashActivityLog) dashActivityLog.innerHTML = '';
+
                     if (!data.recentTransactions || data.recentTransactions.length === 0) {
-                        txList.innerHTML = '<p style="font-size: 13px; color: var(--text-muted, #777);">No transactions available.</p>';
+                        const emptyMsg = '<p style="font-size: 13px; color: var(--text-muted, #777); padding: 10px 0;">No transactions available.</p>';
+                        txList.innerHTML = emptyMsg;
+                        if (dashActivityLog) dashActivityLog.innerHTML = emptyMsg;
                     } else {
                         data.recentTransactions.forEach(tx => {
-                            const row = document.createElement('div');
-                            row.className = 'log-item';
-                            row.innerHTML = `
+                            const salePrice = parseFloat(tx.sale_price || 0);
+                            const netEarned = (salePrice * 0.75).toFixed(2);
+
+                            const rowHtml = `
                                 <span><strong>${tx.buyer_name || 'Anonymous'}</strong> purchased <em>${tx.book_title}</em></span>
-                                <span style="color: var(--primary-green-light, #27ae60); font-weight: bold;">+$${parseFloat(tx.sale_price || 0).toFixed(2)}</span>
+                                <span style="color: var(--primary-green-light, #27ae60); font-weight: bold;">+$${netEarned}</span>
                             `;
-                            txList.appendChild(row);
+
+                            const txRow = document.createElement('div');
+                            txRow.className = 'log-item';
+                            txRow.innerHTML = rowHtml;
+                            txList.appendChild(txRow);
+
+                            if (dashActivityLog) {
+                                const logRow = document.createElement('div');
+                                logRow.className = 'log-item';
+                                logRow.style.cssText = "display: flex; justify-content: space-between; border-bottom: 1px solid #f0f0f0; padding: 8px 0; font-size: 12px;";
+                                logRow.innerHTML = rowHtml;
+                                dashActivityLog.appendChild(logRow);
+                            }
                         });
                     }
                 }
             })
             .catch(err => console.error("Error loading sales data:", err));
-    }
-
-    // Payout withdrawal handler
-    const withdrawBtn = document.querySelector('.withdraw-btn');
-    if (withdrawBtn) {
-        withdrawBtn.addEventListener('click', () => {
-            const phoneInput = document.getElementById('author-phone');
-            const phone = phoneInput ? phoneInput.value.trim() : '';
-
-            fetch('/api/payouts/request', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ phone })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (data.error) alert(`❌ ${data.error}`);
-                else alert("✅ Withdrawal request submitted successfully!");
-            })
-            .catch(err => alert("⚠️ Withdrawal request failed."));
-        });
     }
 
     // -------------------------------------------------------------
