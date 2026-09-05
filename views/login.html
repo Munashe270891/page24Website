@@ -3,12 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Page 24 - Portal Login</title>
+    <title>Page 24 - Portal Access</title>
     <link rel="stylesheet" href="/css/style.css">
     <style>
         .form-container {
             max-width: 400px;
-            margin: 100px auto;
+            margin: 60px auto;
             background: #fff;
             padding: 30px;
             border-radius: 8px;
@@ -22,13 +22,40 @@
             margin-bottom: 8px;
             font-weight: bold;
         }
-        .form-group input {
+        
+        /* Relative wrapper for custom password input + toggle button placement */
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+        .password-wrapper input {
+            width: 100%;
+            padding: 10px 40px 10px 10px; /* Space on right for toggle */
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        .toggle-password {
+            position: absolute;
+            right: 10px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+            color: #1b3d2b;
+            font-weight: bold;
+            padding: 0;
+        }
+
+        .form-group input:not(.password-wrapper input) {
             width: 100%;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
         }
+
         .form-btn {
             background: #1b3d2b;
             color: white;
@@ -50,57 +77,118 @@
         <p id="portal-subtext">Access your account to read, publish, and manage books.</p>
         <div id="error-msg" style="color: red; margin-bottom: 15px; font-weight: bold; display: none;"></div>
         
-        <form id="login-form">
+        <form id="auth-form">
             <div class="form-group">
                 <label for="email">Email Address</label>
                 <input type="email" id="email" required placeholder="you@email.com">
             </div>
+
+            <!-- Main Password Field with Visibility Toggle -->
             <div class="form-group">
                 <label for="password">Password</label>
-                <input type="password" id="password" required placeholder="••••••••">
+                <div class="password-wrapper">
+                    <input type="password" id="password" required placeholder="••••••••">
+                    <button type="button" class="toggle-password" onclick="togglePasswordVisibility('password', this)">Show</button>
+                </div>
             </div>
-            <button type="submit" class="form-btn">Log In</button>
+
+            <!-- Confirm Password Field (Shown only in Registration Mode) -->
+            <div class="form-group" id="confirm-password-group" style="display: none;">
+                <label for="confirm-password">Confirm Password</label>
+                <div class="password-wrapper">
+                    <input type="password" id="confirm-password" placeholder="••••••••">
+                    <button type="button" class="toggle-password" onclick="togglePasswordVisibility('confirm-password', this)">Show</button>
+                </div>
+            </div>
+
+            <button type="submit" id="submit-btn" class="form-btn">Log In</button>
         </form>
+
         <p style="margin-top: 20px; font-size: 14px; text-align: center;">
-            New here? <a id="register-link" href="/register" style="color: #d97736;">Register an account</a>
+            <span id="toggle-text">New here?</span> 
+            <a id="mode-toggle-link" href="#" style="color: #d97736;">Register an account</a>
         </p>
     </div>
 
     <script>
-        // Extract return parameter from URL (e.g. /login?returnTo=/read)
-        const urlParams = new URLSearchParams(window.location.search);
-        const returnTo = urlParams.get('returnTo');
+        let isSignUpMode = false;
 
-        // Adjust UI context if user came from Reader App
-        if (returnTo && returnTo.includes('/read')) {
-            document.getElementById('portal-title').textContent = "Reader & Author Sign In";
-            document.getElementById('portal-subtext').textContent = "Sign in to access your digital library and purchased books.";
-            document.getElementById('register-link').href = `/register?returnTo=${encodeURIComponent(returnTo)}`;
+        // Toggle password visibility (Type switch between password and text)
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.textContent = 'Hide';
+            } else {
+                input.type = 'password';
+                btn.textContent = 'Show';
+            }
         }
 
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
+        // Toggle UI mode between Login and Sign Up
+        const modeToggleLink = document.getElementById('mode-toggle-link');
+        const confirmPasswordGroup = document.getElementById('confirm-password-group');
+        const confirmPasswordInput = document.getElementById('confirm-password');
+        const submitBtn = document.getElementById('submit-btn');
+        const portalTitle = document.getElementById('portal-title');
+        const portalSubtext = document.getElementById('portal-subtext');
+        const toggleText = document.getElementById('toggle-text');
+        const errorMsg = document.getElementById('error-msg');
+
+        modeToggleLink.addEventListener('click', (e) => {
             e.preventDefault();
+            isSignUpMode = !isSignUpMode;
+            errorMsg.style.display = 'none';
+
+            if (isSignUpMode) {
+                portalTitle.textContent = "Create Account";
+                portalSubtext.textContent = "Sign up to start reading and publishing Zimbabwean stories.";
+                submitBtn.textContent = "Register";
+                toggleText.textContent = "Already have an account?";
+                modeToggleLink.textContent = "Log In";
+                confirmPasswordGroup.style.display = 'block';
+                confirmPasswordInput.required = true;
+            } else {
+                portalTitle.textContent = "Portal Login";
+                portalSubtext.textContent = "Access your account to read, publish, and manage books.";
+                submitBtn.textContent = "Log In";
+                toggleText.textContent = "New here?";
+                modeToggleLink.textContent = "Register an account";
+                confirmPasswordGroup.style.display = 'none';
+                confirmPasswordInput.required = false;
+            }
+        });
+
+        // Form Submission with Password Confirmation Check
+        document.getElementById('auth-form').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            errorMsg.style.display = 'none';
+
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
-            const errorMsg = document.getElementById('error-msg');
+            const confirmPassword = confirmPasswordInput.value;
+
+            // Validate duplicate passwords during sign up
+            if (isSignUpMode && password !== confirmPassword) {
+                errorMsg.textContent = "Passwords do not match. Please try again.";
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            const endpoint = isSignUpMode ? '/api/auth/register' : '/api/auth/login';
 
             try {
-                const response = await fetch('/api/auth/login', {
+                const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        email, 
-                        password,
-                        redirectTo: returnTo || null // Pass origin destination
-                    })
+                    body: JSON.stringify({ email, password })
                 });
 
                 const data = await response.json();
                 if (response.ok && data.success) {
-                    // Smart redirect based on backend determination or returnTo URL
                     window.location.href = data.redirectUrl || '/read';
                 } else {
-                    errorMsg.textContent = data.error || "Invalid login details.";
+                    errorMsg.textContent = data.error || "Authentication failed.";
                     errorMsg.style.display = 'block';
                 }
             } catch (err) {
