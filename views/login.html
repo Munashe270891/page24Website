@@ -85,6 +85,12 @@
                 </select>
             </div>
 
+            <!-- Username Field (Shown only in Registration Mode) -->
+            <div class="form-group" id="username-group" style="display: none;">
+                <label for="username">Username</label>
+                <input type="text" id="username" placeholder="johndoe">
+            </div>
+
             <div class="form-group">
                 <label for="email">Email Address</label>
                 <input type="email" id="email" required placeholder="you@email.com">
@@ -132,6 +138,8 @@
         }
 
         const modeToggleLink = document.getElementById('mode-toggle-link');
+        const usernameGroup = document.getElementById('username-group');
+        const usernameInput = document.getElementById('username');
         const confirmPasswordGroup = document.getElementById('confirm-password-group');
         const confirmPasswordInput = document.getElementById('confirm-password');
         const roleGroup = document.getElementById('role-group');
@@ -153,8 +161,12 @@
                 submitBtn.textContent = "Register";
                 toggleText.textContent = "Already have an account?";
                 modeToggleLink.textContent = "Log In";
+                
+                usernameGroup.style.display = 'block';
                 confirmPasswordGroup.style.display = 'block';
                 roleGroup.style.display = 'block';
+                
+                usernameInput.required = true;
                 confirmPasswordInput.required = true;
             } else {
                 portalTitle.textContent = "Portal Login";
@@ -162,8 +174,12 @@
                 submitBtn.textContent = "Log In";
                 toggleText.textContent = "New here?";
                 modeToggleLink.textContent = "Register an account";
+                
+                usernameGroup.style.display = 'none';
                 confirmPasswordGroup.style.display = 'none';
                 roleGroup.style.display = 'none';
+                
+                usernameInput.required = false;
                 confirmPasswordInput.required = false;
             }
         });
@@ -172,7 +188,8 @@
             e.preventDefault();
             errorMsg.style.display = 'none';
 
-            const email = document.getElementById('email').value;
+            const username = usernameInput.value.trim();
+            const email = document.getElementById('email').value.trim();
             const password = document.getElementById('password').value;
             const confirmPassword = confirmPasswordInput.value;
             const role = roleSelect.value;
@@ -185,7 +202,7 @@
 
             const endpoint = isSignUpMode ? '/api/auth/register' : '/api/auth/login';
             const payload = isSignUpMode 
-                ? { email, password, role } 
+                ? { username, email, password, role } 
                 : { email, password };
 
             try {
@@ -196,8 +213,25 @@
                 });
 
                 const data = await response.json();
-                if (response.ok && data.success) {
-                    window.location.href = data.redirectUrl || '/read';
+
+                if (response.ok && (data.success || isSignUpMode)) {
+                    if (isSignUpMode) {
+                        // Automatically authenticate user right after successful registration
+                        const loginRes = await fetch('/api/auth/login', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ email, password })
+                        });
+                        const loginData = await loginRes.json();
+
+                        if (loginRes.ok && loginData.redirectUrl) {
+                            window.location.href = loginData.redirectUrl;
+                        } else {
+                            window.location.href = '/login';
+                        }
+                    } else {
+                        window.location.href = data.redirectUrl || '/read';
+                    }
                 } else {
                     errorMsg.textContent = data.error || "Authentication failed.";
                     errorMsg.style.display = 'block';
