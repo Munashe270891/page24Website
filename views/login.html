@@ -22,8 +22,6 @@
             margin-bottom: 8px;
             font-weight: bold;
         }
-        
-        /* Relative wrapper for custom password input + toggle button placement */
         .password-wrapper {
             position: relative;
             display: flex;
@@ -31,7 +29,7 @@
         }
         .password-wrapper input {
             width: 100%;
-            padding: 10px 40px 10px 10px; /* Space on right for toggle */
+            padding: 10px 40px 10px 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
@@ -47,15 +45,15 @@
             font-weight: bold;
             padding: 0;
         }
-
-        .form-group input:not(.password-wrapper input) {
+        .form-group input:not(.password-wrapper input), 
+        .form-group select {
             width: 100%;
             padding: 10px;
             border: 1px solid #ccc;
             border-radius: 4px;
             box-sizing: border-box;
+            background: #fff;
         }
-
         .form-btn {
             background: #1b3d2b;
             color: white;
@@ -78,12 +76,21 @@
         <div id="error-msg" style="color: red; margin-bottom: 15px; font-weight: bold; display: none;"></div>
         
         <form id="auth-form">
+            <!-- Account Type (Shown only in Registration Mode) -->
+            <div class="form-group" id="role-group" style="display: none;">
+                <label for="role">Account Type</label>
+                <select id="role">
+                    <option value="reader">Reader (Browse & Buy Books)</option>
+                    <option value="author">Author (Publish & Sell Books)</option>
+                </select>
+            </div>
+
             <div class="form-group">
                 <label for="email">Email Address</label>
                 <input type="email" id="email" required placeholder="you@email.com">
             </div>
 
-            <!-- Main Password Field with Visibility Toggle -->
+            <!-- Password Field with Toggle -->
             <div class="form-group">
                 <label for="password">Password</label>
                 <div class="password-wrapper">
@@ -113,7 +120,6 @@
     <script>
         let isSignUpMode = false;
 
-        // Toggle password visibility (Type switch between password and text)
         function togglePasswordVisibility(inputId, btn) {
             const input = document.getElementById(inputId);
             if (input.type === 'password') {
@@ -125,10 +131,11 @@
             }
         }
 
-        // Toggle UI mode between Login and Sign Up
         const modeToggleLink = document.getElementById('mode-toggle-link');
         const confirmPasswordGroup = document.getElementById('confirm-password-group');
         const confirmPasswordInput = document.getElementById('confirm-password');
+        const roleGroup = document.getElementById('role-group');
+        const roleSelect = document.getElementById('role');
         const submitBtn = document.getElementById('submit-btn');
         const portalTitle = document.getElementById('portal-title');
         const portalSubtext = document.getElementById('portal-subtext');
@@ -147,6 +154,7 @@
                 toggleText.textContent = "Already have an account?";
                 modeToggleLink.textContent = "Log In";
                 confirmPasswordGroup.style.display = 'block';
+                roleGroup.style.display = 'block';
                 confirmPasswordInput.required = true;
             } else {
                 portalTitle.textContent = "Portal Login";
@@ -155,11 +163,11 @@
                 toggleText.textContent = "New here?";
                 modeToggleLink.textContent = "Register an account";
                 confirmPasswordGroup.style.display = 'none';
+                roleGroup.style.display = 'none';
                 confirmPasswordInput.required = false;
             }
         });
 
-        // Form Submission with Password Confirmation Check
         document.getElementById('auth-form').addEventListener('submit', async (e) => {
             e.preventDefault();
             errorMsg.style.display = 'none';
@@ -167,8 +175,8 @@
             const email = document.getElementById('email').value;
             const password = document.getElementById('password').value;
             const confirmPassword = confirmPasswordInput.value;
+            const role = roleSelect.value;
 
-            // Validate duplicate passwords during sign up
             if (isSignUpMode && password !== confirmPassword) {
                 errorMsg.textContent = "Passwords do not match. Please try again.";
                 errorMsg.style.display = 'block';
@@ -176,12 +184,15 @@
             }
 
             const endpoint = isSignUpMode ? '/api/auth/register' : '/api/auth/login';
+            const payload = isSignUpMode 
+                ? { email, password, role } 
+                : { email, password };
 
             try {
                 const response = await fetch(endpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify(payload)
                 });
 
                 const data = await response.json();
