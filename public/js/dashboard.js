@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (error) {
             console.error('Failed to fetch author books:', error);
-            container.innerHTML = `<p style="color: var(--danger-red, #dc3545);">Unable to load books: ${escapeText(error.message)}</p>`;
+            container.innerHTML = `<p style=\"color: var(--danger-red, #dc3545);\">Unable to load books: ${escapeText(error.message)}</p>`;
         }
     }
 
@@ -487,7 +487,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (error) {
             console.error('Error loading chapters:', error);
-            list.innerHTML = '<p style="font-size: 12px; color: var(--text-muted, #777);">Unable to load chapters.</p>';
+            list.innerHTML = '<p style=\"font-size: 12px; color: var(--text-muted, #777);\">Unable to load chapters.</p>';
         }
     }
 
@@ -576,7 +576,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (dashActivityLog) dashActivityLog.innerHTML = '';
 
                 if (!data.recentTransactions || data.recentTransactions.length === 0) {
-                    const emptyMsg = '<p style="font-size: 13px; color: var(--text-muted, #777); padding: 10px 0;">No transactions available.</p>';
+                    const emptyMsg = '<p style=\"font-size: 13px; color: var(--text-muted, #777); padding: 10px 0;\">No transactions available.</p>';
                     txList.innerHTML = emptyMsg;
                     if (dashActivityLog) dashActivityLog.innerHTML = emptyMsg;
                     return;
