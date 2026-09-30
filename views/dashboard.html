@@ -220,7 +220,12 @@
                             <label class="input-label">FIRST CHAPTER TITLE</label>
                             <input type="text" id="initial-chapter-title" placeholder="e.g. Chapter 1: The Journey Begins">
                             
-                            <label class="input-label">FIRST CHAPTER BODY CONTENT</label>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; margin-bottom: 5px;">
+                                <label class="input-label" style="margin: 0;">FIRST CHAPTER BODY CONTENT</label>
+                                <button type="button" onclick="openLayoutFormatter('initial-chapter-body')" style="background: var(--primary-green, #1b3d2b); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;">
+                                    ✨ Format Layout
+                                </button>
+                            </div>
                             <textarea id="initial-chapter-body" rows="10" placeholder="Paste or type your chapter text here..."></textarea>
                         </div>
 
@@ -282,10 +287,15 @@
                             <label class="input-label">CHAPTER TITLE</label>
                             <input type="text" id="new-chapter-title" placeholder="e.g. Chapter 2: Into the Forest" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
 
-                            <label class="input-label">CHAPTER CONTENT</label>
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                                <label class="input-label" style="margin: 0;">CHAPTER CONTENT</label>
+                                <button type="button" onclick="openLayoutFormatter('new-chapter-body')" style="background: var(--primary-green, #1b3d2b); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;">
+                                    ✨ Format Layout
+                                </button>
+                            </div>
                             <textarea id="new-chapter-body" rows="12" placeholder="Start writing or paste chapter content here..." style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required></textarea>
 
-                            <button type="submit" class="save-master-btn" style="background: var(--primary-green, #1e4d2b); color: white;">Save and Publish Chapter</button>
+                            <button type="submit" class="save-master-btn" style="background: var(--primary-green, #1b3d2b); color: white;">Save and Publish Chapter</button>
                         </form>
                     </div>
 
@@ -392,7 +402,8 @@
         </div>
     </div>
 
-    <!-- External dashboard JS file -->
+    <!-- External formatting utility and dashboard JS files -->
+    <script src="/js/formatter.js"></script>
     <script src="/js/dashboard.js"></script>
 </body>
 </html>
