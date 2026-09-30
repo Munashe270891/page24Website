@@ -2,20 +2,80 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- Viewport optimized for mobile apps with Capacitor safe-area support -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Page 24 - Zimbabwean Voices, Reimagined</title>
     <!-- Cache-busting query parameter added to force browser/Render CSS refresh -->
     <link rel="stylesheet" href="/css/style.css?v=2.2">
+    <!-- Font Awesome for native-style bottom nav icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Native App Shell UI Enhancements (Non-breaking inline additions) */
+        body {
+            padding-bottom: env(safe-area-inset-bottom, 70px); /* Prevent bottom nav overlap */
+            overscroll-behavior-y: none; /* Disables rubber-band native browser bounce */
+        }
+        header {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+            background: rgba(27, 61, 43, 0.95);
+            padding-top: max(12px, env(safe-area-inset-top));
+        }
+        .category-pills-row, .subthemes-pills-row {
+            overflow-x: auto;
+            scrollbar-width: none;
+            -webkit-overflow-scrolling: touch;
+        }
+        .category-pills-row::-webkit-scrollbar, .subthemes-pills-row::-webkit-scrollbar {
+            display: none;
+        }
+        /* Native App Bottom Tab Bar */
+        .app-bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            background: #ffffff;
+            border-top: 1px solid #e3e1d5;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 1000;
+            padding-bottom: env(safe-area-inset-bottom, 0);
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.05);
+        }
+        .app-nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-decoration: none;
+            color: #666;
+            font-size: 11px;
+            font-weight: 600;
+            flex: 1;
+            transition: color 0.2s;
+        }
+        .app-nav-item.active {
+            color: var(--primary-green, #1b3d2b);
+        }
+        .app-nav-item i {
+            font-size: 18px;
+            margin-bottom: 2px;
+        }
+    </style>
 </head>
 <body>
 
     <header>
         <div class="logo">PAGE 24</div>
         <nav class="nav-button-group">
-            <a href="#category-filter-section" id="browse-books-btn" class="nav-btn-secondary">Browse Books</a>
-            <a href="/read" class="nav-btn-secondary" title="Open Page 24 Reader PWA">📱 Open Reader App</a>
+            <a href="#category-filter-section" id="browse-books-btn" class="nav-btn-secondary" style="display:none;">Browse</a>
+            <a href="/read" class="nav-btn-secondary" title="Open Reader App">📱 Reader</a>
             <a href="/login" id="auth-nav-btn" class="nav-btn-secondary">Sign In</a>
-            <a href="/dashboard" class="nav-btn-primary">Author Portal</a>
+            <a href="/dashboard" class="nav-btn-primary">Author</a>
         </nav>
     </header>
 
@@ -24,10 +84,9 @@
     <!-- ========================================== -->
     <aside class="ad-container ad-header-slot" aria-label="Advertisement">
         <div class="ad-content">
-            <!-- DEFAULT: Internal House Ad / Promo -->
             <div class="house-ad">
                 <span class="ad-badge">PROMO</span>
-                <p>Are you a writer? <strong>Publish your books on Page 24 today</strong> and earn directly via EcoCash & OneMoney!</p>
+                <p>Are you a writer? <strong>Publish your books on Page 24 today</strong> and earn directly via EcoCash &amp; OneMoney!</p>
                 <a href="/dashboard" class="ad-cta-btn">Start Publishing</a>
             </div>
         </div>
@@ -35,7 +94,7 @@
 
     <section class="hero">
         <h1>Zimbabwean Voices, Reimagined</h1>
-        <p>Discover locally published books. Simple ecosystem payments using EcoCash & OneMoney.</p>
+        <p>Discover locally published books. Simple ecosystem payments using EcoCash &amp; OneMoney.</p>
         
         <!-- SEARCH BAR CONTAINER COMPONENT -->
         <div class="search-container" style="margin-top: 25px;">
@@ -52,13 +111,13 @@
             <button class="cat-pill active" onclick="filterByCategory('All', this)">All Books</button>
             <button class="cat-pill" onclick="filterByCategory('Shona Novels', this)">Shona Novels</button>
             <button class="cat-pill" onclick="filterByCategory('Motivational', this)">Motivational</button>
-            <button class="cat-pill" onclick="filterByCategory('Dating & Relationships', this)">Dating & Relationships</button>
+            <button class="cat-pill" onclick="filterByCategory('Dating &amp; Relationships', this)">Dating &amp; Relationships</button>
             <button class="cat-pill" onclick="filterByCategory('Christian Devotional', this)">Christian Devotional</button>
             <button class="cat-pill" onclick="filterByCategory('Business', this)">Business</button>
             <button class="cat-pill" onclick="filterByCategory('Other', this)">Other</button>
         </div>
 
-        <!-- DYNAMIC SHONA SUB-THEMES ROW (Shown only when Shona Novels is active) -->
+        <!-- DYNAMIC SHONA SUB-THEMES ROW -->
         <div id="shona-subthemes-row" class="subthemes-pills-row" style="display: none;">
             <span class="sub-label">Shona Theme:</span>
             <button class="sub-pill active" onclick="filterBySubTheme('All', this)">All Themes</button>
@@ -91,7 +150,7 @@
     <!-- ========================================== -->
     <!-- BOOK DETAIL PREVIEW MODAL OVERLAY          -->
     <!-- ========================================== -->
-    <div id="preview-modal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; justify-content: center; align-items: center;">
+    <div id="preview-modal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center;">
         <div class="modal-content" style="background: var(--bg-cream-light, #fdfcf7); padding: 25px; border-radius: 8px; max-width: 550px; width: 90%; position: relative; border: 1px solid var(--border-tan, #e3e1d5); box-shadow: 0 5px 15px rgba(0,0,0,0.2); max-height: 90vh; overflow-y: auto;">
             <span id="close-modal-btn" style="position: absolute; top: 15px; right: 20px; font-size: 24px; cursor: pointer; color: var(--text-dark, #2a2d2b); font-weight: bold;">&times;</span>
             
@@ -113,8 +172,24 @@
         </div>
     </div>
 
-    <!-- SITE FOOTER -->
-    <footer class="site-footer">
+    <!-- NATIVE APP BOTTOM TAB BAR (Bridges Web & Capacitor App Experience) -->
+    <nav class="app-bottom-nav">
+        <a href="/" class="app-nav-item active">
+            <i class="fas fa-store"></i>
+            <span>Store</span>
+        </a>
+        <a href="/read" class="app-nav-item">
+            <i class="fas fa-book-open"></i>
+            <span>My Library</span>
+        </a>
+        <a href="/dashboard" class="app-nav-item">
+            <i class="fas fa-user-pen"></i>
+            <span>Author Hub</span>
+        </a>
+    </nav>
+
+    <!-- SITE FOOTER (Hidden elegantly under bottom nav spacing) -->
+    <footer class="site-footer" style="margin-bottom: 60px;">
         <div class="footer-content">
             <p class="copyright-text">
                 &copy; 2026 Page 24 Digital Publishing Platform. A product of <strong>Upnode Technologies (PVT LTD) in Partnership with Pearl Press Media Publishing Company</strong>. All rights reserved.
