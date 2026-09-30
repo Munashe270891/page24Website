@@ -22,6 +22,10 @@ app.use('/api/author', require('./routes/author'));
 app.use('/api/books', require('./routes/books'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/admin', require('./routes/admin'));
+// --- NEW POD PRINT-ON-DEMAND ROUTES ---
+app.use('/api/print-files', require('./routes/printFiles'));
+app.use('/api/shipping', require('./routes/shipping'));
+app.use('/api/physical-orders', require('./routes/physicalOrders'));
 
 // --- HTML VIEW ROUTES ---
 app.get('/', (req, res) => {
