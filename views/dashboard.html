@@ -18,10 +18,12 @@
                     <span class="logo-icon">🇿🇼</span>
                     <span class="logo-text">Page 24</span>
                 </div>
-                <div class="welcome-tag">Welcome 👤</div>
+                <!-- MOVED SIGN OUT BUTTON HERE NEXT TO BRAND/LOGO AREA -->
+                <a href="/api/auth/logout" style="background-color: #d97736; color: #ffffff; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; text-decoration: none; display: inline-block;">🚪 Sign Out</a>
             </div>
+            <div class="welcome-tag" style="margin-top: 8px;">Welcome 👤</div>
 
-            <nav class="side-menu">
+            <nav class="side-menu" style="margin-top: 15px;">
                 <a href="#" class="menu-item active" id="menu-dash" onclick="switchTab('dashboard-view', event)">📊 My Books Dashboard</a>
                 <a href="#" class="menu-item" id="menu-create" onclick="switchTab('creator-view', event)">➕ Create New Book</a>
                 <a href="#" class="menu-item" id="menu-studio" onclick="switchTab('studio-view', event)">✍️ Write Online (Web Studio)</a>
@@ -50,8 +52,7 @@
                         📚 Browse Main Library
                     </a>
                 </div>
-
-                <a href="/api/auth/logout" style="color: #d97736; font-weight: bold; margin-top: 20px; display: block; text-decoration: none; padding: 10px;">🚪 Sign Out</a>
+                <!-- (Sign out link removed from bottom of the nav since it's now at the top) -->
             </nav>
         </aside>
 
