@@ -209,7 +209,7 @@
                         <!-- Conditional Input field 1: For PDF Authors -->
                         <div id="pdf-input-group" class="conditional-group">
                             <label class="input-label">UPLOAD PDF MANUSCRIPT</label>
-                            <input type="file" id="pdf-upload" accept=".pdf">
+                            <input type="file" id="pdf-upload" name="pdfFile" accept=".pdf">
                         </div>
 
                         <!-- Conditional Input field 2: For Web Book Authors -->
@@ -383,16 +383,31 @@
 
     <!-- EDIT BOOK DETAILS POPUP MODAL -->
     <div id="edit-book-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div style="background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 500px; box-sizing: border-box; border: 1px solid var(--border-tan, #ccc);">
+        <div style="background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-sizing: border-box; border: 1px solid var(--border-tan, #ccc);">
             <h2 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">📝 Edit Book Profile</h2>
             <form id="edit-book-form">
                 <input type="hidden" id="edit-book-id">
                 
                 <label class="input-label">UPDATE SUMMARY / DESCRIPTION</label>
-                <textarea id="edit-book-description" rows="5" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required></textarea>
+                <textarea id="edit-book-description" rows="4" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required></textarea>
 
                 <label class="input-label">UPDATE PRICE (USD)</label>
-                <input type="number" id="edit-book-price" step="0.01" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 20px;" required>
+                <input type="number" id="edit-book-price" step="0.01" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
+
+                <!-- OPTIONAL PDF REPLACEMENT FILE INPUT -->
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label class="input-label">REPLACE PDF MANUSCRIPT (Optional)</label>
+                    <input type="file" id="edit-book-pdf-file" name="pdfFile" accept=".pdf" style="display: block; width: 100%; padding: 8px; border: 1px solid var(--border-tan, #ccc); border-radius: 4px; background-color: var(--bg-cream-light, #fafafa);">
+                    <small style="color: var(--text-muted, #777); font-size: 11px;">Upload a new PDF file only if you want to swap out the existing manuscript.</small>
+                </div>
+
+                <!-- DYNAMIC HTML CHAPTER EDITOR & FORMATTER CONTAINER -->
+                <div id="edit-chapter-group" class="form-group" style="margin-bottom: 15px; display: none;">
+                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">SELECT CHAPTER TO EDIT</label>
+                    <select id="edit-chapter-select" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 10px;"></select>
+                </div>
+
+                <textarea id="edit-book-content" rows="8" placeholder="Chapter content..." style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 20px; display: none;"></textarea>
 
                 <div style="display: flex; gap: 10px; justify-content: flex-end;">
                     <button type="button" id="close-modal-btn" style="background: #ccc; color: black; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer;">Cancel</button>
