@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (error) {
             console.error('Failed to fetch author books:', error);
-            container.innerHTML = `<p style=\"color: var(--danger-red, #dc3545);\">Unable to load books: ${escapeText(error.message)}</p>`;
+            container.innerHTML = `<p style="color: var(--danger-red, #dc3545);">Unable to load books: ${escapeText(error.message)}</p>`;
         }
     }
 
@@ -341,29 +341,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 const phone = document.getElementById('author-phone');
                 const isbn = document.getElementById('author-isbn');
                 const bio = document.getElementById('author-bio');
-                const fbHandle = document.getElementById('author-fb-handle');
-                const ttHandle = document.getElementById('author-tt-handle');
-                const twHandle = document.getElementById('author-tw-handle');
-                const igHandle = document.getElementById('author-ig-handle');
-
-                const showFb = document.getElementById('show-fb');
-                const showTt = document.getElementById('show-tt');
-                const showTw = document.getElementById('show-tw');
-                const showIg = document.getElementById('show-ig');
 
                 if (legalName) legalName.value = data.legal_name || data.legalName || '';
                 if (phone) phone.value = data.phone || '';
                 if (isbn) isbn.value = data.isbn || '';
                 if (bio) bio.value = data.bio || '';
-                if (fbHandle) fbHandle.value = data.facebook_handle || data.facebookHandle || '';
-                if (ttHandle) ttHandle.value = data.tiktok_handle || data.tiktokHandle || '';
-                if (twHandle) twHandle.value = data.twitter_handle || data.twitterHandle || '';
-                if (igHandle) igHandle.value = data.instagram_handle || data.instagramHandle || '';
-
-                if (showFb) showFb.checked = data.show_facebook !== undefined ? Boolean(data.show_facebook) : true;
-                if (showTt) showTt.checked = data.show_tiktok !== undefined ? Boolean(data.show_tiktok) : true;
-                if (showTw) showTw.checked = data.show_twitter !== undefined ? Boolean(data.show_twitter) : true;
-                if (showIg) showIg.checked = data.show_instagram !== undefined ? Boolean(data.show_instagram) : true;
             })
             .catch((error) => {
                 console.error('Failed to load author profile:', error);
@@ -383,10 +365,6 @@ document.addEventListener('DOMContentLoaded', () => {
             const isbnDocInput = document.getElementById('author-isbn-proof');
             const profilePicInput = document.getElementById('author-profile-pic');
             const bioInput = document.getElementById('author-bio');
-            const fbHandleInput = document.getElementById('author-fb-handle');
-            const ttHandleInput = document.getElementById('author-tt-handle');
-            const twHandleInput = document.getElementById('author-tw-handle');
-            const igHandleInput = document.getElementById('author-ig-handle');
 
             if (legalNameInput) formData.set('legalName', legalNameInput.value.trim());
             if (phoneInput) formData.set('phone', phoneInput.value.trim());
@@ -394,15 +372,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (isbnDocInput && isbnDocInput.files[0]) formData.set('isbnDoc', isbnDocInput.files[0]);
             if (profilePicInput && profilePicInput.files[0]) formData.set('profilePic', profilePicInput.files[0]);
             if (bioInput) formData.set('bio', bioInput.value.trim());
-            if (fbHandleInput) formData.set('facebookHandle', fbHandleInput.value.trim());
-            if (ttHandleInput) formData.set('tiktokHandle', ttHandleInput.value.trim());
-            if (twHandleInput) formData.set('twitterHandle', twHandleInput.value.trim());
-            if (igHandleInput) formData.set('instagramHandle', igHandleInput.value.trim());
-
-            formData.set('showFacebook', document.getElementById('show-fb')?.checked ? 'true' : 'false');
-            formData.set('showTiktok', document.getElementById('show-tt')?.checked ? 'true' : 'false');
-            formData.set('showTwitter', document.getElementById('show-tw')?.checked ? 'true' : 'false');
-            formData.set('showInstagram', document.getElementById('show-ig')?.checked ? 'true' : 'false');
 
             try {
                 const result = await apiFetch('/api/author/profile', {
@@ -487,7 +456,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (error) {
             console.error('Error loading chapters:', error);
-            list.innerHTML = '<p style=\"font-size: 12px; color: var(--text-muted, #777);\">Unable to load chapters.</p>';
+            list.innerHTML = '<p style="font-size: 12px; color: var(--text-muted, #777);">Unable to load chapters.</p>';
         }
     }
 
@@ -576,7 +545,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (dashActivityLog) dashActivityLog.innerHTML = '';
 
                 if (!data.recentTransactions || data.recentTransactions.length === 0) {
-                    const emptyMsg = '<p style=\"font-size: 13px; color: var(--text-muted, #777); padding: 10px 0;\">No transactions available.</p>';
+                    const emptyMsg = '<p style="font-size: 13px; color: var(--text-muted, #777); padding: 10px 0;">No transactions available.</p>';
                     txList.innerHTML = emptyMsg;
                     if (dashActivityLog) dashActivityLog.innerHTML = emptyMsg;
                     return;
