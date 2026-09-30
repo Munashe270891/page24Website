@@ -70,33 +70,48 @@ window.addEventListener('beforeinstallprompt', (e) => {
     deferredPrompt = e;
 });
 
-installBtn.addEventListener('click', () => {
-    if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.then(() => deferredPrompt = null);
-    } else {
-        alert("To install Page 24 Reader App:\n\n• Mobile: Tap browser menu -> 'Add to Home Screen'\n• Desktop: Click the Install icon in your address bar.");
-    }
-});
+if (installBtn) {
+    installBtn.addEventListener('click', () => {
+        if (deferredPrompt) {
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(() => deferredPrompt = null);
+        } else {
+            alert("To install Page 24 Reader App:\n\n• Mobile: Tap browser menu -> 'Add to Home Screen'\n• Desktop: Click the Install icon in your address bar.");
+        }
+    });
+}
 
-// 3. Tab Navigation
-function switchTab(tabName) {
-    document.querySelectorAll('.tab-screen').forEach(s => s.classList.remove('active'));
+// 3. Unified Tab Navigation
+function switchTab(tabName, element) {
+    document.querySelectorAll('.tab-screen').forEach(s => {
+        s.classList.remove('active');
+        s.style.display = 'none';
+    });
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
 
+    const targetScreen = document.getElementById('screen-' + tabName);
+    if (targetScreen) {
+        targetScreen.classList.add('active');
+        targetScreen.style.display = 'block';
+    }
+
+    if (element) {
+        element.classList.add('active');
+    } else {
+        // Fallback button matching if called without element reference
+        const btnIndex = tabName === 'library' ? 0 : tabName === 'read' ? 1 : 2;
+        const buttons = document.querySelectorAll('.tab-btn');
+        if (buttons[btnIndex]) buttons[btnIndex].classList.add('active');
+    }
+
+    const headerTitle = document.getElementById('top-header-title');
     if (tabName === 'read') {
-        document.getElementById('screen-read').classList.add('active');
-        document.querySelectorAll('.tab-btn')[1].classList.add('active');
-        document.getElementById('top-header-title').textContent = currentBookTitle || "📖 Read Now";
+        if (headerTitle) headerTitle.textContent = currentBookTitle || "📖 Read Now";
     } else if (tabName === 'store') {
-        document.getElementById('screen-store').classList.add('active');
-        document.querySelectorAll('.tab-btn')[2].classList.add('active');
-        document.getElementById('top-header-title').textContent = "🛒 Page 24 Store";
+        if (headerTitle) headerTitle.textContent = "🛒 Page 24 Store";
         if (typeof loadPublicCatalog === 'function') loadPublicCatalog();
     } else if (tabName === 'library') {
-        document.getElementById('screen-library').classList.add('active');
-        document.querySelectorAll('.tab-btn')[0].classList.add('active');
-        document.getElementById('top-header-title').textContent = "📚 My Books";
+        if (headerTitle) headerTitle.textContent = "📚 My Books";
         loadUserLibrary();
     }
 }
@@ -131,7 +146,6 @@ async function openBook(bookId) {
         } else {
             document.getElementById('html-wrapper').style.display = 'block';
             
-            // Attempt multi-chapter retrieval
             try {
                 const chapRes = await fetch(`/api/books/${bookId}/chapters`);
                 if (chapRes.ok) {
@@ -145,11 +159,11 @@ async function openBook(bookId) {
                 }
             } catch(e) { console.warn("Single chapter mode fallback active"); }
 
-            // Single chapter fallback from secure-source
             document.getElementById('chapter-title').textContent = book.chapterTitle || book.title;
             document.getElementById('chapter-content').innerHTML = book.chapterBody || "No text body available.";
         }
     } catch (err) {
+        document.getElementById('status-text').style.display = 'block';
         document.getElementById('status-text').textContent = "Unable to load book content. Please log in or confirm purchase.";
     }
 }
@@ -189,7 +203,8 @@ function renderPdfView(pdfUrl) {
     }).catch(err => {
         console.error("PDF Render error:", err);
         document.getElementById('status-text').style.display = 'block';
-        document.getElementById('status-text'].textContent = "Error rendering PDF file.";
+        // FIXED: Replaced invalid closing bracket ']' with parentheses ')'
+        document.getElementById('status-text').textContent = "Error rendering PDF file.";
     });
 }
 
@@ -240,20 +255,17 @@ if (readerScreen) {
 function handleSwipeGesture() {
     const diffX = touchEndX - touchStartX;
     const diffY = touchEndY - touchStartY;
-    const threshold = 50; // Minimum pixel drag to qualify as a swipe
+    const threshold = 50;
 
-    // Determine if swipe was mostly horizontal or vertical
     if (Math.abs(diffX) > Math.abs(diffY)) {
         if (Math.abs(diffX) > threshold) {
             if (diffX > 0) {
-                // Swipe Right -> Previous Chapter / Page
                 if (currentChapters.length > 1) {
                     navigateChapter(-1);
                 } else if (pdfDoc && pageNum > 1) {
                     pageNum--; renderPage(pageNum);
                 }
             } else {
-                // Swipe Left -> Next Chapter / Page
                 if (currentChapters.length > 1) {
                     navigateChapter(1);
                 } else if (pdfDoc && pageNum < pdfDoc.numPages) {
@@ -264,10 +276,8 @@ function handleSwipeGesture() {
     } else {
         if (Math.abs(diffY) > threshold) {
             if (diffY > 0) {
-                // Swipe Down -> Previous item/chapter
                 if (currentChapters.length > 1 && diffY > 80) navigateChapter(-1);
             } else {
-                // Swipe Up -> Next item/chapter
                 if (currentChapters.length > 1 && diffY < -80) navigateChapter(1);
             }
         }
@@ -283,7 +293,6 @@ function toggleReaderTheme() {
         currentReaderTheme = 'dark';
         readScreen.style.backgroundColor = '#121212';
         readScreen.style.color = '#e0e0e0';
-        // Apply dark background to webbook body blocks if present
         document.querySelectorAll('.book-content-body, #chapter-content').forEach(el => {
             el.style.backgroundColor = '#1e1e1e';
             el.style.color = '#f1f5f9';
@@ -328,10 +337,12 @@ function filterBySubTheme(subTheme, btn) {
     }
 }
 
-// Close Book Preview Modal Only
-document.getElementById('close-modal-btn').addEventListener('click', () => {
-    document.getElementById('preview-modal').style.display = 'none';
-});
+const closeModalBtn = document.getElementById('close-modal-btn');
+if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', () => {
+        document.getElementById('preview-modal').style.display = 'none';
+    });
+}
 
 // 6. User Personal Library Pipeline
 async function loadUserLibrary() {
@@ -339,12 +350,12 @@ async function loadUserLibrary() {
 
     if (!currentUser) {
         grid.innerHTML = `
-            <div class="guest-box">
+            <div class="guest-box" style="text-align:center; padding: 40px 20px; grid-column: 1 / -1;">
                 <h3 style="margin-top:0; color: var(--primary-green);">Sign In Required</h3>
                 <p style="color:#666; font-size:14px; margin-bottom: 20px;">
                     Please sign in to view your books or saved downloads.
                 </p>
-                <a href="/login?returnTo=/read" class="action-btn" style="width: auto; padding: 10px 24px;">Sign In / Register</a>
+                <a href="/login?returnTo=/read" class="action-btn" style="background:#1b3d2b; color:#fff; padding:10px 24px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:13px; display:inline-block;">Sign In / Register</a>
             </div>
         `;
         return;
@@ -354,9 +365,9 @@ async function loadUserLibrary() {
         const res = await fetch('/api/books/my-library');
         if (res.status === 401) {
             grid.innerHTML = `
-                <div class="guest-box">
-                    <p style="color:#666;">Please sign in to view your books or saved downloads.</p>
-                    <a href="/login?returnTo=/read" class="action-btn" style="width: auto; padding: 10px 20px;">Sign In</a>
+                <div class="guest-box" style="text-align:center; padding: 40px 20px; grid-column: 1 / -1;">
+                    <p style="color:#666; margin-bottom:15px; font-size:14px;">Please sign in to view your books or saved downloads.</p>
+                    <a href="/login?returnTo=/read" class="action-btn" style="background:#1b3d2b; color:#fff; padding:10px 20px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:13px; display:inline-block;">Sign In</a>
                 </div>
             `;
             return;
@@ -408,7 +419,9 @@ function renderLibraryGrid(books) {
 }
 
 function filterLibraryBooks() {
-    const query = document.getElementById('library-search-input').value.toLowerCase();
+    const searchInput = document.getElementById('library-search-input');
+    if (!searchInput) return;
+    const query = searchInput.value.toLowerCase();
     const filtered = allLibraryBooks.filter(b => 
         (b.title && b.title.toLowerCase().includes(query)) || 
         (b.author && b.author.toLowerCase().includes(query))
