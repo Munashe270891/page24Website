@@ -5,20 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Page 24 - Author Dashboard</title>
     <link rel="stylesheet" href="/css/dashboard.css">
-    <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
 
     <div class="dashboard-container">
-        <!-- Sidebar Workspace Navigation Component -->
         <aside class="sidebar">
             <div class="brand-section">
                 <div class="logo-group">
                     <span class="logo-icon">🇿🇼</span>
                     <span class="logo-text">Page 24</span>
                 </div>
-                <!-- MOVED SIGN OUT BUTTON HERE NEXT TO BRAND/LOGO AREA -->
                 <a href="/api/auth/logout" style="background-color: #d97736; color: #ffffff; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; text-decoration: none; display: inline-block;">🚪 Sign Out</a>
             </div>
             <div class="welcome-tag" style="margin-top: 8px;">Welcome 👤</div>
@@ -31,395 +28,138 @@
                 <a href="#" class="menu-item" id="menu-profile" onclick="switchTab('profile-view', event)">👤 My Author Profile</a>
                 <hr class="menu-divider">
                 <a href="/terms" target="_blank" class="menu-item">📜 Terms & Copyright</a>
-                
-                <!-- BROWSE MAIN LIBRARY BUTTON -->
                 <div style="padding: 10px 0; text-align: center;">
-                    <a href="/" style="
-                        display: inline-flex;
-                        align-items: center;
-                        justify-content: center;
-                        gap: 8px;
-                        width: 90%;
-                        background-color: #27ae60;
-                        color: #ffffff;
-                        padding: 10px 14px;
-                        border-radius: 20px;
-                        text-decoration: none;
-                        font-weight: bold;
-                        font-size: 13px;
-                        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-                        transition: background 0.2s ease;">
-                        📚 Browse Main Library
-                    </a>
+                    <a href="/" style="display: inline-flex; align-items: center; justify-content: center; gap: 8px; width: 90%; background-color: #27ae60; color: #ffffff; padding: 10px 14px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 13px; box-shadow: 0 2px 6px rgba(0,0,0,0.2);">📚 Browse Main Library</a>
                 </div>
-                <!-- (Sign out link removed from bottom of the nav since it's now at the top) -->
             </nav>
         </aside>
 
-        <!-- Dynamic Main Content Grid Layout -->
         <main class="main-content">
-
-            <!-- TOPBAR WITH NOTIFICATION CENTER -->
             <div class="topbar-header">
-                <div>
-                    <h2 style="margin: 0; color: var(--primary-green, #1e4d2b); font-size: 22px;">Author Workspace</h2>
-                </div>
-
-                <!-- Notification Bell Area -->
+                <div><h2 style="margin: 0; color: var(--primary-green, #1e4d2b); font-size: 22px;">Author Workspace</h2></div>
                 <div class="notification-wrapper">
-                    <button id="notif-bell-btn" class="notif-bell-btn" onclick="toggleNotifDropdown()">
-                        <i class="fas fa-bell"></i>
-                        <span id="notif-badge" class="notif-badge hidden">0</span>
-                    </button>
-
-                    <!-- Dropdown Card -->
+                    <button id="notif-bell-btn" class="notif-bell-btn" onclick="toggleNotifDropdown()"><i class="fas fa-bell"></i><span id="notif-badge" class="notif-badge hidden">0</span></button>
                     <div id="notif-dropdown" class="notif-dropdown hidden">
-                        <div class="notif-header">
-                            <h4><i class="fas fa-bell"></i> Notifications</h4>
-                        </div>
-                        
-                        <div id="notif-list-container" class="notif-list-container">
-                            <p style="text-align: center; color: var(--text-muted, #777); font-size: 13px; padding: 15px 0;">Loading updates...</p>
-                        </div>
+                        <div class="notif-header"><h4><i class="fas fa-bell"></i> Notifications</h4></div>
+                        <div id="notif-list-container" class="notif-list-container"><p style="text-align: center; color: var(--text-muted, #777); font-size: 13px; padding: 15px 0;">Loading updates...</p></div>
                     </div>
                 </div>
             </div> 
             
-            <!-- VIEW 1: Main Dashboard Window (Active Books & Balances) -->
             <div id="dashboard-view" class="view-section">
                 <h1 class="view-title">Active Books</h1>
-                
-                <div class="books-horizontal-grid" id="author-books-container">
-                    <p style="color: var(--text-dark, #222); opacity: 0.6;">Loading your books portfolio...</p>
-                </div>
-
-                <!-- Quick Action Trigger Bar -->
-                <div class="action-trigger-card" id="quick-create-trigger" onclick="switchTab('creator-view', event)">
-                    <span class="plus-circle">＋</span>
-                    <h3>Create a New Book</h3>
-                </div>
-
-                <!-- Financial Balance & Activity Matrix Setup -->
+                <div class="books-horizontal-grid" id="author-books-container"><p style="color: var(--text-dark, #222); opacity: 0.6;">Loading your books portfolio...</p></div>
+                <div class="action-trigger-card" id="quick-create-trigger" onclick="switchTab('creator-view', event)"><span class="plus-circle">＋</span><h3>Create a New Book</h3></div>
                 <div class="financials-row">
-                    <div class="activity-log-box">
-                        <h3>Recent Activity</h3>
-                        <div id="dashboard-activity-log">
-                            <p style="font-size: 13px; color: gray; padding: 10px 0;">No transactions yet.</p>
-                        </div>
-                    </div>
-
+                    <div class="activity-log-box"><h3>Recent Activity</h3><div id="dashboard-activity-log"><p style="font-size: 13px; color: gray; padding: 10px 0;">No transactions yet.</p></div></div>
                     <div class="earnings-withdrawal-box">
                         <h3>Total Author Earnings</h3>
                         <p class="sub-label">Automatic payouts occur monthly for balances over $5.00 USD.</p>
-                        
-                        <div class="payout-row">
-                            <span>💸 Net Author Royalties (75%)</span>
-                            <strong id="dashboard-ecocash-balance" style="color: #27ae60;">$0.00 USD</strong>
-                        </div>
-                        <div class="payout-row">
-                            <span>🏢 Platform Commission (20%)</span>
-                            <strong id="dashboard-platform-fee" style="color: #777;">$0.00 USD</strong>
-                        </div>
-                        <div class="payout-row">
-                            <span>⚙️ Gateway & Ops Fee (5%)</span>
-                            <strong id="dashboard-ops-fee" style="color: #94a3b8;">$0.00 USD</strong>
-                        </div>
-
-                        <!-- Scheduled Payout Info Box -->
+                        <div class="payout-row"><span>💸 Net Author Royalties (75%)</span><strong id="dashboard-ecocash-balance" style="color: #27ae60;">$0.00 USD</strong></div>
+                        <div class="payout-row"><span>🏢 Platform Commission (20%)</span><strong id="dashboard-platform-fee" style="color: #777;">$0.00 USD</strong></div>
+                        <div class="payout-row"><span>⚙️ Gateway & Ops Fee (5%)</span><strong id="dashboard-ops-fee" style="color: #94a3b8;">$0.00 USD</strong></div>
                         <div style="margin-top: 15px; padding: 12px; background: #f8fafc; border: 1px solid var(--border-tan, #e2e8f0); border-radius: 6px; text-align: left;">
-                            <div style="display: flex; align-items: center; gap: 8px; color: var(--primary-green, #1e4d2b); font-weight: bold; font-size: 12px; margin-bottom: 4px;">
-                                <i class="fas fa-calendar-check"></i> Next Scheduled Payout
-                            </div>
-                            <p style="font-size: 11px; color: var(--text-muted, #64748b); margin: 0; line-height: 1.4;">
-                                Payouts are transferred automatically to your EcoCash or OneMoney line on the <strong>15th of every month</strong> once you reach the <strong>$5.00 USD</strong> threshold.
-                            </p>
+                            <div style="display: flex; align-items: center; gap: 8px; color: var(--primary-green, #1e4d2b); font-weight: bold; font-size: 12px; margin-bottom: 4px;"><i class="fas fa-calendar-check"></i> Next Scheduled Payout</div>
+                            <p style="font-size: 11px; color: var(--text-muted, #64748b); margin: 0; line-height: 1.4;">Payouts are transferred automatically to your EcoCash or OneMoney line on the <strong>15th of every month</strong> once you reach the <strong>$5.00 USD</strong> threshold.</p>
                         </div>
                     </div>
                 </div> 
             </div>
 
-            <!-- VIEW 2: Creator Creation Desk Window Form -->
             <div id="creator-view" class="view-section hidden">
                 <h1 class="view-title">Create & Publish Master</h1>
-                
                 <div class="creator-card">
                     <form id="publish-master-form">
-                        <!-- AUTHOR NAME (PRE-FILLED VIA JS) -->
                         <div class="form-group" style="margin-bottom: 15px;">
                             <label class="input-label">AUTHOR NAME</label>
                             <input type="text" id="book-author-name" name="authorName" placeholder="Author Name" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box;" required>
                         </div>
-
-                        <!-- CATEGORY SELECTOR -->
                         <div class="form-group" style="margin-bottom: 15px;">
                             <label class="input-label">BOOK CATEGORY</label>
                             <select id="book-category" name="category" class="styled-select" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box;" required>
-                                <option value="Shona Novels">Shona Novels</option>
-                                <option value="Motivational">Motivational</option>
-                                <option value="Dating & Relationships">Dating & Relationships</option>
-                                <option value="Christian Devotional">Christian Devotional</option>
-                                <option value="Business">Business</option>
-                                <option value="Other">Other</option>
+                                <option value="Shona Novels">Shona Novels</option><option value="Motivational">Motivational</option><option value="Dating & Relationships">Dating & Relationships</option><option value="Christian Devotional">Christian Devotional</option><option value="Business">Business</option><option value="Other">Other</option>
                             </select>
                         </div>
-
-                        <!-- SUB-THEME SELECTOR (Dynamic display for Shona Novels) -->
                         <div class="form-group" id="sub-theme-group" style="margin-bottom: 15px;">
                             <label class="input-label">SHONA NOVEL SUB-THEME</label>
                             <select id="book-sub-theme" name="subTheme" class="styled-select" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box;">
-                                <option value="Love / Rudo">Love / Rudo</option>
-                                <option value="Christian / Chitendero">Christian / Chitendero</option>
-                                <option value="Culture / Tsika neMagariro">Culture / Tsika neMagariro</option>
-                                <option value="Drama / Mutambo">Drama / Mutambo</option>
+                                <option value="Love / Rudo">Love / Rudo</option><option value="Christian / Chitendero">Christian / Chitendero</option><option value="Culture / Tsika neMagariro">Culture / Tsika neMagariro</option><option value="Drama / Mutambo">Drama / Mutambo</option>
                             </select>
                         </div>
-
                         <label class="input-label">BOOK TITLE</label>
                         <input type="text" id="book-title" name="title" placeholder="Enter Book Title" required>
-
                         <label class="input-label">BOOK DESCRIPTION / SUMMARY</label>
-                        <textarea id="book-description" name="description" rows="4" placeholder="Enter a brief summary of what the book is about..." style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box;" required></textarea>
-
+                        <textarea id="book-description" name="description" rows="4" placeholder="Enter a brief summary..." style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box;" required></textarea>
                         <label class="input-label">BOOK PRICE (USD)</label>
                         <input type="number" id="book-price" name="price" placeholder="e.g. 5.00" step="0.01" min="0" value="0" required>
 
+                        <!-- NEW: PHYSICAL POD TOGGLE -->
+                        <div class="form-group" style="margin: 15px 0; padding: 12px; background: #fff8e1; border: 1px solid #f0ad4e; border-radius: 6px;">
+                            <label style="font-weight: bold; display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                                <input type="checkbox" id="is-physical-check" name="is_physical" value="true">
+                                📦 Enable Physical Print-on-Demand (Author pays printing + shipping for sample)
+                            </label>
+                            <small style="display:block; margin-top:6px; color:#856404;">If checked, you can upload print-ready PDF after publishing. Sample order is 50% refundable if you arrange own courier from Harare office.</small>
+                        </div>
+
+                        <div id="print-upload-group" class="hidden" style="margin-bottom: 15px; padding: 12px; border: 1px dashed #2980b9; border-radius: 6px; background: #ebf5fb;">
+                            <label class="input-label">PRINT-READY INTERIOR PDF (A5, 300dpi)</label>
+                            <input type="file" id="print-pdf-file" accept=".pdf">
+                            <small style="color: var(--text-muted, #777);">You can also upload this later from Dashboard -> My Books -> Upload Print PDF</small>
+                        </div>
+
                         <label class="input-label">BOOK STORE FRONT COVER IMAGE</label>
                         <input type="file" id="cover-upload" name="coverImage" accept="image/*" style="display: block; margin-bottom: 15px;" required>
-                        
                         <label class="input-label">PUBLISH FORMAT</label>
                         <div class="mode-select-row" style="margin-bottom: 15px;">
-                            <label class="radio-option" style="display: block; margin-bottom: 10px; font-weight: bold;">
-                                <input type="radio" name="upload-mode" value="pdf" id="format-pdf" checked> 📁 Upload finished PDF manuscript
-                            </label>
-                            <label class="radio-option" style="display: block; font-weight: bold;">
-                                <input type="radio" name="upload-mode" value="html" id="format-html"> ✍️ Compose / Paste chapters directly online (No PDF required!)
-                            </label>
+                            <label class="radio-option" style="display: block; margin-bottom: 10px; font-weight: bold;"><input type="radio" name="upload-mode" value="pdf" id="format-pdf" checked> 📁 Upload finished PDF manuscript</label>
+                            <label class="radio-option" style="display: block; font-weight: bold;"><input type="radio" name="upload-mode" value="html" id="format-html"> ✍️ Compose / Paste chapters directly online (No PDF required!)</label>
                         </div>
-
-                        <!-- SECURITY & DISTRIBUTION RULES DROPDOWN -->
                         <div class="security-rules-group">
                             <label for="book-download-rule" class="input-label">SECURITY & DISTRIBUTION RULES</label>
-                            <div class="select-wrapper">
-                                <select id="book-download-rule" name="downloadRule" class="styled-select" required>
-                                    <option value="0" selected>🔒 Secure Anti-Piracy Streaming (Read in App Only)</option>
-                                    <option value="1">📂 Open Distribution (Allow PDF Download to Reader Device)</option>
-                                </select>
-                            </div>
+                            <div class="select-wrapper"><select id="book-download-rule" name="downloadRule" class="styled-select" required><option value="0" selected>🔒 Secure Anti-Piracy Streaming (Read in App Only)</option><option value="1">📂 Open Distribution (Allow PDF Download)</option></select></div>
                         </div>
-
-                        <!-- Conditional Input field 1: For PDF Authors -->
-                        <div id="pdf-input-group" class="conditional-group">
-                            <label class="input-label">UPLOAD PDF MANUSCRIPT</label>
-                            <input type="file" id="pdf-upload" name="pdfFile" accept=".pdf">
-                        </div>
-
-                        <!-- Conditional Input field 2: For Web Book Authors -->
+                        <div id="pdf-input-group" class="conditional-group"><label class="input-label">UPLOAD PDF MANUSCRIPT</label><input type="file" id="pdf-upload" name="pdfFile" accept=".pdf"></div>
                         <div id="html-input-group" class="conditional-group hidden">
-                            <div style="background-color: #fcf8e3; border-left: 4px solid #f0ad4e; padding: 12px; margin-bottom: 15px; border-radius: 4px;">
-                                <strong>💡 Web Book Tip:</strong> You can write your first chapter right now! Once saved, you can add and manage more chapters inside the <strong>Write Online (Web Studio)</strong> menu. Web books are strictly protected for in-app reading only.
-                            </div>
-                            <label class="input-label">FIRST CHAPTER TITLE</label>
-                            <input type="text" id="initial-chapter-title" placeholder="e.g. Chapter 1: The Journey Begins">
-                            
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; margin-bottom: 5px;">
-                                <label class="input-label" style="margin: 0;">FIRST CHAPTER BODY CONTENT</label>
-                                <button type="button" onclick="openLayoutFormatter('initial-chapter-body')" style="background: var(--primary-green, #1b3d2b); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;">
-                                    ✨ Format Layout
-                                </button>
-                            </div>
+                            <div style="background-color: #fcf8e3; border-left: 4px solid #f0ad4e; padding: 12px; margin-bottom: 15px; border-radius: 4px;"><strong>💡 Web Book Tip:</strong> You can write your first chapter right now! Once saved, you can add more chapters inside <strong>Write Online (Web Studio)</strong>.</div>
+                            <label class="input-label">FIRST CHAPTER TITLE</label><input type="text" id="initial-chapter-title" placeholder="e.g. Chapter 1: The Journey Begins">
+                            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px; margin-bottom: 5px;"><label class="input-label" style="margin: 0;">FIRST CHAPTER BODY CONTENT</label><button type="button" onclick="openLayoutFormatter('initial-chapter-body')" style="background: var(--primary-green, #1b3d2b); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;">✨ Format Layout</button></div>
                             <textarea id="initial-chapter-body" rows="10" placeholder="Paste or type your chapter text here..."></textarea>
                         </div>
-
-                        <!-- COPYRIGHT & LEGAL COMPLIANCE AFFIRMATION -->
                         <div class="legal-declaration-card">
                             <h4 style="color: var(--primary-green, #1e4d2b); margin-bottom: 8px;">⚖️ Legal & Copyright Declaration</h4>
-                            <p class="legal-subtitle" style="font-size: 11px; color: #555; margin-bottom: 12px; line-height: 1.4;">
-                                Pursuant to the <strong>Zimbabwe Copyright and Neighbouring Rights Act [Chapter 26:05]</strong>, you must certify that you possess lawful distribution rights for this work.
-                            </p>
-
+                            <p class="legal-subtitle" style="font-size: 11px; color: #555; margin-bottom: 12px; line-height: 1.4;">Pursuant to the <strong>Zimbabwe Copyright and Neighbouring Rights Act [Chapter 26:05]</strong>, you must certify that you possess lawful distribution rights.</p>
                             <div class="checkbox-group">
-                                <label class="custom-checkbox-label">
-                                    <input type="checkbox" id="copyright-ownership-check" required>
-                                    <span class="checkbox-text">I certify that I am the original author or authorized copyright holder of this content, or that it is strictly in the public domain.</span>
-                                </label>
-
-                                <label class="custom-checkbox-label">
-                                    <input type="checkbox" id="copyright-terms-check" required>
-                                    <span class="checkbox-text">I agree to Page 24 Terms of Service and understand that submitting pirated or fraudulent works will result in immediate termination, forfeiture of royalties, and full personal legal indemnity under Zimbabwean law.</span>
-                                </label>
+                                <label class="custom-checkbox-label"><input type="checkbox" id="copyright-ownership-check" required><span class="checkbox-text">I certify that I am the original author or authorized copyright holder.</span></label>
+                                <label class="custom-checkbox-label"><input type="checkbox" id="copyright-terms-check" required><span class="checkbox-text">I agree to Page 24 Terms and understand pirated works result in termination and forfeiture.</span></label>
                             </div>
                         </div>
-
                         <button type="submit" class="save-master-btn">Save Content Profile</button>
                     </form>
                 </div>
             </div>
 
-            <!-- VIEW 3: Write Online / Web Book Studio Panel -->
             <div id="studio-view" class="view-section hidden">
                 <h1 class="view-title">✍️ Web Book Writing Studio</h1>
                 <p style="margin-bottom: 20px; opacity: 0.8;">Select one of your online-composed books below to add or edit chapters.</p>
-                
                 <div style="display: grid; grid-template-columns: 1fr 2fr; gap: 20px;">
-                    <!-- Left Column: Web Books list Selector -->
-                    <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border-tan, #ccc); max-height: 500px; overflow-y: auto;">
-                        <h3 style="margin-bottom: 10px; color: var(--primary-green, #1e4d2b);">Your Web Books</h3>
-                        <div id="studio-books-list">
-                            <p style="font-size: 13px; color: gray;">Loading your web books...</p>
-                        </div>
-                    </div>
-
-                    <!-- Right Column: Chapter Composer Panel -->
-                    <div id="studio-editor-panel" class="hidden" style="background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border-tan, #ccc);">
-                        <h3 id="current-editing-book-title" style="margin-bottom: 5px; color: var(--primary-green, #1e4d2b);">No Book Selected</h3>
-                        <p style="font-size: 12px; color: gray; margin-bottom: 15px;">Add chapters to your web book composition pipeline.</p>
-                        
-                        <hr style="margin-bottom: 15px; border: 0; border-top: 1px solid #eee;">
-                        
-                        <div style="margin-bottom: 20px;">
-                            <h4 style="margin-bottom: 10px;">Current Chapters</h4>
-                            <div id="studio-chapters-list" style="display: flex; flex-direction: column; gap: 8px;"></div>
-                        </div>
-
-                        <form id="add-chapter-form">
-                            <input type="hidden" id="editor-book-id">
-                            <h4 style="margin-bottom: 10px;">➕ Write a New Chapter</h4>
-                            
-                            <label class="input-label">CHAPTER TITLE</label>
-                            <input type="text" id="new-chapter-title" placeholder="e.g. Chapter 2: Into the Forest" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
-
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
-                                <label class="input-label" style="margin: 0;">CHAPTER CONTENT</label>
-                                <button type="button" onclick="openLayoutFormatter('new-chapter-body')" style="background: var(--primary-green, #1b3d2b); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px; cursor: pointer;">
-                                    ✨ Format Layout
-                                </button>
-                            </div>
-                            <textarea id="new-chapter-body" rows="12" placeholder="Start writing or paste chapter content here..." style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required></textarea>
-
-                            <button type="submit" class="save-master-btn" style="background: var(--primary-green, #1b3d2b); color: white;">Save and Publish Chapter</button>
-                        </form>
-                    </div>
-
-                    <!-- Placeholder display when no book is selected -->
-                    <div id="studio-editor-placeholder" style="background: white; padding: 40px; border-radius: 8px; border: 1px dashed var(--border-tan, #ccc); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;">
-                        <span style="font-size: 40px; margin-bottom: 10px;">👈</span>
-                        <h3>Select a Web Book to Begin Writing</h3>
-                        <p style="opacity: 0.7;">Select one of your online composition books from the list on the left to add, edit, or organize chapters.</p>
-                    </div>
+                    <div style="background: white; padding: 15px; border-radius: 8px; border: 1px solid var(--border-tan, #ccc); max-height: 500px; overflow-y: auto;"><h3 style="margin-bottom: 10px; color: var(--primary-green, #1e4d2b);">Your Web Books</h3><div id="studio-books-list"><p style="font-size: 13px; color: gray;">Loading...</p></div></div>
+                    <div id="studio-editor-panel" class="hidden" style="background: white; padding: 20px; border-radius: 8px; border: 1px solid var(--border-tan, #ccc);"><h3 id="current-editing-book-title" style="margin-bottom: 5px;">No Book Selected</h3><hr style="margin-bottom: 15px;"><div style="margin-bottom: 20px;"><h4>Current Chapters</h4><div id="studio-chapters-list" style="display: flex; flex-direction: column; gap: 8px;"></div></div><form id="add-chapter-form"><input type="hidden" id="editor-book-id"><h4>➕ Write a New Chapter</h4><label class="input-label">CHAPTER TITLE</label><input type="text" id="new-chapter-title" style="width: 100%; border: 1px solid var(--border-tan, #ccc); border-radius: 4px; padding: 12px; margin-bottom: 15px;" required><div style="display: flex; justify-content: space-between; margin-bottom: 5px;"><label class="input-label" style="margin: 0;">CHAPTER CONTENT</label><button type="button" onclick="openLayoutFormatter('new-chapter-body')" style="background: var(--primary-green, #1b3d2b); color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 11px;">✨ Format Layout</button></div><textarea id="new-chapter-body" rows="12" style="width: 100%; border: 1px solid var(--border-tan, #ccc); border-radius: 4px; padding: 12px; margin-bottom: 15px;" required></textarea><button type="submit" class="save-master-btn" style="background: var(--primary-green, #1b3d2b); color: white;">Save and Publish Chapter</button></form></div>
+                    <div id="studio-editor-placeholder" style="background: white; padding: 40px; border-radius: 8px; border: 1px dashed var(--border-tan, #ccc); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center;"><span style="font-size: 40px; margin-bottom: 10px;">👈</span><h3>Select a Web Book to Begin Writing</h3></div>
                 </div>
             </div>
 
-            <!-- VIEW 4: SALES & ROYALTIES VIEW PANEL -->
-            <div id="sales-view" class="view-section hidden" style="padding: 20px; box-sizing: border-box;">
-                <h1 style="color: var(--primary-green, #1e4d2b); margin-bottom: 5px;">💰 Royalties & Earnings</h1>
-                <p style="opacity: 0.7; margin-bottom: 25px;">Track your live book sales, customer transactions, and overall payouts.</p>
+            <div id="sales-view" class="view-section hidden" style="padding: 20px;"><h1 style="color: var(--primary-green, #1e4d2b);">💰 Royalties & Earnings</h1><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin: 25px 0;"><div style="background: white; border: 1px solid var(--border-tan, #ccc); border-radius: 8px; padding: 20px;"><span style="font-size: 11px; font-weight: bold; opacity: 0.6;">Gross Sales Volume</span><h2 id="stats-total-earnings" style="font-size: 32px; color: var(--primary-green, #1e4d2b);">$0.00</h2></div><div style="background: white; border: 1px solid var(--border-tan, #ccc); border-radius: 8px; padding: 20px;"><span style="font-size: 11px; font-weight: bold; opacity: 0.6;">Net Author Royalties (75%)</span><h2 id="stats-net-royalties" style="font-size: 32px; color: #27ae60;">$0.00</h2></div><div style="background: white; border: 1px solid var(--border-tan, #ccc); border-radius: 8px; padding: 20px;"><span style="font-size: 11px; font-weight: bold; opacity: 0.6;">Total Copies Sold</span><h2 id="stats-total-sales" style="font-size: 32px; color: #2980b9;">0</h2></div></div><div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px;"><div style="background: white; border: 1px solid var(--border-tan, #ccc); border-radius: 8px; padding: 20px;"><h3>📈 Revenue by Book Title</h3><div id="sales-breakdown-list"></div></div><div style="background: white; border: 1px solid var(--border-tan, #ccc); border-radius: 8px; padding: 20px;"><h3>🕒 Recent Transactions</h3><div id="recent-transactions-list"></div></div></div></div>
 
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px;">
-                    <div style="background: white; border: 1px solid var(--border-tan, #ccc); border-radius: 8px; padding: 20px; box-sizing: border-box;">
-                        <span style="font-size: 11px; font-weight: bold; letter-spacing: 0.5px; opacity: 0.6; text-transform: uppercase;">Gross Sales Volume</span>
-                        <h2 id="stats-total-earnings" style="font-size: 32px; color: var(--primary-green, #1e4d2b); margin: 5px 0 0 0;">$0.00</h2>
-                    </div>
-                    <div style="background: white; border: 1px solid var(--border-tan, #ccc); border-radius: 8px; padding: 20px; box-sizing: border-box;">
-                        <span style="font-size: 11px; font-weight: bold; letter-spacing: 0.5px; opacity: 0.6; text-transform: uppercase;">Net Author Royalties (75%)</span>
-                        <h2 id="stats-net-royalties" style="font-size: 32px; color: #27ae60; margin: 5px 0 0 0;">$0.00</h2>
-                    </div>
-                    <div style="background: white; border: 1px solid var(--border-tan, #ccc); border-radius: 8px; padding: 20px; box-sizing: border-box;">
-                        <span style="font-size: 11px; font-weight: bold; letter-spacing: 0.5px; opacity: 0.6; text-transform: uppercase;">Total Copies Sold</span>
-                        <h2 id="stats-total-sales" style="font-size: 32px; color: #2980b9; margin: 5px 0 0 0;">0</h2>
-                    </div>
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 25px; align-items: start;">
-                    <div style="background: white; border: 1px solid var(--border-tan, #ccc); border-radius: 8px; padding: 20px;">
-                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px; font-size: 16px;">📈 Revenue by Book Title</h3>
-                        <div id="sales-breakdown-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
-                    </div>
-
-                    <div style="background: white; border: 1px solid var(--border-tan, #ccc); border-radius: 8px; padding: 20px;">
-                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px; font-size: 16px;">🕒 Recent Customer Transactions</h3>
-                        <div id="recent-transactions-list" style="display: flex; flex-direction: column; gap: 10px; max-height: 350px; overflow-y: auto;"></div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- VIEW 5: AUTHOR PROFILE -->
-            <div id="profile-view" class="view-section hidden">
-                <h1 class="view-title">👤 Author Profile</h1>
-                <p style="margin-bottom: 20px; opacity: 0.8;">Manage your public author details and payout destination details below.</p>
-
-                <!-- PAYOUT NOTICE -->
-                <div style="background: #ebf5fb; border-left: 4px solid #2980b9; padding: 15px; margin-bottom: 20px; border-radius: 4px; max-width: 650px;">
-                    <strong style="color: #2980b9;">⚠️ Financial Gateway Policy:</strong>
-                    <p style="font-size: 12px; margin-top: 5px; color: #333; line-height: 1.4;">
-                        Your registered <strong>Mobile Phone Number</strong> will be used for automated monthly payouts on the 15th. Page 24 strictly prohibits royalty payouts to third-party accounts.
-                    </p>
-                </div>
-
-                <div class="creator-card" style="max-width: 650px;">
-                    <form id="author-profile-form" enctype="multipart/form-data">
-                        <!-- PUBLIC AUTHOR BRANDING -->
-                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">🌟 Public Author Branding</h3>
-
-                        <label class="input-label">PROFILE PICTURE</label>
-                        <input type="file" id="author-profile-pic" name="profilePic" accept="image/*" style="display: block; margin-bottom: 15px;">
-
-                        <label class="input-label">AUTHOR BIO (Max 160 characters, Optional)</label>
-                        <textarea id="author-bio" name="bio" rows="3" maxlength="160" placeholder="A short bio to present on your author profile..." style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;"></textarea>
-
-                        <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-tan, #ccc);">
-
-                        <!-- PAYOUT DESTINATION -->
-                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">💳 Payout Details</h3>
-                        
-                        <label class="input-label">PAYOUT MOBILE PHONE NUMBER (EcoCash / OneMoney Registered Number)</label>
-                        <input type="tel" id="author-phone" name="phone" placeholder="e.g. 0771234567" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 20px;" required>
-
-                        <button type="submit" class="save-master-btn">Save Profile</button>
-                    </form>
-                </div>
-            </div>
-
+            <div id="profile-view" class="view-section hidden"><h1 class="view-title">👤 Author Profile</h1><div style="background: #ebf5fb; border-left: 4px solid #2980b9; padding: 15px; margin-bottom: 20px; border-radius: 4px; max-width: 650px;"><strong style="color: #2980b9;">⚠️ Financial Gateway Policy:</strong><p style="font-size: 12px; margin-top: 5px; color: #333;">Your <strong>Mobile Phone Number</strong> will be used for automated payouts on the 15th.</p></div><div class="creator-card" style="max-width: 650px;"><form id="author-profile-form" enctype="multipart/form-data"><h3 style="color: var(--primary-green, #1e4d2b);">🌟 Public Author Branding</h3><label class="input-label">PROFILE PICTURE</label><input type="file" id="author-profile-pic" name="profilePic" accept="image/*" style="display: block; margin-bottom: 15px;"><label class="input-label">AUTHOR BIO</label><textarea id="author-bio" name="bio" rows="3" maxlength="160" style="width: 100%; border: 1px solid var(--border-tan, #ccc); border-radius: 4px; padding: 12px; margin-bottom: 15px;"></textarea><hr style="margin: 20px 0;"><h3 style="color: var(--primary-green, #1e4d2b);">💳 Payout Details</h3><label class="input-label">PAYOUT MOBILE NUMBER</label><input type="tel" id="author-phone" name="phone" placeholder="e.g. 0771234567" style="width: 100%; border: 1px solid var(--border-tan, #ccc); border-radius: 4px; padding: 12px; margin-bottom: 20px;" required><button type="submit" class="save-master-btn">Save Profile</button></form></div></div>
         </main>
     </div>
 
-    <!-- EDIT BOOK DETAILS POPUP MODAL -->
-    <div id="edit-book-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;">
-        <div style="background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; box-sizing: border-box; border: 1px solid var(--border-tan, #ccc);">
-            <h2 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">📝 Edit Book Profile</h2>
-            <form id="edit-book-form">
-                <input type="hidden" id="edit-book-id">
-                
-                <label class="input-label">UPDATE SUMMARY / DESCRIPTION</label>
-                <textarea id="edit-book-description" rows="4" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required></textarea>
+    <div id="edit-book-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center;"><div style="background: white; padding: 25px; border-radius: 8px; width: 100%; max-width: 600px; max-height: 90vh; overflow-y: auto; border: 1px solid var(--border-tan, #ccc);"><h2 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">📝 Edit Book Profile</h2><form id="edit-book-form"><input type="hidden" id="edit-book-id"><label class="input-label">UPDATE SUMMARY</label><textarea id="edit-book-description" rows="4" style="width: 100%; border: 1px solid var(--border-tan, #ccc); border-radius: 4px; padding: 12px; margin-bottom: 15px;" required></textarea><label class="input-label">UPDATE PRICE</label><input type="number" id="edit-book-price" step="0.01" style="width: 100%; border: 1px solid var(--border-tan, #ccc); border-radius: 4px; padding: 12px; margin-bottom: 15px;" required><div class="form-group" style="margin-bottom: 15px;"><label class="input-label">REPLACE PDF (Optional)</label><input type="file" id="edit-book-pdf-file" name="pdfFile" accept=".pdf" style="display: block; width: 100%; padding: 8px; border: 1px solid var(--border-tan, #ccc); border-radius: 4px;"></div><div id="edit-chapter-group" class="form-group" style="margin-bottom: 15px; display: none;"><label style="font-weight: bold; display: block; margin-bottom: 5px;">SELECT CHAPTER</label><select id="edit-chapter-select" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 10px;"></select></div><textarea id="edit-book-content" rows="8" placeholder="Chapter content..." style="width: 100%; border: 1px solid var(--border-tan, #ccc); border-radius: 4px; padding: 12px; margin-bottom: 20px; display: none;"></textarea><div style="display: flex; gap: 10px; justify-content: flex-end;"><button type="button" id="close-modal-btn" style="background: #ccc; color: black; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer;">Cancel</button><button type="submit" class="save-master-btn" style="margin: 0; padding: 10px 20px;">Save Updates</button></div></form></div></div>
 
-                <label class="input-label">UPDATE PRICE (USD)</label>
-                <input type="number" id="edit-book-price" step="0.01" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
-
-                <!-- OPTIONAL PDF REPLACEMENT FILE INPUT -->
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label class="input-label">REPLACE PDF MANUSCRIPT (Optional)</label>
-                    <input type="file" id="edit-book-pdf-file" name="pdfFile" accept=".pdf" style="display: block; width: 100%; padding: 8px; border: 1px solid var(--border-tan, #ccc); border-radius: 4px; background-color: var(--bg-cream-light, #fafafa);">
-                    <small style="color: var(--text-muted, #777); font-size: 11px;">Upload a new PDF file only if you want to swap out the existing manuscript.</small>
-                </div>
-
-                <!-- DYNAMIC HTML CHAPTER EDITOR & FORMATTER CONTAINER -->
-                <div id="edit-chapter-group" class="form-group" style="margin-bottom: 15px; display: none;">
-                    <label style="font-weight: bold; display: block; margin-bottom: 5px;">SELECT CHAPTER TO EDIT</label>
-                    <select id="edit-chapter-select" style="width: 100%; padding: 8px; border-radius: 4px; border: 1px solid #ccc; margin-bottom: 10px;"></select>
-                </div>
-
-                <textarea id="edit-book-content" rows="8" placeholder="Chapter content..." style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 20px; display: none;"></textarea>
-
-                <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                    <button type="button" id="close-modal-btn" style="background: #ccc; color: black; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer;">Cancel</button>
-                    <button type="submit" class="save-master-btn" style="margin: 0; padding: 10px 20px;">Save Updates</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- External formatting utility and dashboard JS files -->
     <script src="/js/formatter.js"></script>
     <script src="/js/dashboard.js"></script>
+    <!-- NEW PHYSICAL MODULE - keep separate to avoid bloat -->
+    <script src="/js/dashboard-physical.js"></script>
 </body>
 </html>
