@@ -524,6 +524,17 @@ app.post('/api/auth/logout', (req, res) => {
     });
 });
 
+// Added GET logout route as requested
+app.get('/api/auth/logout', (req, res) => {
+    req.session.destroy((err) => {
+        if (err) {
+            return res.status(500).send('Could not log out.');
+        }
+        res.clearCookie('connect.sid');
+        res.redirect('/');
+    });
+});
+
 app.get('/api/auth/me', (req, res) => {
     if (!req.session.user) {
         return res.status(401).json({ loggedIn: false });
