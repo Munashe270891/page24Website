@@ -334,13 +334,13 @@
             <!-- VIEW 5: AUTHOR PROFILE -->
             <div id="profile-view" class="view-section hidden">
                 <h1 class="view-title">👤 Author Profile</h1>
-                <p style="margin-bottom: 20px; opacity: 0.8;">Manage your public author details, social links, and payout destination details below.</p>
+                <p style="margin-bottom: 20px; opacity: 0.8;">Manage your public author details and payout destination details below.</p>
 
                 <!-- PAYOUT NOTICE -->
                 <div style="background: #ebf5fb; border-left: 4px solid #2980b9; padding: 15px; margin-bottom: 20px; border-radius: 4px; max-width: 650px;">
-                    <strong style="color: #2980b9;">⚠️ Financial Gateway & Legal Name Policy:</strong>
+                    <strong style="color: #2980b9;">⚠️ Financial Gateway Policy:</strong>
                     <p style="font-size: 12px; margin-top: 5px; color: #333; line-height: 1.4;">
-                        Your registered <strong>Full Legal Name</strong> and <strong>Mobile Phone Number</strong> will be used for automated monthly payouts on the 15th. Page 24 strictly prohibits royalty payouts to third-party accounts.
+                        Your registered <strong>Mobile Phone Number</strong> will be used for automated monthly payouts on the 15th. Page 24 strictly prohibits royalty payouts to third-party accounts.
                     </p>
                 </div>
 
@@ -357,76 +357,11 @@
 
                         <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-tan, #ccc);">
 
-                        <!-- SOCIAL MEDIA HANDLES & AUDIENCE -->
-                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 5px;">📲 Social Media & Reach</h3>
-                        <p style="font-size: 12px; color: gray; margin-bottom: 15px;">Add your profile links below and toggle visibility. Follower counts will be automatically verified by the platform based on these links.</p>
-
-                        <!-- FACEBOOK -->
-                        <div style="margin-bottom: 15px; border: 1px solid var(--border-tan, #ccc); padding: 12px; border-radius: 6px; background-color: var(--bg-cream-light, #fafafa);">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <label class="input-label" style="margin: 0;">FACEBOOK HANDLE / LINK</label>
-                                <label style="font-size: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
-                                    <input type="checkbox" id="show-fb" name="showFacebook" checked> Show on Profile
-                                </label>
-                            </div>
-                            <input type="text" id="author-fb-handle" name="facebookHandle" placeholder="https://www.facebook.com/yourname" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: white; border-radius: 4px; padding: 10px; box-sizing: border-box;">
-                        </div>
-
-                        <!-- TIKTOK -->
-                        <div style="margin-bottom: 15px; border: 1px solid var(--border-tan, #ccc); padding: 12px; border-radius: 6px; background-color: var(--bg-cream-light, #fafafa);">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <label class="input-label" style="margin: 0;">TIKTOK HANDLE / LINK</label>
-                                <label style="font-size: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
-                                    <input type="checkbox" id="show-tt" name="showTiktok" checked> Show on Profile
-                                </label>
-                            </div>
-                            <input type="text" id="author-tt-handle" name="tiktokHandle" placeholder="https://www.tiktok.com/@username" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: white; border-radius: 4px; padding: 10px; box-sizing: border-box;">
-                        </div>
-
-                        <!-- X / TWITTER -->
-                        <div style="margin-bottom: 15px; border: 1px solid var(--border-tan, #ccc); padding: 12px; border-radius: 6px; background-color: var(--bg-cream-light, #fafafa);">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <label class="input-label" style="margin: 0;">X / TWITTER HANDLE</label>
-                                <label style="font-size: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
-                                    <input type="checkbox" id="show-tw" name="showTwitter" checked> Show on Profile
-                                </label>
-                            </div>
-                            <input type="text" id="author-tw-handle" name="twitterHandle" placeholder="username" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: white; border-radius: 4px; padding: 10px; box-sizing: border-box;">
-                        </div>
-
-                        <!-- INSTAGRAM -->
-                        <div style="margin-bottom: 20px; border: 1px solid var(--border-tan, #ccc); padding: 12px; border-radius: 6px; background-color: var(--bg-cream-light, #fafafa);">
-                            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
-                                <label class="input-label" style="margin: 0;">INSTAGRAM HANDLE</label>
-                                <label style="font-size: 12px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 5px;">
-                                    <input type="checkbox" id="show-ig" name="showInstagram" checked> Show on Profile
-                                </label>
-                            </div>
-                            <input type="text" id="author-ig-handle" name="instagramHandle" placeholder="username" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: white; border-radius: 4px; padding: 10px; box-sizing: border-box;">
-                        </div>
-
-                        <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-tan, #ccc);">
-
-                        <!-- LEGAL IDENTITY -->
-                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">🪪 Identity Information</h3>
+                        <!-- PAYOUT DESTINATION -->
+                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">💳 Payout Details</h3>
                         
-                        <label class="input-label">FULL LEGAL NAME</label>
-                        <input type="text" id="author-legal-name" name="legalName" placeholder="e.g. Tendai Samuel Moyo" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;" required>
-
                         <label class="input-label">PAYOUT MOBILE PHONE NUMBER (EcoCash / OneMoney Registered Number)</label>
                         <input type="tel" id="author-phone" name="phone" placeholder="e.g. 0771234567" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 20px;" required>
-
-                        <hr style="margin: 20px 0; border: 0; border-top: 1px solid var(--border-tan, #ccc);">
-
-                        <!-- OPTIONAL ISBN PROOF -->
-                        <h3 style="color: var(--primary-green, #1e4d2b); margin-bottom: 15px;">📖 Optional Copyright & ISBN Verification</h3>
-                        <p style="font-size: 12px; color: gray; margin-bottom: 15px;">If you have registered an official ISBN for your publication, add it below to increase reader trust.</p>
-
-                        <label class="input-label">ISBN NUMBER (Optional)</label>
-                        <input type="text" id="author-isbn" name="isbn" placeholder="e.g. 978-3-16-148410-0" style="width: 100%; border: 1px solid var(--border-tan, #ccc); background-color: var(--bg-cream-light, #fafafa); border-radius: 4px; padding: 12px; box-sizing: border-box; margin-bottom: 15px;">
-
-                        <label class="input-label">UPLOAD ISBN / COPYRIGHT CERTIFICATE PROOF (Optional)</label>
-                        <input type="file" id="author-isbn-proof" name="isbnDoc" accept="image/*,.pdf" style="display: block; margin-bottom: 20px;">
 
                         <button type="submit" class="save-master-btn">Save Profile</button>
                     </form>
