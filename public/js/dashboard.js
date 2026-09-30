@@ -337,14 +337,10 @@ document.addEventListener('DOMContentLoaded', () => {
             .then((data) => {
                 if (!data) return;
 
-                const legalName = document.getElementById('author-legal-name');
                 const phone = document.getElementById('author-phone');
-                const isbn = document.getElementById('author-isbn');
                 const bio = document.getElementById('author-bio');
 
-                if (legalName) legalName.value = data.legal_name || data.legalName || '';
                 if (phone) phone.value = data.phone || '';
-                if (isbn) isbn.value = data.isbn || '';
                 if (bio) bio.value = data.bio || '';
             })
             .catch((error) => {
@@ -359,18 +355,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const formData = new FormData(profileForm);
 
-            const legalNameInput = document.getElementById('author-legal-name');
             const phoneInput = document.getElementById('author-phone');
-            const isbnInput = document.getElementById('author-isbn');
-            const isbnDocInput = document.getElementById('author-isbn-proof');
-            const profilePicInput = document.getElementById('author-profile-pic');
             const bioInput = document.getElementById('author-bio');
 
-            if (legalNameInput) formData.set('legalName', legalNameInput.value.trim());
             if (phoneInput) formData.set('phone', phoneInput.value.trim());
-            if (isbnInput && isbnInput.value.trim()) formData.set('isbn', isbnInput.value.trim());
-            if (isbnDocInput && isbnDocInput.files[0]) formData.set('isbnDoc', isbnDocInput.files[0]);
-            if (profilePicInput && profilePicInput.files[0]) formData.set('profilePic', profilePicInput.files[0]);
             if (bioInput) formData.set('bio', bioInput.value.trim());
 
             try {
