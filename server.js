@@ -109,15 +109,15 @@ function serializeBook(book = {}) {
 }
 
 /*
- * API requests return JSON instead of redirecting to an HTML login page.
+ * Updated Authentication Middlewares:
+ * Differentiate between API requests (return JSON) and browser view navigation (redirect to /login).
  */
 function requireLogin(req, res, next) {
     if (!req.session.user) {
-        return sendError(
-            res,
-            401,
-            'Unauthorized access. Please log in.'
-        );
+        if (req.path.startsWith('/api/') || req.headers['accept']?.includes('application/json')) {
+            return sendError(res, 401, 'Unauthorized access. Please log in.');
+        }
+        return res.redirect('/login');
     }
 
     next();
@@ -125,7 +125,10 @@ function requireLogin(req, res, next) {
 
 async function requireAdmin(req, res, next) {
     if (!req.session.user) {
-        return sendError(res, 401, 'Unauthorized access.');
+        if (req.path.startsWith('/api/') || req.headers['accept']?.includes('application/json')) {
+            return sendError(res, 401, 'Unauthorized access.');
+        }
+        return res.redirect('/login');
     }
 
     try {
@@ -137,17 +140,26 @@ async function requireAdmin(req, res, next) {
 
         if (error) {
             console.error('Admin lookup error:', error);
-            return sendError(res, 500, 'Unable to verify administrator privileges.');
+            if (req.path.startsWith('/api/')) {
+                return sendError(res, 500, 'Unable to verify administrator privileges.');
+            }
+            return res.redirect('/');
         }
 
         if (!user || user.role !== 'admin') {
-            return sendError(res, 403, 'Administrator privileges required.');
+            if (req.path.startsWith('/api/')) {
+                return sendError(res, 403, 'Administrator privileges required.');
+            }
+            return res.redirect('/');
         }
 
         next();
     } catch (error) {
         console.error('Admin authentication error:', error);
-        sendError(res, 500, 'Server authentication error.');
+        if (req.path.startsWith('/api/')) {
+            return sendError(res, 500, 'Server authentication error.');
+        }
+        return res.redirect('/');
     }
 }
 
@@ -1670,26 +1682,11 @@ app.post('/api/payments/initiate', async (req, res) => {
     }
 });
 
-/*
- * Do not grant purchases from this endpoint until the Paynow response is
- * verified using the Paynow SDK and matched to a pending transaction.
- *
- * The previous implementation logged the callback but did not verify it.
- * Logging payment payloads can also expose customer information.
- */
 app.post('/api/payments/callback', (req, res) => {
     console.info('Paynow callback received.');
-
-    // Payment verification and purchase fulfilment should be implemented here.
-    // Never insert into purchases based only on bookId, email, or client data.
-
     res.sendStatus(200);
 });
 
-/*
- * This endpoint intentionally no longer creates a paid purchase directly.
- * That was a payment bypass in the original implementation.
- */
 app.post('/api/books/:id/buy', requireLogin, async (req, res) => {
     try {
         const { data: book, error } = await supabase
