@@ -242,8 +242,7 @@ const dualUploadFields = upload.fields([
 
 const profileUploadFields = upload.fields([
     { name: 'idDoc', maxCount: 1 },
-    { name: 'isbnDoc', maxCount: 1 },
-    { name: 'profilePic', maxCount: 1 }
+    { name: 'isbnDoc', maxCount: 1 }
 ]);
 
 function getSafeExtension(file) {
@@ -551,20 +550,7 @@ const profileSelect = [
     'isbn',
     'isbn_doc_path',
     'profile_complete',
-    'bio',
-    'profile_pic_url',
-    'facebook_handle',
-    'tiktok_handle',
-    'twitter_handle',
-    'instagram_handle',
-    'facebook_followers',
-    'tiktok_followers',
-    'twitter_followers',
-    'instagram_followers',
-    'show_facebook',
-    'show_tiktok',
-    'show_twitter',
-    'show_instagram'
+    'bio'
 ].join(',');
 
 app.get('/api/author/profile', requireLogin, async (req, res) => {
@@ -612,7 +598,7 @@ app.post(
 
             const { data: existing, error: existingError } = await supabase
                 .from('users')
-                .select('id_doc_path,isbn_doc_path,profile_pic_url')
+                .select('id_doc_path,isbn_doc_path')
                 .eq('id', userId)
                 .single();
 
@@ -622,7 +608,6 @@ app.post(
 
             let idDocPath = existing.id_doc_path;
             let isbnDocPath = existing.isbn_doc_path;
-            let profilePicUrl = existing.profile_pic_url;
 
             if (req.files?.idDoc?.[0]) {
                 idDocPath = await uploadToSupabase(
@@ -634,13 +619,6 @@ app.post(
             if (req.files?.isbnDoc?.[0]) {
                 isbnDocPath = await uploadToSupabase(
                     req.files.isbnDoc[0],
-                    'covers'
-                );
-            }
-
-            if (req.files?.profilePic?.[0]) {
-                profilePicUrl = await uploadToSupabase(
-                    req.files.profilePic[0],
                     'covers'
                 );
             }
@@ -678,92 +656,7 @@ app.post(
                 profile_complete: 1,
                 bio: body.bio
                     ? String(body.bio).substring(0, 160)
-                    : null,
-                profile_pic_url: profilePicUrl,
-                facebook_handle: getProfileValue(
-                    body,
-                    'facebookHandle',
-                    'facebook_handle'
-                ),
-                tiktok_handle: getProfileValue(
-                    body,
-                    'tiktokHandle',
-                    'tiktok_handle'
-                ),
-                twitter_handle: getProfileValue(
-                    body,
-                    'twitterHandle',
-                    'twitter_handle'
-                ),
-                instagram_handle: getProfileValue(
-                    body,
-                    'instagramHandle',
-                    'instagram_handle'
-                ),
-                facebook_followers: parseInt(
-                    getProfileValue(
-                        body,
-                        'facebookFollowers',
-                        'facebook_followers',
-                        0
-                    ),
-                    10
-                ) || 0,
-                tiktok_followers: parseInt(
-                    getProfileValue(
-                        body,
-                        'tiktokFollowers',
-                        'tiktok_followers',
-                        0
-                    ),
-                    10
-                ) || 0,
-                twitter_followers: parseInt(
-                    getProfileValue(
-                        body,
-                        'twitterFollowers',
-                        'twitter_followers',
-                        0
-                    ),
-                    10
-                ) || 0,
-                instagram_followers: parseInt(
-                    getProfileValue(
-                        body,
-                        'instagramFollowers',
-                        'instagram_followers',
-                        0
-                    ),
-                    10
-                ) || 0,
-                show_facebook: normalizeBoolean(
-                    getProfileValue(
-                        body,
-                        'showFacebook',
-                        'show_facebook'
-                    )
-                ),
-                show_tiktok: normalizeBoolean(
-                    getProfileValue(
-                        body,
-                        'showTiktok',
-                        'show_tiktok'
-                    )
-                ),
-                show_twitter: normalizeBoolean(
-                    getProfileValue(
-                        body,
-                        'showTwitter',
-                        'show_twitter'
-                    )
-                ),
-                show_instagram: normalizeBoolean(
-                    getProfileValue(
-                        body,
-                        'showInstagram',
-                        'show_instagram'
-                    )
-                )
+                    : null
             };
 
             const { error } = await supabase
@@ -886,20 +779,7 @@ const bookSelect = [
 
 const authorSelect = [
     'id',
-    'bio',
-    'profile_pic_url',
-    'facebook_handle',
-    'tiktok_handle',
-    'twitter_handle',
-    'instagram_handle',
-    'facebook_followers',
-    'tiktok_followers',
-    'twitter_followers',
-    'instagram_followers',
-    'show_facebook',
-    'show_tiktok',
-    'show_twitter',
-    'show_instagram'
+    'bio'
 ].join(',');
 
 app.get('/api/books', async (req, res) => {
@@ -917,14 +797,7 @@ app.get('/api/books', async (req, res) => {
         res.json((books || []).map(book => ({
             ...serializeBook(book),
             author_id: book.users?.id || book.user_id,
-            author_bio: book.users?.bio || null,
-            author_picture: book.users?.profile_pic_url || null,
-            social: {
-                facebook: book.users?.facebook_handle || null,
-                tiktok: book.users?.tiktok_handle || null,
-                twitter: book.users?.twitter_handle || null,
-                instagram: book.users?.instagram_handle || null
-            }
+            author_bio: book.users?.bio || null
         })));
     } catch (error) {
         console.error('Book lookup error:', error);
