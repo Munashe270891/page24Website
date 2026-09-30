@@ -35,12 +35,12 @@ async function checkAuth() {
 
         if (data.loggedIn) {
             currentUser = data.user;
-            authBtn.textContent = `👤 ${currentUser.username}`;
+            authBtn.textContent = currentUser.username;
             authBtn.href = "/dashboard";
             logoutBtn.style.display = "inline-block";
         } else {
             currentUser = null;
-            authBtn.textContent = "👤 Sign In";
+            authBtn.textContent = "Sign In";
             authBtn.href = "/login?returnTo=/read";
             logoutBtn.style.display = "none";
         }
@@ -240,18 +240,9 @@ function filterBySubTheme(subTheme, btn) {
     }
 }
 
-function openAuthorsModal() {
-    const modal = document.getElementById('authors-modal');
-    if (modal) modal.style.display = 'flex';
-    if (typeof loadTopAuthors === 'function') loadTopAuthors();
-}
-
-// Close Modals
+// Close Book Preview Modal Only
 document.getElementById('close-modal-btn').addEventListener('click', () => {
     document.getElementById('preview-modal').style.display = 'none';
-});
-document.getElementById('close-authors-modal').addEventListener('click', () => {
-    document.getElementById('authors-modal').style.display = 'none';
 });
 
 // 6. User Personal Library Pipeline
