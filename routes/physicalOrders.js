@@ -1,19 +1,22 @@
 const express = require('express');
 const router = express.Router();
 const { supabase } = require('../database');
-const { authenticateToken } = require('../middleware/auth');
+const { requireLogin } = require('../middleware/auth'); // FIXED
 
 // POST Create Physical Order - FINAL VERSION WITH shipping_fee + book_price
-router.post('/create-order', authenticateToken, async (req, res) => {
+router.post('/create-order', requireLogin, async (req, res) => {
   try {
     const { bookId, shippingZoneId, shippingMethod } = req.body;
-    const buyerId = req.user.id;
+    const buyerId = req.session.user.id; // FIXED: was req.user.id
 
     // 1. Get book price
     const { data: book, error: bookErr } = await supabase
-      .from('books').select('id, price, is_physical_available').eq('id', bookId).single();
+      .from('books').select('id, price, is_physical').eq('id', bookId).single();
     
     if (bookErr || !book) return res.status(404).json({ error: 'Book not found' });
+
+    // Optional: block if not physical (remove if you want digital to also use this route)
+    // if (!book.is_physical) return res.status(400).json({ error: 'Book is not available as physical' });
 
     // 2. Calculate shipping
     let shippingFee = 0;
@@ -24,14 +27,14 @@ router.post('/create-order', authenticateToken, async (req, res) => {
       shippingFee = zone ? Number(zone.base_fee) : 0;
       fulfillmentStatus = 'paid_with_shipping';
     } else {
-      // manual_arrangement
+      // manual_arrangement - Harare office pickup or author arranges own courier (50% refund logic later)
       shippingFee = 0;
       fulfillmentStatus = 'paid_book_only_manual_shipping_pending';
     }
 
     const totalPrice = Number(book.price) + shippingFee;
 
-    // 3. Insert with ALL your columns including the 2 you just added
+    // 3. Insert with ALL your columns
     const { data: order, error: orderErr } = await supabase
       .from('purchases')
       .insert([{
