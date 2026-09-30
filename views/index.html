@@ -6,21 +6,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Page 24 - Zimbabwean Voices, Reimagined</title>
     <!-- Cache-busting query parameter added to force browser/Render CSS refresh -->
-    <link rel="stylesheet" href="/css/style.css?v=2.3">
-    <!-- Font Awesome for native-style bottom nav icons -->
+    <link rel="stylesheet" href="/css/style.css?v=2.4">
+    <!-- Font Awesome for native-style bottom nav icons & hamburger menu -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         /* Native App Shell UI Enhancements */
         body {
             padding-bottom: env(safe-area-inset-bottom, 70px);
             overscroll-behavior-y: none;
+            background-color: var(--bg-cream-light, #fdfcf7);
+            color: var(--text-dark, #2a2d2b);
+            margin: 0;
+            font-family: 'Inter', sans-serif;
         }
         header {
             position: sticky;
             top: 0;
             z-index: 100;
             backdrop-filter: blur(12px);
-            background: rgba(27, 61, 43, 0.95);
+            background: rgba(253, 252, 247, 0.95);
+            border-bottom: 1px solid var(--border-tan, #e3e1d5);
             padding-top: max(10px, env(safe-area-inset-top));
             padding-bottom: 10px;
             display: flex;
@@ -29,14 +34,68 @@
             padding-left: 16px;
             padding-right: 16px;
         }
+        
+        /* Custom CSS Logo Styles */
+        .p24-logo {
+            display: flex;
+            align-items: center;
+            font-family: 'Inter', sans-serif;
+            font-weight: 600;
+            letter-spacing: -0.5px;
+            line-height: 1;
+            text-decoration: none;
+        }
+        .p24-text {
+            color: #1A3B5C;
+            font-size: 1.8rem;
+        }
+        .p24-icon-and-num {
+            display: flex;
+            align-items: center;
+            position: relative;
+            margin-left: 2px;
+        }
+        .p24-num-4 {
+            color: #B8860B;
+            font-size: 1.8rem;
+            z-index: 2;
+        }
+        .p24-book-icon {
+            position: absolute;
+            top: 55%; 
+            left: 55%; 
+            transform: translate(-50%, -50%);
+            width: 0.8em;
+            height: 0.8em;
+            border: 0.15em solid #B8860B;
+            border-radius: 0.1em;
+            background: transparent;
+            z-index: 1;
+        }
+        .p24-book-icon::before {
+            content: '';
+            position: absolute;
+            top: 0.2em;
+            right: 0.1em;
+            bottom: 0.2em;
+            left: 0.5em;
+            border-left: 0.1em solid #B8860B;
+        }
+
+        /* Category Row Scrolling */
         .category-pills-row, .subthemes-pills-row {
             overflow-x: auto;
             scrollbar-width: none;
             -webkit-overflow-scrolling: touch;
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            padding: 5px 0;
         }
         .category-pills-row::-webkit-scrollbar, .subthemes-pills-row::-webkit-scrollbar {
             display: none;
         }
+
         /* Native App Bottom Tab Bar */
         .app-bottom-nav {
             position: fixed;
@@ -76,60 +135,72 @@
 <body>
 
     <header>
-        <div class="logo">PAGE 24</div>
-        <nav class="nav-button-group" style="display: flex; gap: 10px; align-items: center;">
-            <a href="/read" class="nav-btn-secondary" title="Open Reader App" style="font-size: 13px; text-decoration: none; padding: 6px 10px;">Reader</a>
-            <a href="/login" id="auth-nav-btn" class="nav-btn-secondary" style="font-size: 13px; text-decoration: none; padding: 6px 10px;">Sign In</a>
+        <!-- Reader Navigation / Hamburger Menu Trigger -->
+        <button id="menu-toggle-btn" aria-label="Reader Navigation Menu" style="background: none; border: none; font-size: 20px; cursor: pointer; color: var(--text-dark, #2a2d2b); padding: 5px;">
+            <i class="fas fa-bars"></i>
+        </button>
+
+        <!-- Custom HTML/CSS Logo Component -->
+        <a href="/" class="p24-logo">
+            <span class="p24-text">page</span>
+            <span class="p24-icon-and-num">
+                <span class="p24-book-icon"></span>
+                <span class="p24-num-4">4</span>
+            </span>
+        </a>
+
+        <!-- Top Right Actions -->
+        <nav class="nav-button-group" style="display: flex; gap: 8px; align-items: center;">
+            <a href="/read" class="nav-btn-secondary" style="font-size: 12px; text-decoration: none; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px;">Reader</a>
+            <a href="/login" id="auth-nav-btn" class="nav-btn-secondary" style="font-size: 12px; text-decoration: none; padding: 5px 8px; border: 1px solid #ccc; border-radius: 4px;">Sign In</a>
         </nav>
     </header>
 
-    <!-- UNTRUSIVE COMPACT WRITER PROMO BAR -->
-    <div class="compact-promo-bar" style="background: var(--bg-cream-accent, #f4f1ea); border-bottom: 1px solid var(--border-tan, #e3e1d5); padding: 8px 16px; font-size: 13px; text-align: center; display: flex; justify-content: center; align-items: center; gap: 10px; flex-wrap: wrap;">
-        <span>Are you a writer? Publish &amp; earn directly via EcoCash &amp; OneMoney.</span>
-        <a href="/dashboard" class="promo-inline-btn" style="background: var(--primary-green, #1b3d2b); color: #fff; padding: 3px 10px; border-radius: 4px; font-weight: 600; text-decoration: none; font-size: 12px;">Publish Your Book</a>
-    </div>
-
-    <!-- MAIN HERO SECTION -->
-    <section class="hero" style="padding: 30px 16px; text-align: center;">
-        <h1 style="font-size: 24px; margin-bottom: 8px;">Zimbabwean Voices, Reimagined</h1>
-        <p style="font-size: 14px; opacity: 0.85; margin-bottom: 20px;">Discover locally published books. Simple ecosystem payments using EcoCash &amp; OneMoney.</p>
+    <!-- MAIN HERO SECTION MATCHING CONCEPT -->
+    <section class="hero" style="padding: 25px 16px 20px 16px; text-align: center;">
+        <h1 style="font-size: 22px; font-weight: 700; margin-bottom: 6px; color: #1a2e22;">Discover the Heartbeat of Zimbabwean Stories.</h1>
+        <p style="font-size: 13px; opacity: 0.8; margin-bottom: 18px;">Connect with local authors and explore our nation's rich narratives.</p>
         
-        <!-- SEARCH BAR CONTAINER COMPONENT -->
-        <div class="search-container">
-            <input type="text" id="store-search" placeholder="🔍 Search books by title or author..." style="width: 100%; max-width: 500px; padding: 12px 20px; border: 1px solid var(--border-tan, #ccc); border-radius: 25px; font-size: 14px; outline: none; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+        <!-- SEARCH BAR CONTAINER -->
+        <div class="search-container" style="margin-bottom: 15px;">
+            <input type="text" id="store-search" placeholder="🔍 Search by title, author, or genre..." style="width: 100%; max-width: 500px; padding: 12px 18px; border: 1px solid var(--border-tan, #ccc); border-radius: 25px; font-size: 14px; outline: none; box-shadow: 0 2px 8px rgba(0,0,0,0.04);">
         </div>
+
+        <!-- START READING CTA BUTTON -->
+        <a href="#public-books-grid" class="nav-btn-primary" style="display: inline-block; background: #d97736; color: white; padding: 10px 24px; border-radius: 20px; text-decoration: none; font-weight: 600; font-size: 14px; box-shadow: 0 3px 6px rgba(217,119,54,0.3);">Start Reading Now</a>
     </section>
 
-    <!-- CATEGORY & SUB-THEME FILTER SECTION -->
+    <!-- CATEGORY & SUB-THEME FILTER SECTION (Dynamic via script) -->
     <section id="category-filter-section" class="category-filter-container" style="padding: 0 16px 15px 16px;">
-        <div class="category-pills-row" style="display: flex; gap: 8px; align-items: center;">
-            <span class="filter-label" style="font-size: 13px; font-weight: bold; white-space: nowrap;">Categories:</span>
-            <button class="cat-pill active" onclick="filterByCategory('All', this)">All Books</button>
-            <button class="cat-pill" onclick="filterByCategory('Shona Novels', this)">Shona Novels</button>
-            <button class="cat-pill" onclick="filterByCategory('Motivational', this)">Motivational</button>
-            <button class="cat-pill" onclick="filterByCategory('Dating &amp; Relationships', this)">Dating &amp; Relationships</button>
-            <button class="cat-pill" onclick="filterByCategory('Christian Devotional', this)">Christian Devotional</button>
-            <button class="cat-pill" onclick="filterByCategory('Business', this)">Business</button>
-            <button class="cat-pill" onclick="filterByCategory('Other', this)">Other</button>
+        <div class="category-pills-row">
+            <span class="filter-label" style="font-size: 13px; font-weight: bold; white-space: nowrap;">CATEGORIES:</span>
+            <!-- Categories are dynamically populated by dashboard.js / main.js logic -->
         </div>
 
         <!-- DYNAMIC SHONA SUB-THEMES ROW -->
-        <div id="shona-subthemes-row" class="subthemes-pills-row" style="display: none; margin-top: 10px; gap: 8px; align-items: center;">
+        <div id="shona-subthemes-row" class="subthemes-pills-row" style="display: none; margin-top: 10px;">
             <span class="sub-label" style="font-size: 13px; font-weight: bold; white-space: nowrap;">Theme:</span>
-            <button class="sub-pill active" onclick="filterBySubTheme('All', this)">All Themes</button>
-            <button class="sub-pill" onclick="filterBySubTheme('Love / Rudo', this)">Love / Rudo</button>
-            <button class="sub-pill" onclick="filterBySubTheme('Christian / Chitendero', this)">Christian / Chitendero</button>
-            <button class="sub-pill" onclick="filterBySubTheme('Culture / Tsika neMagariro', this)">Culture / Tsika neMagariro</button>
-            <button class="sub-pill" onclick="filterBySubTheme('Drama / Mutambo', this)">Drama / Mutambo</button>
         </div>
     </section>
 
-    <main class="content-wrapper" style="padding: 15px 16px;">
-        <h2 id="catalog-heading" style="font-size: 18px; margin-bottom: 15px;">Featured Zimbabwean Stories</h2>
+    <main class="content-wrapper" style="padding: 10px 16px;">
+        <h2 id="catalog-heading" style="font-size: 17px; margin-bottom: 12px; font-weight: 700;">Featured Zimbabwean Stories</h2>
         <div class="book-grid" id="public-books-grid">
-            <!-- Main.js script injects database books here -->
+            <!-- Main.js script dynamically injects database books here -->
         </div>
     </main>
+
+    <!-- NON-INTRUSIVE AUTHOR PROMO CARD (Placed safely at the bottom before footer) -->
+    <section class="bottom-promo-card" style="margin: 30px 16px; background: #f4f1ea; border: 1px solid var(--border-tan, #e3e1d5); border-radius: 8px; padding: 16px; display: flex; gap: 15px; align-items: center;">
+        <div style="font-size: 28px; color: var(--primary-green, #1b3d2b);">
+            <i class="fas fa-feather-pointed"></i>
+        </div>
+        <div style="flex: 1;">
+            <h3 style="margin: 0 0 4px 0; font-size: 15px; color: var(--primary-green, #1b3d2b);">Tell Your Story. Get Published. Earn.</h3>
+            <p style="margin: 0 0 10px 0; font-size: 12px; opacity: 0.85; line-height: 1.4;">Page 24 connects local writers directly with readers. Publish easily and receive payments via EcoCash &amp; OneMoney.</p>
+            <a href="/dashboard" style="display: inline-block; background: var(--primary-green, #1b3d2b); color: #fff; padding: 6px 14px; border-radius: 4px; font-weight: 600; text-decoration: none; font-size: 12px;">Become an Author</a>
+        </div>
+    </section>
 
     <!-- BOOK DETAIL PREVIEW MODAL OVERLAY -->
     <div id="preview-modal" class="modal-overlay" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 2000; justify-content: center; align-items: center;">
@@ -171,7 +242,7 @@
     </nav>
 
     <!-- SITE FOOTER -->
-    <footer class="site-footer" style="margin-bottom: 60px; padding: 20px 16px; text-align: center; font-size: 11px; opacity: 0.7;">
+    <footer class="site-footer" style="margin-bottom: 70px; padding: 20px 16px; text-align: center; font-size: 11px; opacity: 0.7;">
         <div class="footer-content">
             <p class="copyright-text">
                 &copy; 2026 Page 24 Digital Publishing Platform. A product of <strong>Upnode Technologies (PVT LTD) in Partnership with Pearl Press Media Publishing Company</strong>. All rights reserved.
@@ -182,7 +253,7 @@
         </div>
     </footer>
 
-    <script src="/js/main.js?v=2.3"></script>
+    <script src="/js/main.js?v=2.4"></script>
     
     <!-- DYNAMIC AUTH BUTTON CHECK SCRIPT -->
     <script>
