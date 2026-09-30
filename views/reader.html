@@ -27,7 +27,7 @@
     </header>
 
     <!-- TAB 1: READ NOW SCREEN -->
-    <div id="screen-read" class="tab-screen">
+    <div id="screen-read" class="tab-screen" style="display: none;">
         <p id="status-text" style="text-align: center; margin-top: 50px; color: #666;">
             Select a book from <strong>My Books</strong> or the <strong>Store</strong> to start reading.
         </p>
@@ -56,7 +56,7 @@
     </div>
 
     <!-- TAB 2: BOOK STORE SCREEN -->
-    <div id="screen-store" class="tab-screen">
+    <div id="screen-store" class="tab-screen" style="display: none;">
         <aside class="ad-container">
             <div class="house-ad">
                 <span class="ad-badge">PROMO</span>
@@ -90,8 +90,6 @@
                 <button class="sub-pill" onclick="filterBySubTheme('Drama / Mutambo', this)">Drama / Mutambo</button>
             </div>
         </section>
-
-        <!-- Top Authors Bar completely removed here -->
 
         <div class="book-grid" id="public-books-grid">Loading store catalog...</div>
     </div>
@@ -151,16 +149,82 @@
 
     <!-- BOTTOM TAB NAVIGATION -->
     <nav class="nav-tabs">
-        <button class="tab-btn active" onclick="switchTab('library')">
+        <button class="tab-btn active" onclick="switchTab('library', this)">
             <span class="icon">📚</span> My Books
         </button>
-        <button class="tab-btn" onclick="switchTab('read')">
+        <button class="tab-btn" onclick="switchTab('read', this)">
             <span class="icon">📖</span> Read Now
         </button>
-        <button class="tab-btn" onclick="switchTab('store')">
+        <button class="tab-btn" onclick="switchTab('store', this)">
             <span class="icon">🛒</span> Store
         </button>
     </nav>
+
+    <!-- INLINE TAB SWITCHER & AUTH CHECK FIX -->
+    <script>
+        function switchTab(tabName, element) {
+            // Hide all tab screens and remove active display
+            document.querySelectorAll('.tab-screen').forEach(screen => {
+                screen.classList.remove('active');
+                screen.style.display = 'none';
+            });
+
+            // Remove active state from all tab buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+
+            // Show target screen
+            const targetScreen = document.getElementById('screen-' + tabName);
+            if (targetScreen) {
+                targetScreen.classList.add('active');
+                targetScreen.style.display = 'block';
+            }
+
+            // Activate clicked button
+            if (element) {
+                element.classList.add('active');
+            }
+
+            // Update top header title dynamically
+            const headerTitle = document.getElementById('top-header-title');
+            if (headerTitle) {
+                if (tabName === 'library') headerTitle.innerHTML = '📚 My Books';
+                else if (tabName === 'read') headerTitle.innerHTML = '📖 Read Now';
+                else if (tabName === 'store') headerTitle.innerHTML = '🛒 Book Store';
+            }
+        }
+
+        // Handle initial view state and unauthenticated library state check
+        document.addEventListener('DOMContentLoaded', async () => {
+            // Ensure only library screen is shown initially matching default active tab
+            document.querySelectorAll('.tab-screen').forEach(s => {
+                if (!s.classList.contains('active')) {
+                    s.style.display = 'none';
+                } else {
+                    s.style.display = 'block';
+                }
+            });
+
+            // Check if user is logged in to avoid infinite "Loading your personal library..." text when unauthenticated
+            try {
+                const res = await fetch('/api/auth/me');
+                if (!res.ok) {
+                    const libGrid = document.getElementById('library-books-grid');
+                    if (libGrid) {
+                        libGrid.innerHTML = `
+                            <div style="text-align:center; padding: 40px 20px; grid-column: 1 / -1;">
+                                <p style="color:#666; margin-bottom:15px; font-size:14px;">Please sign in to view your personal library and purchased books.</p>
+                                <a href="/login?returnTo=/read" style="background:#1b3d2b; color:#fff; padding:10px 20px; border-radius:4px; text-decoration:none; font-weight:bold; font-size:13px;">Sign In Now</a>
+                            </div>
+                        `;
+                    }
+                }
+            } catch (err) {
+                console.error('Auth verification check failed:', err);
+            }
+        });
+    </script>
 
     <!-- LOAD MAIN.JS & READER SPECIFIC SCRIPT -->
     <script src="/js/main.js?v=2.2"></script>
