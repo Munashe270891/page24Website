@@ -7,6 +7,9 @@ let activeSubTheme = 'All';
 let currentChapters = [];
 let currentChapterIdx = 0;
 
+// Reader Theme State ('cream' or 'dark')
+let currentReaderTheme = 'cream';
+
 function escapeHTML(str) {
     if (!str) return '';
     return String(str)
@@ -98,7 +101,7 @@ function switchTab(tabName) {
     }
 }
 
-// 4. Reader Engine
+// 4. Reader Engine & Mobile Swipe Controls
 let pdfDoc = null, pageNum = 1, currentBookTitle = "";
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
 
@@ -186,7 +189,7 @@ function renderPdfView(pdfUrl) {
     }).catch(err => {
         console.error("PDF Render error:", err);
         document.getElementById('status-text').style.display = 'block';
-        document.getElementById('status-text').textContent = "Error rendering PDF file.";
+        document.getElementById('status-text'].textContent = "Error rendering PDF file.";
     });
 }
 
@@ -210,6 +213,91 @@ document.getElementById('prev-page').addEventListener('click', () => {
 document.getElementById('next-page').addEventListener('click', () => {
     if (pdfDoc && pageNum < pdfDoc.numPages) { pageNum++; renderPage(pageNum); }
 });
+
+// ==========================================
+// MOBILE THUMB SWIPE GESTURE ENGINE          
+// ==========================================
+let touchStartX = 0;
+let touchStartY = 0;
+let touchEndX = 0;
+let touchEndY = 0;
+
+const readerScreen = document.getElementById('screen-read');
+
+if (readerScreen) {
+    readerScreen.addEventListener('touchstart', e => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+    }, { passive: true });
+
+    readerScreen.addEventListener('touchend', e => {
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+        handleSwipeGesture();
+    }, { passive: true });
+}
+
+function handleSwipeGesture() {
+    const diffX = touchEndX - touchStartX;
+    const diffY = touchEndY - touchStartY;
+    const threshold = 50; // Minimum pixel drag to qualify as a swipe
+
+    // Determine if swipe was mostly horizontal or vertical
+    if (Math.abs(diffX) > Math.abs(diffY)) {
+        if (Math.abs(diffX) > threshold) {
+            if (diffX > 0) {
+                // Swipe Right -> Previous Chapter / Page
+                if (currentChapters.length > 1) {
+                    navigateChapter(-1);
+                } else if (pdfDoc && pageNum > 1) {
+                    pageNum--; renderPage(pageNum);
+                }
+            } else {
+                // Swipe Left -> Next Chapter / Page
+                if (currentChapters.length > 1) {
+                    navigateChapter(1);
+                } else if (pdfDoc && pageNum < pdfDoc.numPages) {
+                    pageNum++; renderPage(pageNum);
+                }
+            }
+        }
+    } else {
+        if (Math.abs(diffY) > threshold) {
+            if (diffY > 0) {
+                // Swipe Down -> Previous item/chapter
+                if (currentChapters.length > 1 && diffY > 80) navigateChapter(-1);
+            } else {
+                // Swipe Up -> Next item/chapter
+                if (currentChapters.length > 1 && diffY < -80) navigateChapter(1);
+            }
+        }
+    }
+}
+
+// ==========================================
+// THEME TOGGLE ENGINE (Cream vs Dark Mode)   
+// ==========================================
+function toggleReaderTheme() {
+    const readScreen = document.getElementById('screen-read');
+    if (currentReaderTheme === 'cream') {
+        currentReaderTheme = 'dark';
+        readScreen.style.backgroundColor = '#121212';
+        readScreen.style.color = '#e0e0e0';
+        // Apply dark background to webbook body blocks if present
+        document.querySelectorAll('.book-content-body, #chapter-content').forEach(el => {
+            el.style.backgroundColor = '#1e1e1e';
+            el.style.color = '#f1f5f9';
+        });
+    } else {
+        currentReaderTheme = 'cream';
+        readScreen.style.backgroundColor = '';
+        readScreen.style.color = '';
+        document.querySelectorAll('.book-content-body, #chapter-content').forEach(el => {
+            el.style.backgroundColor = '';
+            el.style.color = '';
+        });
+    }
+}
 
 // 5. Category & Filter Controls
 function filterByCategory(category, btn) {
