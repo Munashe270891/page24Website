@@ -587,7 +587,27 @@ document.addEventListener('DOMContentLoaded', () => {
         let chapterGroup = document.getElementById('edit-chapter-group');
         const contentTextArea = document.getElementById('edit-book-content') || document.getElementById('edit-chapter-body');
 
+        // Setup AI Formatter Trigger Button dynamically inside the Edit Modal if HTML mode
+        let formatterTriggerBtn = document.getElementById('launch-formatter-btn');
+        if (!formatterTriggerBtn && contentTextArea) {
+            formatterTriggerBtn = document.createElement('button');
+            formatterTriggerBtn.type = 'button';
+            formatterTriggerBtn.id = 'launch-formatter-btn';
+            formatterTriggerBtn.innerHTML = '<i class="fas fa-magic"></i> Open AI Layout Formatter';
+            formatterTriggerBtn.style.cssText = 'margin-bottom: 10px; padding: 6px 12px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; display: block;';
+            formatterTriggerBtn.addEventListener('click', () => {
+                if (typeof openLayoutFormatter === 'function') {
+                    openLayoutFormatter(contentTextArea.id, id, state.currentEditingChapterId);
+                } else {
+                    alert('Formatter utility is not loaded.');
+                }
+            });
+            contentTextArea.parentNode.insertBefore(formatterTriggerBtn, contentTextArea);
+        }
+
         if (String(mode).toLowerCase() === 'html') {
+            if (formatterTriggerBtn) formatterTriggerBtn.style.display = 'block';
+
             if (!chapterGroup && editForm) {
                 chapterGroup = document.createElement('div');
                 chapterGroup.id = 'edit-chapter-group';
@@ -644,6 +664,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error('Failed to load chapter content for editing:', error);
             }
         } else {
+            if (formatterTriggerBtn) formatterTriggerBtn.style.display = 'none';
             if (chapterGroup) chapterGroup.style.display = 'none';
             if (contentTextArea) contentTextArea.style.display = 'none';
         }
@@ -665,6 +686,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const description = document.getElementById('edit-book-description')?.value || '';
             const price = document.getElementById('edit-book-price')?.value || '0';
             const contentTextArea = document.getElementById('edit-book-content') || document.getElementById('edit-chapter-body');
+            const pdfFileInput = document.getElementById('edit-book-pdf-file');
 
             if (!id) {
                 alert('Missing book ID.');
@@ -672,9 +694,18 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             try {
+                // Package updates into FormData to support optional replacement PDF files
+                const formData = new FormData();
+                formData.append('description', description);
+                formData.append('price', price);
+
+                if (pdfFileInput && pdfFileInput.files[0]) {
+                    formData.append('pdfFile', pdfFileInput.files[0]);
+                }
+
                 const bookResult = await apiFetch(`/api/books/${encodeURIComponent(id)}`, {
                     method: 'PUT',
-                    body: JSON.stringify({ description, price })
+                    body: formData
                 });
 
                 if (bookResult && bookResult.error) {
@@ -696,8 +727,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
 
-                alert('✅ Book details updated successfully!');
+                alert('✅ Book details and files updated successfully!');
                 if (editModal) editModal.style.display = 'none';
+                if (pdfFileInput) pdfFileInput.value = '';
                 await loadDashboardBooks();
             } catch (error) {
                 console.error('Error saving book edits:', error);
