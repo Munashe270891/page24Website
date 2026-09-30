@@ -1,12 +1,17 @@
-// Dedicated Webbook Layout & Formatting Utility v2.2 (Resilient & Offline-Ready)
+// Dedicated Webbook Layout & Formatting Utility v2.3 (Supabase Integrated)
 
 let historyStack = [];
 let historyStep = -1;
 let autoSaveTimer = null;
 let activeTargetId = null;
+let activeBookId = null;     // Linked book ID if editing from dashboard
+let activeChapterId = null;  // Linked chapter ID if editing specific chapter
 
-function openLayoutFormatter(targetTextareaId) {
+function openLayoutFormatter(targetTextareaId, bookId = null, chapterId = null) {
     activeTargetId = targetTextareaId;
+    activeBookId = bookId;
+    activeChapterId = chapterId;
+
     const targetArea = document.getElementById(targetTextareaId);
     if (!targetArea) return;
 
@@ -25,7 +30,7 @@ function openLayoutFormatter(targetTextareaId) {
                     <h3 style="margin: 0; color: #1e4d2b;"><i class="fas fa-magic"></i> AI Book Text & Layout Formatter</h3>
                     <span id="autosave-status" style="font-size: 11px; color: #27ae60; font-weight: bold;">● All changes saved</span>
                 </div>
-                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Format your book chapter into clean semantic HTML. Auto-saves every 20 seconds.</p>
+                <p style="font-size: 12px; color: #666; margin-bottom: 15px;">Format your book chapter into clean semantic HTML. Auto-saves locally and syncs to Supabase.</p>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px;">
                     <div>
@@ -74,7 +79,7 @@ function openLayoutFormatter(targetTextareaId) {
                 </div>
 
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <button type="button" onclick="saveAsDraft()" style="padding: 8px 15px; background: #d97706; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;"><i class="fas fa-save"></i> Save As Draft</button>
+                    <button type="button" onclick="saveAsDraftToSupabase()" style="padding: 8px 15px; background: #d97706; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;"><i class="fas fa-cloud-upload-alt"></i> Save As Draft</button>
                     <div style="display: flex; gap: 10px;">
                         <button type="button" onclick="closeLayoutFormatter()" style="padding: 8px 15px; background: #e2e8f0; color: #333; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Exit / Cancel</button>
                         <button type="button" onclick="confirmLayoutFormatter()" style="padding: 8px 20px; background: #1e4d2b; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;"><i class="fas fa-check"></i> Apply & Return to Dashboard</button>
@@ -85,23 +90,19 @@ function openLayoutFormatter(targetTextareaId) {
         document.body.appendChild(modal);
     }
 
-    // Load existing working text or recover draft if saved locally
     const savedDraft = localStorage.getItem('draft_' + targetTextareaId);
     const initialText = savedDraft || targetArea.value;
     
     const workingArea = document.getElementById('fmt-working-area');
     workingArea.value = initialText;
     
-    // Initialize history stack
     historyStack = [initialText];
     historyStep = 0;
-
     modal.style.display = 'flex';
 
-    // Start auto-save loop every 20 seconds
     if (autoSaveTimer) clearInterval(autoSaveTimer);
     autoSaveTimer = setInterval(() => {
-        performAutoSave();
+        performLocalAutoSave();
     }, 20000);
 }
 
@@ -138,7 +139,7 @@ function fmtRedo() {
     }
 }
 
-function performAutoSave() {
+function performLocalAutoSave() {
     if (!activeTargetId) return;
     const val = document.getElementById('fmt-working-area').value;
     localStorage.setItem('draft_' + activeTargetId, val);
@@ -150,25 +151,44 @@ function performAutoSave() {
     }
 }
 
-function saveAsDraft() {
-    performAutoSave();
-    
-    // Optional: If Supabase client is available in your global scope, sync draft to database table
-    if (typeof supabase !== 'undefined' && window.userSession) {
-        // Example Supabase draft upsert hook
-        /*
-        supabase.from('book_drafts').upsert({
-            user_id: window.userSession.id,
-            target_field: activeTargetId,
-            content: document.getElementById('fmt-working-area').value,
-            updated_at: new Date()
-        }).then(({ error }) => {
-            if(error) console.error("Cloud sync error:", error.message);
-        });
-        */
+async function saveAsDraftToSupabase() {
+    performLocalAutoSave();
+    const currentText = document.getElementById('fmt-working-area').value;
+
+    if (typeof supabase === 'undefined') {
+        alert("💾 Draft saved locally! (Supabase client not detected in global scope)");
+        return;
     }
 
-    alert("💾 Chapter draft saved successfully! You can safely exit or continue editing.");
+    try {
+        const statusEl = document.getElementById('autosave-status');
+        if (statusEl) statusEl.innerText = "☁️ Syncing to Supabase...";
+
+        if (activeChapterId) {
+            // Update specific chapter in the `chapters` table
+            const { error } = await supabase
+                .from('chapters')
+                .update({ body: currentText })
+                .eq('id', activeChapterId);
+            if (error) throw error;
+        } else if (activeBookId) {
+            // Update book record in the `books` table (`chapter_body`)
+            const { error } = await supabase
+                .from('books')
+                .update({ chapter_body: currentText })
+                .eq('id', activeBookId);
+            if (error) throw error;
+        }
+
+        if (statusEl) {
+            statusEl.innerText = "● Synced to Supabase";
+            statusEl.style.color = "#27ae60";
+        }
+        alert("✅ Draft successfully saved to your Supabase database!");
+    } catch (err) {
+        console.error("Supabase draft sync failed:", err.message);
+        alert("⚠️ Network offline or sync failed. Your draft is safely stored locally in your browser.");
+    }
 }
 
 function applyFmtTag(tagType) {
@@ -191,22 +211,35 @@ function applyFmtTag(tagType) {
     recordHistoryState();
 }
 
-function confirmLayoutFormatter() {
+async function confirmLayoutFormatter() {
     if (!activeTargetId) return;
     const workingAreaVal = document.getElementById('fmt-working-area').value;
     const genre = document.getElementById('fmt-genre').value;
     const align = document.getElementById('fmt-align').value;
     const pStyle = document.getElementById('fmt-p-style').value;
 
+    const formattedHtml = parseTextToCleanHtml(workingAreaVal, genre, align, pStyle);
+
     const targetArea = document.getElementById(activeTargetId);
     if (targetArea) {
-        targetArea.value = parseTextToCleanHtml(workingAreaVal, genre, align, pStyle);
-        // Clear local draft cache upon successful commit back to dashboard form
+        targetArea.value = formattedHtml;
         localStorage.removeItem('draft_' + activeTargetId);
+    }
+
+    // Optional direct cloud save of the final HTML output if connected to Supabase
+    if (typeof supabase !== 'undefined') {
+        try {
+            if (activeChapterId) {
+                await supabase.from('chapters').update({ body: formattedHtml }).eq('id', activeChapterId);
+            } else if (activeBookId) {
+                await supabase.from('books').update({ html_content: formattedHtml, chapter_body: workingAreaVal }).eq('id', activeBookId);
+            }
+        } catch (e) {
+            console.error("Final HTML sync error:", e);
+        }
     }
     
     closeLayoutFormatter();
-    // Triggers standard dashboard return transition or form state sync
 }
 
 function parseTextToCleanHtml(text, genre, alignment, paragraphStyle) {
