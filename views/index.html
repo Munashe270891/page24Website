@@ -82,6 +82,30 @@
             border-left: 0.1em solid #B8860B;
         }
 
+        /* Enhanced Hero Background Styles */
+        .hero-banner {
+            position: relative;
+            background: url('/images/IMG_3536.jpeg') no-repeat center center;
+            background-size: cover;
+            padding: 40px 16px 35px 16px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-tan, #e3e1d5);
+        }
+        .hero-banner::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to bottom, rgba(253, 252, 247, 0.93) 0%, rgba(253, 252, 247, 0.97) 100%);
+            z-index: 1;
+        }
+        .hero-content-wrapper {
+            position: relative;
+            z-index: 2;
+        }
+
         .category-pills-row, .subthemes-pills-row {
             overflow-x: auto;
             scrollbar-width: none;
@@ -192,19 +216,21 @@
         </nav>
     </header>
 
-    <!-- MAIN HERO SECTION -->
-    <section class="hero" style="padding: 30px 16px; text-align: center;">
-        <h1 style="font-size: 24px; margin-bottom: 8px; font-weight: 700;">Zimbabwean Voices, Reimagined</h1>
-        <p style="font-size: 14px; opacity: 0.85; margin-bottom: 20px;">Discover locally published books. Simple ecosystem payments using EcoCash &amp; OneMoney.</p>
-        
-        <!-- SEARCH BAR CONTAINER COMPONENT -->
-        <div class="search-container">
-            <input type="text" id="store-search" placeholder="🔍 Search books by title or author..." style="width: 100%; max-width: 500px; padding: 12px 20px; border: 1px solid var(--border-tan, #ccc); border-radius: 25px; font-size: 14px; outline: none; box-shadow: 0 2px 8px rgba(0,0,0,0.06);">
+    <!-- MAIN HERO SECTION WITH REPO IMAGE BACKGROUND & LEGIBILITY OVERLAY -->
+    <section class="hero hero-banner">
+        <div class="hero-content-wrapper">
+            <h1 style="font-size: 24px; margin-bottom: 8px; font-weight: 700; color: #1A3B5C;">Zimbabwean Voices, Reimagined</h1>
+            <p style="font-size: 14px; opacity: 0.9; margin-bottom: 20px; font-weight: 500;">Discover locally published books. Simple ecosystem payments using EcoCash &amp; OneMoney.</p>
+            
+            <!-- SEARCH BAR CONTAINER COMPONENT -->
+            <div class="search-container">
+                <input type="text" id="store-search" placeholder="🔍 Search books by title or author..." style="width: 100%; max-width: 500px; padding: 12px 20px; border: 1px solid var(--border-tan, #ccc); border-radius: 25px; font-size: 14px; outline: none; box-shadow: 0 2px 8px rgba(0,0,0,0.06); background: rgba(255,255,255,0.95);">
+            </div>
         </div>
     </section>
 
     <!-- CATEGORY & SUB-THEME FILTER SECTION -->
-    <section id="category-filter-section" class="category-filter-container" style="padding: 0 16px 15px 16px;">
+    <section id="category-filter-section" class="category-filter-container" style="padding: 15px 16px 15px 16px;">
         <div class="category-pills-row" style="display: flex; gap: 8px; align-items: center;">
             <span class="filter-label" style="font-size: 13px; font-weight: bold; white-space: nowrap;">Categories:</span>
             <button class="cat-pill active" onclick="filterByCategory('All', this)">All Books</button>
@@ -227,7 +253,7 @@
         </div>
     </section>
 
-    <main class="content-wrapper" style="padding: 15px 16px;">
+    <main class="content-wrapper" style="padding: 10px 16px;">
         <h2 id="catalog-heading" style="font-size: 18px; margin-bottom: 15px; font-weight: 700;">Featured Zimbabwean Stories</h2>
         <div class="book-grid" id="public-books-grid">
             <!-- Main.js script injects database books here -->
