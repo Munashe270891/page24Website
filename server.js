@@ -13,6 +13,7 @@ app.set('trust proxy', 1);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(express.static(path.join(__dirname, 'public')));
+app.use('/images', express.static(path.join(__dirname, 'images'))); // <-- Added middleware for root /images folder
 
 app.use(session(SESSION_CONFIG));
 
