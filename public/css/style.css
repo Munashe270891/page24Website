@@ -113,9 +113,11 @@ header {
 /* ========================================== */
 
 .hero {
-    background-color: var(--primary-green);
+    position: relative;
+    background: url('/images/IMG_3536.jpeg') no-repeat center center;
+    background-size: cover;
     color: var(--white);
-    padding: 50px 5% 45px 5%;
+    padding: 60px 5% 55px 5%;
     text-align: center;
 }
 
@@ -132,6 +134,19 @@ header {
     max-width: 600px;
     margin: 0 auto;
     line-height: 1.4;
+}
+
+/* Frosted Glass Container Card for Hero Content */
+.hero-glass-card {
+    background: rgba(10, 25, 47, 0.65);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 30px 20px;
+    border-radius: 16px;
+    max-width: 650px;
+    margin: 0 auto;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.3);
 }
 
 /* ========================================== */
