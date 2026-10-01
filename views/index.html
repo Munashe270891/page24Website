@@ -86,28 +86,11 @@
         .hero-banner {
             position: relative;
             /* Set the background image from the repo */
-            background: url('/images/IMG_3540.jpeg') no-repeat center center;
+            background: url('/images/IMG_3536.jpeg') no-repeat center center;
             background-size: cover;
             padding: 50px 16px 40px 16px; /* Increased vertical padding */
             text-align: center;
             border-bottom: 1px solid var(--border-tan, #e3e1d5);
-        }
-        
-        /* Semi-transparent overlay for text legibility */
-        .hero-banner::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(to bottom, rgba(253, 252, 247, 0.9) 0%, rgba(253, 252, 247, 0.97) 100%);
-            z-index: 1;
-        }
-        
-        .hero-content-wrapper {
-            position: relative;
-            z-index: 2; /* Ensures content is above the overlay */
         }
         
         /* Category and Subtheme Pill Styles */
@@ -242,15 +225,15 @@
         </nav>
     </header>
 
-    <!-- MAIN HERO SECTION WITH IMAGE BACKGROUND & LEGIBILITY OVERLAY -->
+    <!-- MAIN HERO SECTION WITH FULL IMAGE BACKGROUND & GLASS CARD -->
     <section class="hero hero-banner">
-        <div class="hero-content-wrapper">
-            <h1 style="font-size: 28px; margin-bottom: 8px; font-weight: 800; color: #1A3B5C; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">Zimbabwean Voices, Reimagined</h1>
-            <p style="font-size: 16px; opacity: 0.95; margin-bottom: 25px; font-weight: 500; color: #1A3B5C;">Discover locally published books. Simple payments using EcoCash &amp; OneMoney.</p>
+        <div class="hero-glass-card" style="background: rgba(10, 25, 47, 0.65); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.15); padding: 30px 20px; border-radius: 16px; max-width: 650px; margin: 0 auto; box-shadow: 0 8px 32px rgba(0,0,0,0.3);">
+            <h1 style="font-size: 26px; margin-bottom: 8px; font-weight: 800; color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Zimbabwean Voices, Reimagined</h1>
+            <p style="font-size: 15px; margin-bottom: 20px; font-weight: 500; color: #f1f5f9; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">Discover locally published books. Simple payments using EcoCash &amp; OneMoney.</p>
             
             <!-- SEARCH BAR CONTAINER COMPONENT -->
             <div class="search-container">
-                <input type="text" id="store-search" placeholder="🔍 Search books by title or author..." style="width: 100%; max-width: 600px; padding: 14px 20px; border: 1px solid var(--border-tan, #e3e1d5); border-radius: 25px; font-size: 15px; outline: none; box-shadow: 0 3px 10px rgba(0,0,0,0.1); background: rgba(255,255,255,0.95);">
+                <input type="text" id="store-search" placeholder="🔍 Search books by title or author..." style="width: 100%; max-width: 500px; padding: 14px 20px; border: 1px solid rgba(255,255,255,0.2); border-radius: 25px; font-size: 15px; outline: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2); background: rgba(255,255,255,0.95); color: #0f172a;">
             </div>
         </div>
     </section>
