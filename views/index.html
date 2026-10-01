@@ -85,10 +85,10 @@
         /* Enhanced Hero Background Styles */
         .hero-banner {
             position: relative;
-            /* Set the background image from the repo */
-            background: url('/images/IMG_3540.jpeg') no-repeat center center;
+            /* Background image with fallback color; verify exact filename and casing in /images/ */
+            background: linear-gradient(rgba(10, 25, 47, 0.3), rgba(10, 25, 47, 0.3)), url('/images/IMG_3540.jpeg') no-repeat center center;
             background-size: cover;
-            padding: 50px 16px 40px 16px; /* Increased vertical padding */
+            padding: 50px 16px 40px 16px;
             text-align: center;
             border-bottom: 1px solid var(--border-tan, #e3e1d5);
         }
@@ -101,8 +101,8 @@
             display: flex;
             gap: 8px;
             align-items: center;
-            padding: 15px 16px; /* Provides padding within the scroll container */
-            background-color: #fdfcf7; /* Matches body background */
+            padding: 15px 16px;
+            background-color: #fdfcf7;
         }
         .category-pills-row::-webkit-scrollbar, .subthemes-pills-row::-webkit-scrollbar {
             display: none;
@@ -130,7 +130,7 @@
         /* Floating Dismissible Author Promo Bar */
         #floating-writer-promo {
             position: fixed;
-            bottom: 65px; /* Sits comfortably right above the bottom nav bar */
+            bottom: 65px;
             left: 16px;
             right: 16px;
             background: #1b3d2b;
@@ -231,9 +231,9 @@
             <h1 style="font-size: 26px; margin-bottom: 8px; font-weight: 800; color: #ffffff; text-shadow: 0 2px 4px rgba(0,0,0,0.3);">Zimbabwean Voices, Reimagined</h1>
             <p style="font-size: 15px; margin-bottom: 20px; font-weight: 500; color: #f1f5f9; text-shadow: 0 1px 2px rgba(0,0,0,0.3);">Discover locally published books. Simple payments using EcoCash &amp; OneMoney.</p>
             
-            <!-- SEARCH BAR CONTAINER COMPONENT -->
-            <div class="search-container">
-                <input type="text" id="store-search" placeholder="🔍 Search books by title or author..." style="width: 100%; max-width: 500px; padding: 14px 20px; border: 1px solid rgba(255,255,255,0.2); border-radius: 25px; font-size: 15px; outline: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2); background: rgba(255,255,255,0.95); color: #0f172a;">
+            <!-- SEARCH BAR CONTAINER COMPONENT (Properly Box-Sized & Aligned) -->
+            <div class="search-container" style="width: 100%;">
+                <input type="text" id="store-search" placeholder="🔍 Search books by title or author..." style="width: 100%; box-sizing: border-box; padding: 14px 20px; border: 1px solid rgba(255,255,255,0.2); border-radius: 25px; font-size: 15px; outline: none; box-shadow: 0 4px 15px rgba(0,0,0,0.2); background: rgba(255,255,255,0.95); color: #0f172a;">
             </div>
         </div>
     </section>
@@ -241,7 +241,6 @@
     <!-- CATEGORY FILTER SECTION - TIGHTER FLOW -->
     <section id="category-filter-section" class="category-filter-container" style="padding: 0;">
         <div class="category-pills-row">
-            <!-- The label is now part of the horizontal flow -->
             <span class="filter-label" style="font-size: 14px; font-weight: 700; white-space: nowrap; margin-right: 5px; color: #1A3B5C;">Explore:</span>
             <button class="cat-pill active" onclick="filterByCategory('All', this)">All Books</button>
             <button class="cat-pill" onclick="filterByCategory('Shona Novels', this)">Shona Novels</button>
@@ -335,7 +334,6 @@
     <!-- FLOATING PROMO DISMISSAL SCRIPT & AUTH CHECK -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            // Floating Promo Dismissal Handler
             const promoBar = document.getElementById('floating-writer-promo');
             const closeBtn = document.getElementById('close-promo-btn');
             
@@ -377,7 +375,7 @@
                     }
                 }
             } catch (err) {
-                // User is unauthenticated, leave button as "Sign In"
+                // User is unauthenticated
             }
         });
     </script>
