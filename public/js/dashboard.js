@@ -4,18 +4,65 @@ document.addEventListener('DOMContentLoaded', () => {
         currentEditingChapterId: null
     };
 
+    // --- GLOBAL LOADING & STATUS OVERLAY UTILITY ---
+    function showProgressModal(message) {
+        let overlay = document.getElementById('upload-progress-overlay');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'upload-progress-overlay';
+            overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; color: white; font-family: Inter, sans-serif;';
+            overlay.innerHTML = `
+                <div style="background: #1b3d2b; padding: 25px 35px; border-radius: 12px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.2); max-width: 400px; width: 90%;">
+                    <div class="spinner" style="border: 4px solid rgba(255,255,255,0.3); width: 40px; height: 40px; border-radius: 50%; border-left-color: #d97736; animation: spin 1s linear infinite; margin: 0 auto 15px auto;"></div>
+                    <p id="progress-message" style="margin: 0; font-size: 15px; font-weight: 600; line-height: 1.4;">Processing upload...</p>
+                </div>
+                <style>@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }</style>
+            `;
+            document.body.appendChild(overlay);
+        }
+        document.getElementById('progress-message').textContent = message;
+        overlay.style.display = 'flex';
+    }
+
+    function hideProgressModal() {
+        const overlay = document.getElementById('upload-progress-overlay');
+        if (overlay) overlay.style.display = 'none';
+    }
+
+    // --- ENHANCED API FETCH WITH CORRECT MULTIPART HANDLING ---
     const apiFetch = async (url, options = {}) => {
         const customOptions = {...options };
-        if (!(customOptions.body instanceof FormData)) {
+        
+        // If sending FormData, do NOT force 'Content-Type: application/json' 
+        // Let the browser automatically manage multipart boundaries.
+        if (customOptions.body instanceof FormData) {
+            if (customOptions.headers) {
+                delete customOptions.headers['Content-Type'];
+            }
+        } else if (customOptions.body && typeof customOptions.body === 'object' && !(customOptions.body instanceof URLSearchParams)) {
             customOptions.headers = {...(customOptions.headers || {}), 'Content-Type': 'application/json' };
+            customOptions.body = JSON.stringify(customOptions.body);
         }
-        const response = await fetch(url, { credentials: 'same-origin',...customOptions });
+
+        let response;
+        try {
+            response = await fetch(url, { credentials: 'same-origin', ...customOptions });
+        } catch (networkError) {
+            throw new Error('Network connection failed. Please check your internet connection and try again.');
+        }
+
         const contentType = response.headers.get('content-type') || '';
-        const payload = contentType.includes('application/json')? await response.json() : await response.text();
+        const payload = contentType.includes('application/json') ? await response.json() : await response.text();
+        
         if (!response.ok) {
-            const message = typeof payload === 'object' && payload && payload.error? payload.error : `Request failed with status ${response.status}`;
+            let errorMessage = `Request failed with status ${response.status}`;
+            if (typeof payload === 'object' && payload !== null) {
+                errorMessage = payload.error || payload.message || errorMessage;
+            } else if (typeof payload === 'string' && payload.trim().length > 0) {
+                errorMessage = payload;
+            }
             if (response.status === 401) window.location.href = '/login';
-            throw new Error(message);
+            throw new Error(errorMessage);
         }
         return payload;
     };
@@ -79,18 +126,18 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadCurrentUser() {
         try {
             const data = await apiFetch('/api/auth/me');
-            if (!data.loggedIn ||!data.user) { window.location.href = '/login'; return; }
+            if (!data.loggedIn || !data.user) { window.location.href = '/login'; return; }
             const displayName = data.user.name || data.user.legal_name || data.user.username || '';
             const welcomeTag = document.querySelector('.welcome-tag');
             if (welcomeTag) welcomeTag.textContent = `Welcome 👤 ${displayName}`;
             const authorNameInput = document.getElementById('book-author-name');
-            if (authorNameInput &&!authorNameInput.value) authorNameInput.value = displayName;
+            if (authorNameInput && !authorNameInput.value) authorNameInput.value = displayName;
         } catch (error) { console.error('Failed to load user info:', error); }
     }
 
     function getBookMode(book) { return String(book.mode || 'pdf').toLowerCase(); }
     function getBookCover(book) { return book.cover_image || book.coverImage || '/images/default-cover.png'; }
-    function escapeText(input) { return String(input?? ''); }
+    function escapeText(input) { return String(input ?? ''); }
 
     async function loadDashboardBooks() {
         const container = document.getElementById('author-books-container');
@@ -117,51 +164,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 title.textContent = book.title || 'Untitled Book';
                 const description = document.createElement('p');
                 const rawDescription = escapeText(book.description || '');
-                description.textContent = rawDescription.length > 80? `${rawDescription.substring(0, 80)}...` : rawDescription;
+                description.textContent = rawDescription.length > 80 ? `${rawDescription.substring(0, 80)}...` : rawDescription;
                 const price = document.createElement('p');
                 const rawPrice = Number(book.price) || 0;
                 price.innerHTML = `<strong>Price:</strong> <span style="color: var(--primary-green-light, #27ae60);">$${rawPrice.toFixed(2)} USD</span>`;
                 const badge = document.createElement('p');
-                // UPDATED BADGE: show PHYSICAL if is_physical true
-                const physicalTag = book.is_physical? `<span class="badge" style="background:#f39c12;color:white;margin-left:6px;">PHYSICAL</span>` : '';
-                badge.innerHTML = `<span class="badge ${book.status === 'Draft'? 'status-draft' : 'status-pub'}">${getBookMode(book).toUpperCase()}</span>${physicalTag}`;
+                const physicalTag = book.is_physical ? `<span class="badge" style="background:#f39c12;color:white;margin-left:6px;">PHYSICAL</span>` : '';
+                badge.innerHTML = `<span class="badge ${book.status === 'Draft' ? 'status-draft' : 'status-pub'}">${getBookMode(book).toUpperCase()}</span>${physicalTag}`;
+                
                 const actions = document.createElement('div');
                 actions.style.display = 'flex';
                 actions.style.gap = '8px';
                 actions.style.marginTop = '10px';
                 actions.style.flexWrap = 'wrap';
+                
                 const editButton = document.createElement('button');
                 editButton.type = 'button'; editButton.textContent = 'Edit';
-                editButton.style.background = 'var(--primary-green, #1b3d2b)'; editButton.style.color = 'white'; editButton.style.border = 'none'; editButton.style.padding = '6px 12px'; editButton.style.borderRadius = '4px'; editButton.style.cursor = 'pointer';
+                editButton.style.cssText = 'background: var(--primary-green, #1b3d2b); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;';
                 editButton.addEventListener('click', () => { window.openEditModal(book.id, book.description || '', rawPrice, getBookMode(book)); });
+                
                 const deleteButton = document.createElement('button');
                 deleteButton.type = 'button'; deleteButton.textContent = 'Delete';
-                deleteButton.style.background = 'var(--danger-red, #dc3545)'; deleteButton.style.color = 'white'; deleteButton.style.border = 'none'; deleteButton.style.padding = '6px 12px'; deleteButton.style.borderRadius = '4px'; deleteButton.style.cursor = 'pointer';
+                deleteButton.style.cssText = 'background: var(--danger-red, #dc3545); color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer;';
                 deleteButton.addEventListener('click', () => { window.deleteBook(book.id); });
+                
                 actions.appendChild(editButton);
                 actions.appendChild(deleteButton);
-
-                // NEW: Sample button only if physical
-                if (book.is_physical) {
-                    const sampleBtn = document.createElement('button');
-                    sampleBtn.type = 'button'; sampleBtn.textContent = 'Sample';
-                    sampleBtn.style.background = '#f39c12'; sampleBtn.style.color = 'white'; sampleBtn.style.border = 'none'; sampleBtn.style.padding = '6px 12px'; sampleBtn.style.borderRadius = '4px'; sampleBtn.style.cursor = 'pointer';
-                    sampleBtn.addEventListener('click', () => {
-                        if (window.orderSampleCopy) window.orderSampleCopy(book.id);
-                        else alert('Physical module not loaded. Add dashboard-physical.js');
-                    });
-                    actions.appendChild(sampleBtn);
-
-                    const uploadBtn = document.createElement('button');
-                    uploadBtn.type = 'button'; uploadBtn.textContent = 'Upload Print PDF';
-                    uploadBtn.style.background = '#2980b9'; uploadBtn.style.color = 'white'; uploadBtn.style.border = 'none'; uploadBtn.style.padding = '6px 12px'; uploadBtn.style.borderRadius = '4px'; uploadBtn.style.cursor = 'pointer';
-                    uploadBtn.addEventListener('click', () => {
-                        if (window.uploadPrintFile) window.uploadPrintFile(book.id);
-                        else alert('Physical module not loaded.');
-                    });
-                    actions.appendChild(uploadBtn);
-                }
-
                 meta.appendChild(title); meta.appendChild(description); meta.appendChild(price); meta.appendChild(badge); meta.appendChild(actions);
                 card.appendChild(cover); card.appendChild(meta); container.appendChild(card);
             });
@@ -171,24 +199,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // --- PUBLISH MASTER FORM SUBMISSION WITH PROGRESS FEEDBACK ---
     const publishForm = document.getElementById('publish-master-form');
     if (publishForm) {
         publishForm.addEventListener('submit', async (event) => {
             event.preventDefault();
-            const formData = new FormData(publishForm);
-            const selectedMode = document.querySelector('input[name="upload-mode"]:checked')?.value || 'pdf';
-            formData.set('mode', selectedMode);
             const titleValue = (document.getElementById('book-title')?.value || '').trim();
             if (!titleValue) { alert('Please enter a book title.'); return; }
             const priceValue = Number(document.getElementById('book-price')?.value || '0');
             if (!Number.isFinite(priceValue) || priceValue < 0) { alert('Book price must be a valid non-negative number.'); return; }
+
+            const formData = new FormData(publishForm);
+            const selectedMode = document.querySelector('input[name="upload-mode"]:checked')?.value || 'pdf';
+            formData.set('mode', selectedMode);
+            
             const copyrightAccepted = document.getElementById('copyright-ownership-check')?.checked === true;
             const termsAccepted = document.getElementById('copyright-terms-check')?.checked === true;
             formData.set('agreeCopyright', String(copyrightAccepted));
             formData.set('agreeTerms', String(termsAccepted));
+            
             const downloadRule = document.getElementById('book-download-rule');
-            const allowDownload = selectedMode === 'html'? '0' : (downloadRule?.value || '0');
+            const allowDownload = selectedMode === 'html' ? '0' : (downloadRule?.value || '0');
             formData.set('allowDownload', allowDownload);
+
             if (selectedMode === 'html') {
                 const chapterTitle = (document.getElementById('initial-chapter-title')?.value || '').trim();
                 const chapterBody = (document.getElementById('initial-chapter-body')?.value || '').trim();
@@ -196,14 +229,21 @@ document.addEventListener('DOMContentLoaded', () => {
                 formData.set('chapterBody', chapterBody);
                 formData.set('content', chapterBody);
             }
+
             try {
+                showProgressModal('📤 Uploading your book & cover file to secure storage... Please keep this window open.');
                 const result = await apiFetch('/api/books/publish', { method: 'POST', body: formData });
+                hideProgressModal();
                 alert(result.message || '🎉 Success! Your book has been published.');
                 publishForm.reset();
                 handleFormatChange('pdf');
                 switchTab('dashboard-view');
                 await loadDashboardBooks();
-            } catch (error) { console.error('Publishing failed:', error); alert(`⚠️ Publishing failed: ${error.message}`); }
+            } catch (error) {
+                hideProgressModal();
+                console.error('Publishing failed:', error);
+                alert(`⚠️ Publishing failed:\n\n${error.message}\n\nPlease check your file size or database column constraints and try again.`);
+            }
         });
     }
 
@@ -218,6 +258,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (bio) bio.value = data.bio || '';
         }).catch((error) => { console.error('Failed to load author profile:', error); });
     }
+
+    // --- AUTHOR PROFILE FORM WITH PROGRESS FEEDBACK ---
     const profileForm = document.getElementById('author-profile-form');
     if (profileForm) {
         profileForm.addEventListener('submit', async (event) => {
@@ -228,10 +270,16 @@ document.addEventListener('DOMContentLoaded', () => {
             if (phoneInput) formData.set('phone', phoneInput.value.trim());
             if (bioInput) formData.set('bio', bioInput.value.trim());
             try {
+                showProgressModal('💾 Saving your author profile settings...');
                 const result = await apiFetch('/api/author/profile', { method: 'POST', body: formData });
+                hideProgressModal();
                 alert(result.message || '✅ Author profile details updated successfully!');
                 await loadAuthorProfile();
-            } catch (error) { console.error('Profile update failed:', error); alert(`⚠️ Profile update failed: ${error.message}`); }
+            } catch (error) {
+                hideProgressModal();
+                console.error('Profile update failed:', error);
+                alert(`⚠️ Profile update failed: ${error.message}`);
+            }
         });
     }
 
@@ -259,6 +307,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (error) { console.error('Error loading web books:', error); }
     }
+
     function selectStudioBook(book) {
         if (studioEditorPlaceholder) studioEditorPlaceholder.classList.add('hidden');
         if (studioEditorPanel) studioEditorPanel.classList.remove('hidden');
@@ -268,6 +317,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (idInput) idInput.value = book.id;
         loadChapters(book.id);
     }
+
     async function loadChapters(bookId) {
         const list = document.getElementById('studio-chapters-list');
         if (!list) return;
@@ -279,11 +329,12 @@ document.addEventListener('DOMContentLoaded', () => {
             chapters.forEach((chapter, index) => {
                 const item = document.createElement('div');
                 item.style.cssText = 'background: #f8f9fa; border: 1px solid #ddd; padding: 10px; border-radius: 4px; font-size: 13px; margin-bottom: 6px;';
-                item.innerHTML = `<strong>Chapter ${chapter.chapter_number || index + 1}:</strong> ${escapeText(chapter.title || 'Untitled')}</>`;
+                item.innerHTML = `<strong>Chapter ${chapter.chapter_number || index + 1}:</strong> ${escapeText(chapter.title || 'Untitled')}`;
                 list.appendChild(item);
             });
         } catch (error) { console.error('Error loading chapters:', error); list.innerHTML = '<p style="font-size: 12px; color: var(--text-muted, #777);">Unable to load chapters.</p>'; }
     }
+
     if (addChapterForm) {
         addChapterForm.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -292,14 +343,22 @@ document.addEventListener('DOMContentLoaded', () => {
             const bodyInput = document.getElementById('new-chapter-body');
             const title = titleInput?.value.trim() || '';
             const bodyContent = bodyInput?.value.trim() || '';
-            if (!bookId ||!title ||!bodyContent) { alert('Please provide both a chapter title and chapter content.'); return; }
+            if (!bookId || !title || !bodyContent) { alert('Please provide both a chapter title and chapter content.'); return; }
             try {
-                await apiFetch(`/api/books/${encodeURIComponent(bookId)}/chapters`, { method: 'POST', body: JSON.stringify({ title, body: bodyContent }) });
+                showProgressModal('📖 Saving chapter content...');
+                await apiFetch(`/api/books/${encodeURIComponent(bookId)}/chapters`, { method: 'POST', body: { title, body: bodyContent } });
+                hideProgressModal();
                 if (titleInput) titleInput.value = ''; if (bodyInput) bodyInput.value = '';
-                await loadChapters(bookId); alert('📖 Chapter added and published successfully!');
-            } catch (error) { console.error('Failed to add chapter:', error); alert(`⚠️ Failed to add chapter: ${error.message}`); }
+                await loadChapters(bookId); 
+                alert('📖 Chapter added and published successfully!');
+            } catch (error) {
+                hideProgressModal();
+                console.error('Failed to add chapter:', error); 
+                alert(`⚠️ Failed to add chapter: ${error.message}`);
+            }
         });
     }
+
     async function loadSalesAnalytics() {
         try {
             const data = await apiFetch('/api/analytics/sales');
@@ -313,17 +372,20 @@ document.addEventListener('DOMContentLoaded', () => {
             if (totalEarnings) totalEarnings.textContent = `$${grossTotal.toFixed(2)}`;
             if (netRoyalties) netRoyalties.textContent = `$${authorNet75}`;
             if (totalSales) totalSales.textContent = String(data.totalSalesCount || data.total_sales_count || 0);
+            
             const ecocashBal = document.getElementById('dashboard-ecocash-balance');
             const platformFee = document.getElementById('dashboard-platform-fee');
             const opsFee = document.getElementById('dashboard-ops-fee');
             if (ecocashBal) ecocashBal.textContent = `$${authorNet75} USD`;
             if (platformFee) platformFee.textContent = `$${platformFee20} USD`;
             if (opsFee) opsFee.textContent = `$${opsFee5} USD`;
+            
             const breakdownList = document.getElementById('sales-breakdown-list');
             if (breakdownList) {
                 breakdownList.innerHTML = '';
-                if (!data.bookBreakdown || Object.keys(data.bookBreakdown).length === 0) { breakdownList.innerHTML = '<p style="font-size: 13px; color: var(--text-muted, #777);">No sales recorded yet.</p>'; }
-                else {
+                if (!data.bookBreakdown || Object.keys(data.bookBreakdown).length === 0) { 
+                    breakdownList.innerHTML = '<p style="font-size: 13px; color: var(--text-muted, #777);">No sales recorded yet.</p>'; 
+                } else {
                     Object.entries(data.bookBreakdown).forEach(([title, stats]) => {
                         const row = document.createElement('div');
                         row.style.cssText = 'display: flex; justify-content: space-between; border-bottom: 1px dashed #eee; padding: 8px 0; font-size: 13px;';
@@ -334,27 +396,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     });
                 }
             }
-            const txList = document.getElementById('recent-transactions-list');
-            const dashActivityLog = document.getElementById('dashboard-activity-log');
-            if (txList) {
-                txList.innerHTML = ''; if (dashActivityLog) dashActivityLog.innerHTML = '';
-                if (!data.recentTransactions || data.recentTransactions.length === 0) {
-                    const emptyMsg = '<p style="font-size: 13px; color: var(--text-muted, #777); padding: 10px 0;">No transactions available.</p>';
-                    txList.innerHTML = emptyMsg; if (dashActivityLog) dashActivityLog.innerHTML = emptyMsg; return;
-                }
-                data.recentTransactions.forEach((tx) => {
-                    const salePrice = Number(tx.sale_price || 0);
-                    const netEarned = (salePrice * 0.75).toFixed(2);
-                    const rowHtml = `<span><strong>${escapeText(tx.buyer_name || 'Anonymous')}</strong> purchased <em>${escapeText(tx.book_title || 'Unknown book')}</em></span><span style="color: var(--primary-green-light, #27ae60); font-weight: bold;">+$${netEarned}</span>`;
-                    const txRow = document.createElement('div'); txRow.className = 'log-item'; txRow.innerHTML = rowHtml; txList.appendChild(txRow);
-                    if (dashActivityLog) { const logRow = document.createElement('div'); logRow.className = 'log-item'; logRow.style.cssText = 'display: flex; justify-content: space-between; border-bottom: 1px solid #f0f0f0; padding: 8px 0; font-size: 12px;'; logRow.innerHTML = rowHtml; dashActivityLog.appendChild(logRow); }
-                });
-            }
         } catch (error) { console.error('Error loading sales data:', error); }
     }
+
     const editModal = document.getElementById('edit-book-modal');
     const editForm = document.getElementById('edit-book-form');
     const closeModalBtn = document.getElementById('close-modal-btn');
+    
     window.openEditModal = async function(id, description, price, mode) {
         if (!editModal) return;
         state.currentEditingBookId = id; state.currentEditingChapterId = null;
@@ -362,15 +410,18 @@ document.addEventListener('DOMContentLoaded', () => {
         const descInput = document.getElementById('edit-book-description');
         const priceInput = document.getElementById('edit-book-price');
         if (idInput) idInput.value = id; if (descInput) descInput.value = description || ''; if (priceInput) priceInput.value = Number(price || 0).toFixed(2);
+        
         let chapterGroup = document.getElementById('edit-chapter-group');
         const contentTextArea = document.getElementById('edit-book-content') || document.getElementById('edit-chapter-body');
         let formatterTriggerBtn = document.getElementById('launch-formatter-btn');
+        
         if (!formatterTriggerBtn && contentTextArea) {
             formatterTriggerBtn = document.createElement('button'); formatterTriggerBtn.type = 'button'; formatterTriggerBtn.id = 'launch-formatter-btn'; formatterTriggerBtn.innerHTML = '<i class="fas fa-magic"></i> Open AI Layout Formatter';
             formatterTriggerBtn.style.cssText = 'margin-bottom: 10px; padding: 6px 12px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: bold; display: block;';
             formatterTriggerBtn.addEventListener('click', () => { if (typeof openLayoutFormatter === 'function') openLayoutFormatter(contentTextArea.id, id, state.currentEditingChapterId); else alert('Formatter utility is not loaded.'); });
             contentTextArea.parentNode.insertBefore(formatterTriggerBtn, contentTextArea);
         }
+        
         if (String(mode).toLowerCase() === 'html') {
             if (formatterTriggerBtn) formatterTriggerBtn.style.display = 'block';
             if (!chapterGroup && editForm) {
@@ -401,7 +452,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         editModal.style.display = 'flex';
     };
+
     if (closeModalBtn && editModal) closeModalBtn.addEventListener('click', () => { editModal.style.display = 'none'; });
+
     if (editForm) {
         editForm.addEventListener('submit', async (event) => {
             event.preventDefault();
@@ -412,38 +465,55 @@ document.addEventListener('DOMContentLoaded', () => {
             const pdfFileInput = document.getElementById('edit-book-pdf-file');
             if (!id) { alert('Missing book ID.'); return; }
             try {
+                showProgressModal('💾 Updating book details...');
                 const formData = new FormData(); formData.append('description', description); formData.append('price', price);
                 if (pdfFileInput && pdfFileInput.files[0]) formData.append('pdfFile', pdfFileInput.files[0]);
                 const bookResult = await apiFetch(`/api/books/${encodeURIComponent(id)}`, { method: 'PUT', body: formData });
-                if (bookResult && bookResult.error) { alert(`❌ ${bookResult.error}`); return; }
+                if (bookResult && bookResult.error) { throw new Error(bookResult.error); }
                 if (state.currentEditingChapterId && contentTextArea) {
                     const selectElem = document.getElementById('edit-chapter-select');
-                    const selectedOption = selectElem? selectElem.options[selectElem.selectedIndex] : null;
+                    const selectedOption = selectElem ? selectElem.options[selectElem.selectedIndex] : null;
                     const chapterTitle = selectedOption?.dataset.title || 'Chapter';
-                    await apiFetch(`/api/books/chapters/${encodeURIComponent(state.currentEditingChapterId)}`, { method: 'PUT', body: JSON.stringify({ title: chapterTitle, body: contentTextArea.value }) });
+                    await apiFetch(`/api/books/chapters/${encodeURIComponent(state.currentEditingChapterId)}`, { method: 'PUT', body: { title: chapterTitle, body: contentTextArea.value } });
                 }
+                hideProgressModal();
                 alert('✅ Book details and files updated successfully!');
                 if (editModal) editModal.style.display = 'none'; if (pdfFileInput) pdfFileInput.value = '';
                 await loadDashboardBooks();
-            } catch (error) { console.error('Error saving book edits:', error); alert(`⚠️ An error occurred while updating the book: ${error.message}`); }
+            } catch (error) {
+                hideProgressModal();
+                console.error('Error saving book edits:', error); 
+                alert(`⚠️ An error occurred while updating the book:\n\n${error.message}`);
+            }
         });
     }
+
     window.deleteBook = function(id) {
         if (!confirm('⚠️ Are you sure you want to permanently delete this book? This action cannot be undone.')) return;
-        apiFetch(`/api/books/${encodeURIComponent(id)}`, { method: 'DELETE' }).then((data) => { alert(data.message || '🗑️ Book permanently removed.'); loadDashboardBooks(); }).catch((error) => { console.error('Delete failed:', error); alert(`❌ ${error.message}`); });
+        showProgressModal('🗑️ Removing book...');
+        apiFetch(`/api/books/${encodeURIComponent(id)}`, { method: 'DELETE' }).then((data) => {
+            hideProgressModal();
+            alert(data.message || '🗑️ Book permanently removed.'); 
+            loadDashboardBooks();
+        }).catch((error) => {
+            hideProgressModal();
+            console.error('Delete failed:', error); 
+            alert(`❌ ${error.message}`);
+        });
     };
+
     async function loadNotifications() {
         try {
             const notifications = await apiFetch('/api/notifications');
             const listContainer = document.getElementById('notif-list-container');
             const badge = document.getElementById('notif-badge');
-            if (!listContainer ||!Array.isArray(notifications)) return;
-            const unreadCount = notifications.filter((notification) =>!notification.is_read).length;
+            if (!listContainer || !Array.isArray(notifications)) return;
+            const unreadCount = notifications.filter((notification) => !notification.is_read).length;
             if (badge) { badge.textContent = String(unreadCount); badge.classList.toggle('hidden', unreadCount === 0); }
             listContainer.innerHTML = '';
             if (notifications.length === 0) { listContainer.innerHTML = '<p style="text-align: center; color: var(--text-muted, #777); font-size: 13px; padding: 15px 0;">No new notifications</p>'; return; }
             notifications.forEach((notif) => {
-                const card = document.createElement('div'); card.className = `notif-card ${notif.is_read? '' : 'unread'}`; card.style.cursor = 'pointer';
+                const card = document.createElement('div'); card.className = `notif-card ${notif.is_read ? '' : 'unread'}`; card.style.cursor = 'pointer';
                 const title = document.createElement('span'); title.className = 'notif-card-title'; title.style.fontWeight = 'bold'; title.style.fontSize = '13px'; title.style.display = 'block'; title.textContent = `📢 ${notif.title || ''}`;
                 const message = document.createElement('p'); message.className = 'notif-card-body'; message.style.margin = '4px 0'; message.style.fontSize = '12px'; message.style.color = 'var(--text-dark, #222)'; message.textContent = notif.message || '';
                 const time = document.createElement('small'); time.className = 'notif-card-date'; time.style.fontSize = '10px'; time.style.color = 'var(--text-muted, #777)'; time.textContent = new Date(notif.createdAt || notif.created_at).toLocaleDateString();
@@ -453,10 +523,12 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (error) { console.error('Notification load error:', error); }
     }
+
     window.toggleNotifDropdown = function() { const dropdown = document.getElementById('notif-dropdown'); if (dropdown) dropdown.classList.toggle('hidden'); };
     document.addEventListener('click', (event) => {
         const dropdown = document.getElementById('notif-dropdown'); const bellBtn = document.getElementById('notif-bell-btn');
-        if (dropdown &&!dropdown.classList.contains('hidden') && bellBtn &&!bellBtn.contains(event.target) &&!dropdown.contains(event.target)) dropdown.classList.add('hidden');
+        if (dropdown && !dropdown.classList.contains('hidden') && bellBtn && !bellBtn.contains(event.target) && !dropdown.contains(event.target)) dropdown.classList.add('hidden');
     });
+
     loadCurrentUser(); loadDashboardBooks(); loadNotifications(); loadSalesAnalytics(); loadAuthorProfile();
 });
