@@ -16,6 +16,7 @@ router.post('/register', async (req, res) => {
         const username = normalizeText(req.body.username, 80);
         const email = normalizeEmail(req.body.email);
         const password = String(req.body.password || '');
+        const role = String(req.body.role || 'reader').toLowerCase();
 
         if (!username || !email || !password) {
             return sendError(res, 400, 'All registration fields are required.');
@@ -37,18 +38,25 @@ router.post('/register', async (req, res) => {
             return sendError(res, 400, 'Please provide a valid email address.');
         }
 
+        if (!['author', 'reader'].includes(role)) {
+            return sendError(res, 400, 'Invalid account type.');
+        }
+
         const passwordHash = await bcrypt.hash(password, 12);
 
-        const { error } = await supabase
+        const { data, error } = await supabase
             .from('users')
             .insert([{
                 username,
                 email,
                 password: passwordHash,
-                role: 'author'
-            }]);
+                role
+            }])
+            .select('id,username,email,role');
 
         if (error) {
+            console.error('Registration database error:', error);
+
             if (error.code === '23505') {
                 return sendError(
                     res,
@@ -57,13 +65,13 @@ router.post('/register', async (req, res) => {
                 );
             }
 
-            console.error('Registration database error:', error);
-            return sendError(res, 500, 'Registration failed.');
+            return sendError(res, 500, `Registration failed: ${error.message}`);
         }
 
         res.status(201).json({
             success: true,
-            message: 'Registration successful!'
+            message: 'Registration successful!',
+            user: data?.[0] || null
         });
     } catch (error) {
         console.error('Registration error:', error);
@@ -92,7 +100,7 @@ router.post('/login', async (req, res) => {
 
         if (error) {
             console.error('Login lookup error:', error);
-            return sendError(res, 500, 'Login failed.');
+            return sendError(res, 500, `Login failed: ${error.message}`);
         }
 
         if (!user || !user.password) {
