@@ -62,6 +62,7 @@ function serializeBook(book = {}) {
         subTheme: book.sub_theme || null,
         coverImage: book.cover_image || null,
         pdfSource: book.pdf_source || null,
+        isPhysical: normalizeBoolean(book.is_physical), // Added missing serialization
         allowDownload: normalizeBoolean(book.allow_download),
         createdAt: book.created_at || null
     };
@@ -148,7 +149,7 @@ async function uploadToSupabase(file, bucket) {
     }
 
     if (bucket === 'covers') {
-        const { data } = supabase
+        const { data } = await supabase // Added missing await
             .storage
             .from(bucket)
             .getPublicUrl(fileName);
@@ -249,6 +250,7 @@ const bookSelect = [
     'cover_image',
     'pdf_source',
     'allow_download',
+    'is_physical', // Added missing column
     'created_at'
 ].join(',');
 
